@@ -34,10 +34,10 @@ From the BIP39 seed, the identity signing key is derived.
 - **Step 2: Application Key Derivation** — HKDF-SHA256 with:
   - **Input Key Material:** BIP39 seed (or stretched key if Step 1 is used)
   - **Salt:** empty (no salt)
-  - **Info:** A standardized, unique string identifying the purpose
+  - **Info:** `"wot/identity/ed25519/v1"` (canonical, all implementations MUST use this string)
   - **Output:** 32 bytes (Ed25519 seed)
 
-> **Open Question:** Should the info string be standardized across implementations (e.g. `"wot/identity/ed25519/v1"`)? This is the critical decision — if two implementations use different info strings, the same mnemonic produces different identities.
+The info string is standardized so that the same mnemonic produces the same DID across all implementations. This enables a single identity and trust graph across multiple applications (e.g. WoT attestations and financial vouchers).
 
 ### L3: Identity
 
@@ -112,7 +112,7 @@ When a verifier encounters an attestation pointing to an old DID:
 
 ## Open Questions
 
-1. **Standardized HKDF info string:** Should there be one canonical info string (e.g. `"wot/identity/ed25519/v1"`) that all implementations use? This is the critical decision for cross-implementation identity compatibility.
+1. ~~**Standardized HKDF info string:**~~ **Decided:** `"wot/identity/ed25519/v1"` — all implementations MUST use this string.
 2. **Seed slice:** Should the spec mandate using all 64 bytes or the first 32 bytes of the BIP39 seed?
 3. **Key stretching:** Should additional stretching be part of the standard path, or an optional extension? Arguments for: brute-force protection for financial use cases. Arguments against: performance cost, not needed for non-financial identities.
 4. **Migration chain length:** Should there be a limit on how many times an identity can migrate? Long chains increase verification cost.
