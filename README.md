@@ -23,7 +23,8 @@ The spec is not tied to either implementation.
 
 ## Structure
 
-    spec/             Specification documents
+    spec/             Active specification documents
+    drafts/           Early ideas and future topics (not yet ready for discussion)
     rfcs/             Proposals for spec changes (RFC process)
     rfcs/template.md  RFC template
 

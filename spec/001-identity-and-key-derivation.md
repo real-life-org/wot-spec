@@ -66,7 +66,7 @@ Extensions build on top of the core derivation and are implementation-specific:
 
 ## Migration (Key Rotation)
 
-If an implementation needs to change its derivation path to conform to this spec, existing identities are migrated via key rotation. See [Spec 004: Identity Migration](004-identity-migration.md).
+If an implementation needs to change its derivation path to conform to this spec, existing identities are migrated via key rotation. See [Identity Migration](../drafts/004-identity-migration.md) (draft).
 
 ## Current Implementations
 
