@@ -72,10 +72,49 @@ Extensions build on top of L0-L3 and are implementation-specific:
 
 With the current implementations, **the same mnemonic does NOT produce the same DID** due to differences in L1 (seed slice) and L2 (stretching, HKDF info string).
 
+## Identity Migration (Key Rotation)
+
+If the standard derivation path changes, existing identities must not be invalidated. The protocol defines a migration mechanism based on key rotation:
+
+**Migration Message:**
+
+The holder of an old identity signs a statement with the old key:
+
+```
+{
+  type: "identity-migration",
+  oldDid: "did:key:z6Mk...(old)",
+  newDid: "did:key:z6Mk...(new)",
+  timestamp: "ISO 8601",
+  proof: {
+    type: "Ed25519Signature2020",
+    verificationMethod: "did:key:z6Mk...(old)#key-1",
+    proofValue: "..."
+  }
+}
+```
+
+**Properties:**
+
+- The old key signs the migration, proving ownership of both identities
+- Existing attestations remain valid — verifiers follow the migration chain
+- The migration message is propagated through the trust graph (relay, gossip)
+- This is a general-purpose key rotation mechanism — migration is the first use case, but it also handles key compromise, device loss, and algorithm upgrades
+
+**Trust Continuity:**
+
+When a verifier encounters an attestation pointing to an old DID:
+1. Check if a migration message exists for that DID
+2. If yes, follow the chain to the current DID
+3. The attestation is considered valid for the current identity
+
+> **Note:** This mechanism is critical for the goal of one identity across multiple applications (WoT, Human Money Core, etc.). A standardized derivation path means users only need to migrate once.
+
 ## Open Questions
 
-1. **Standardized HKDF info string:** Should there be one canonical info string (e.g. `"wot/identity/ed25519/v1"`) that all implementations use?
+1. **Standardized HKDF info string:** Should there be one canonical info string (e.g. `"wot/identity/ed25519/v1"`) that all implementations use? This is the critical decision for cross-implementation identity compatibility.
 2. **Seed slice:** Should the spec mandate using all 64 bytes or the first 32 bytes of the BIP39 seed?
 3. **Key stretching:** Should additional stretching be part of the standard path, or an optional extension? Arguments for: brute-force protection for financial use cases. Arguments against: performance cost, not needed for non-financial identities.
-4. **Versioning:** How do we handle future changes to the derivation path without breaking existing identities?
-5. **W3C alignment:** Should this spec reference existing W3C specs (DID Core, Verifiable Credentials) or remain independent?
+4. **Migration chain length:** Should there be a limit on how many times an identity can migrate? Long chains increase verification cost.
+5. **Migration revocation:** Can a migration be revoked (e.g., if the new key is compromised before propagation)?
+6. **W3C alignment:** Should this spec reference existing W3C specs (DID Core, Verifiable Credentials) or remain independent?
