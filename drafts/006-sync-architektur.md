@@ -40,12 +40,28 @@ Jedes Gerät braucht eine eigene kryptografische Identität. Zwei Gründe:
 ```
 BIP39 Seed (12 Wörter)
   → HKDF("wot/identity/ed25519/v1") → Master Key (= DID)
-      → Delegation an Device Key A (Handy)
-      → Delegation an Device Key B (Laptop)
-      → Delegation an Device Key C (...)
+  → HKDF("wot/encryption/v1")       → Master Encryption Key (X25519)
+  → Zufällig generiert               → Device Key A (Handy)
+  → Zufällig generiert               → Device Key B (Laptop)
 ```
 
-Der Master Key ist der Root of Trust. Er delegiert an Device-Keys. Device-Keys signieren die Log-Einträge. Jeder kann verifizieren: "Dieser Eintrag kommt von Alices Handy, autorisiert durch Alices Identität."
+**Jedes Gerät hat beides:**
+- **Master Key** (aus Seed, identisch auf allen Geräten) — für Identity-Level-Aktionen
+- **Device Key** (zufällig, einzigartig pro Gerät) — für Sync-Level-Aktionen
+
+### Wer signiert was?
+
+| Aktion | Signiert mit | Warum |
+|--------|-------------|-------|
+| Attestation ("Ich bestätige Bob") | Master Key | Identity-Level — "Ich, Alice" sagt das, nicht "Alices Handy" |
+| Verification ("Ich habe Bob getroffen") | Master Key | Identity-Level — persönliche Aussage |
+| Log-Eintrag (CRDT-Update) | Device Key | Sync-Level — welches Gerät hat das geschrieben? |
+| Delegation ("Mein Laptop ist autorisiert") | Master Key | Autorisierung eines neuen Geräts |
+| Transaktion (Gutschein ausgeben) | Device Key | Double-Spend-Prevention — welches Gerät hat ausgegeben? |
+
+### Wer entschlüsselt?
+
+Nachrichten werden an den **Master Encryption Key** verschlüsselt (X25519, aus Seed ableitbar). Jedes Gerät kann entschlüsseln weil jedes Gerät den Seed hat (oder den davon abgeleiteten Key).
 
 ### Device-Key-Erzeugung
 
