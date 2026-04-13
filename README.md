@@ -31,11 +31,10 @@ Die Infrastruktur für verschlüsselte Datensynchronisation. Nicht WoT-spezifisc
 
 | # | Dokument | Beschreibung |
 |---|----------|-------------|
-| 005 | [Verschlüsselung](sync/005-verschluesselung.md) | AES-256-GCM, ECIES, Gruppen-Verschlüsselung |
-| 006 | [Device-Keys und Delegation](sync/006-device-keys-und-delegation.md) | Geräte-Identität, Master-Delegation |
-| 007 | [Sync-Protokoll](sync/007-sync-protokoll.md) | Append-only Logs, Sedimentree, RIBLT |
-| 008 | [Transport und Broker](sync/008-transport-und-broker.md) | Broker, Inbox, Push, Multi-Broker |
-| 009 | [Discovery](sync/009-discovery.md) | Peer- und Broker-Findung |
+| 004 | [Verschlüsselung](sync/004-verschluesselung.md) | AES-256-GCM, ECIES, Gruppen-Verschlüsselung |
+| 005 | [Sync-Protokoll](sync/005-sync-protokoll.md) | Append-only Logs, Sedimentree, RIBLT |
+| 006 | [Transport und Broker](sync/006-transport-und-broker.md) | Broker, Inbox, Push, Multi-Broker |
+| 007 | [Discovery](sync/007-discovery.md) | Peer- und Broker-Findung |
 
 ### `extensions/` — Extensions
 

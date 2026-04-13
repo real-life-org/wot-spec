@@ -12,12 +12,11 @@ Erweitert das WoT-Protokoll um dezentrales Payment mit Gutscheinen. Nutzt Detach
 
 - **Detached Signatures** — Multi-Signer-Format für Gutscheine mit mehreren Bürgen
 - **SecureContainer** — Multi-Empfänger-Verschlüsselung (X25519 + ChaCha20-Poly1305)
-- **Device-Prefixes / SAI** — Separierte Wallet-Instanzen pro Gerät
-- **TransactionFingerprints** — Double-Spend-Detection via Gossip
-- **ProofOfDoubleSpend** — Kryptografischer Betrugs-Beweis
+- **Device-Prefixes / SAI** — Separierte Wallet-Instanzen pro Gerät. Ein Gutschein existiert physisch nur auf einem Gerät — das verhindert Double-Spend im Offline-Fall
+- **TransactionFingerprints** — Erkennung von absichtlichem Betrug (wenn jemand trotzdem versucht doppelt auszugeben) via Gossip-Propagation
+- **ProofOfDoubleSpend** — Kryptografischer Betrugs-Beweis der im Netzwerk propagiert wird
 
 ## Zu klären
 
 - Detaillierte Spec (mit Sebastian)
-- Abgrenzung zu WoT Core Device-Keys (Sync 006) vs. Payment Device-Prefixes
-- SecureContainer als eigenständiges Format oder als Extension des WoT Core Verschlüsselungsmodells (Sync 005)
+- SecureContainer als eigenständiges Format oder als Extension des Verschlüsselungsmodells (Sync 005)
