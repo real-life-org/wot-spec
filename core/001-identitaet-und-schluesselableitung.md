@@ -115,6 +115,6 @@ Human Money Core verwendet PBKDF2 mit 100k Runden zusätzlich zum BIP39-PBKDF2. 
 
 Diese Entscheidung muss gemeinsam mit Sebastian getroffen werden. Wenn Stretching Teil des Standard-Pfades wird, ändert sich die DID — eine Migration ist nötig.
 
-### 2. W3C-Alignment
+### ~~2. W3C-Alignment~~
 
-Soll diese Spec bestehende W3C-Specs (DID Core, Verifiable Credentials) referenzieren oder unabhängig bleiben?
+**Entschieden:** Ja. Die Spec referenziert W3C-Standards (DID Core, Verifiable Credentials 2.0, Data Integrity 1.0) und baut darauf auf. Attestations sind W3C Verifiable Credentials (siehe [Spec 003](003-attestations.md)).
