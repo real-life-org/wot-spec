@@ -55,7 +55,7 @@ Für direkte Nachrichten zwischen zwei Parteien (Attestations, Einladungen, Key-
 3. Symmetrischen Schlüssel via HKDF-SHA256 ableiten:
    - Input: Shared Secret (32 Bytes)
    - Salt: leer
-   - Info: HKDF Info-String (siehe Offene Fragen)
+   - Info: `"wot/ecies/v1"`
    - Ausgabe: 256-Bit AES-Schlüssel
 4. Klartext mit AES-256-GCM verschlüsseln
 5. Ausgabe: `{ ephemeral_public_key, nonce, ciphertext }`
@@ -114,13 +114,7 @@ Für 1:1-Nachrichten mit Forward Secrecy könnte in Zukunft ein Double-Ratchet-P
 | **P2P-Verschlüsselung** | ECIES (X25519 + HKDF + AES-256-GCM) | SecureContainer (X25519 + HKDF + ChaCha20) | ✅ ECIES + AES-256-GCM |
 | **Gruppen-Verschlüsselung** | Space Keys (zufällig, generationsbasiert) | Nicht eingebaut | ✅ Space Keys |
 | **Symmetrischer Algorithmus** | AES-256-GCM (Web Crypto) | ChaCha20-Poly1305 | ✅ AES-256-GCM |
-| **HKDF Info (P2P)** | `"wot-ecies-v1"` | `"secure-container-kek"` | ❓ Offen |
+| **HKDF Info (P2P)** | `"wot-ecies-v1"` | `"secure-container-kek"` | **`"wot/ecies/v1"`** |
 | **X25519-Ableitung** | Separater HKDF-Pfad | Birationale Abbildung | ✅ Beide erlaubt |
 | **Nonce** | 12 Bytes zufällig | 12 Bytes zufällig | ✅ 12 Bytes zufällig |
 | **Multi-Empfänger** | Nicht eingebaut | SecureContainer (Double-Key-Wrapping) | Nicht im Sync Layer (siehe Extensions) |
-
-## Offene Fragen
-
-### 1. HKDF Info-String für P2P-Verschlüsselung
-
-WoT Core verwendet `"wot-ecies-v1"`, Human Money Core verwendet `"secure-container-kek"`. Für Interoperabilität muss ein gemeinsamer String gewählt werden. Der konsistente Name wäre `"wot/ecies/v1"` — erfordert aber Migration auf beiden Seiten. Verknüpft mit der gleichen Frage in [Core 001](../core/001-identitaet-und-schluesselableitung.md). Wenn migriert wird, dann alles gleichzeitig. Entscheidung: jetzt (wenige User, geringe Kosten) oder nie (bestehende Strings als Standard akzeptieren).
