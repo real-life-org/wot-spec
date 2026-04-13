@@ -53,9 +53,7 @@ HKDF-SHA256 mit:
 - **Info:** `"wot/identity/ed25519/v1"`
 - **Ausgabe:** 32 Bytes (Ed25519-Seed)
 
-Kein zusätzliches Key-Stretching. BIP39 wendet bereits PBKDF2 mit 2048 Runden bei der Seed-Generierung an, und 128 Bit Entropie aus einem korrekten Mnemonic sind nicht per Brute-Force angreifbar. Zusätzliches Stretching kostet Performance ohne relevanten Sicherheitsgewinn.
-
-Implementierungen die zusätzlichen Schutz für spezifische Anwendungsfälle benötigen (z.B. passwortbasiertes Unlock) SOLLTEN Stretching auf der Speicher-/Unlock-Ebene anwenden, nicht auf der Identitäts-Ableitungsebene.
+Ob zusätzliches Key-Stretching vor der HKDF-Ableitung angewendet wird, ist eine offene Frage (siehe Offene Frage 2).
 
 ### Identität
 
@@ -100,11 +98,23 @@ Beide Implementierungen müssen Änderungen vornehmen um dieser Spec zu entsprec
 | **Entropie** | 128 Bit | Konfigurierbar | Mindestens 128 Bit |
 | **Seed-Bytes** | Erste 32 Bytes | Volle 64 Bytes | **Volle 64 Bytes** |
 | **Passphrase** | `""` (leer) | `""` (leer) | `""` (immer leer) |
-| **Stretching** | Keines | PBKDF2 100k Runden | **Keines** |
+| **Stretching** | Keines | PBKDF2 100k Runden | ❓ Mit Sebastian klären |
 | **HKDF Info** | `"wot-identity-v1"` | `"human-money-core/ed25519"` | **`"wot/identity/ed25519/v1"`** |
 | **Ed25519** | @noble/ed25519 | ed25519_dalek | Beliebige konforme Impl. |
 | **DID** | did:key + 0xed01 + Base58 | did:key + 0xed01 + Base58 | did:key + 0xed01 + Base58 |
 
 ## Offene Fragen
 
-1. **W3C-Alignment:** Soll diese Spec bestehende W3C-Specs (DID Core, Verifiable Credentials) referenzieren oder unabhängig bleiben?
+### 1. Key-Stretching bei der Ableitung
+
+Human Money Core verwendet PBKDF2 mit 100k Runden zusätzlich zum BIP39-PBKDF2. WoT Core verwendet kein zusätzliches Stretching.
+
+**Argumente dafür:** Bei Gutscheinen steht echtes Geld auf dem Spiel — zusätzlicher Brute-Force-Schutz ist sinnvoll. Schützt auch bei schwacher Entropie-Quelle.
+
+**Argumente dagegen:** Bei 128 Bit Entropie aus einem korrekten Mnemonic ist Brute-Force bereits unlösbar. Stretching kostet Performance bei jedem Unlock auf Mobilgeräten.
+
+Diese Entscheidung muss gemeinsam mit Sebastian getroffen werden. Wenn Stretching Teil des Standard-Pfades wird, ändert sich die DID — eine Migration ist nötig.
+
+### 2. W3C-Alignment
+
+Soll diese Spec bestehende W3C-Specs (DID Core, Verifiable Credentials) referenzieren oder unabhängig bleiben?
