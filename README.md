@@ -17,9 +17,8 @@ Ein modulares Protokoll das ermöglicht:
 |-----|--------|----------------|-------|
 | Identität, Signaturen, Attestations | `01-wot-core/` | web-of-trust | Das Protokoll. Gemeinsam mit Sebastian. |
 | Verschlüsselung, Sync, Transport, Discovery | `02-wot-sync/` | web-of-trust | Die Infrastruktur. Jede Local-First-App könnte das nutzen. |
-| Datenmodell, Gruppen, Mitgliedschaft | — (nicht hier) | real-life-stack | RLS-spezifisch. |
+| Datenmodell, Gruppen, Display | `03-rls-extensions/` | real-life-stack | Unsere Erweiterungen. |
 | Trust-Scores, Payment | `04-hmc-extensions/` | human-money-core | Sebastians Erweiterungen. |
-| Display/Badges | `03-rls-extensions/` | real-life-stack | Unsere Erweiterungen. |
 
 Die Trennung folgt der Frage: **Braucht Sebastian das?** Ja → WoT Core. Hilfreich → WoT Sync. Nein → Extensions oder anderes Repo.
 
