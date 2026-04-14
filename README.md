@@ -18,7 +18,7 @@ Ein modulares Protokoll das ermöglicht:
 | Identität, Signaturen, Attestations | `01-wot-core/` | web-of-trust | Das Protokoll. Gemeinsam mit Sebastian. |
 | Verschlüsselung, Sync, Transport, Discovery | `02-wot-sync/` | web-of-trust | Die Infrastruktur. Jede Local-First-App könnte das nutzen. |
 | Datenmodell, Gruppen, Badges | `03-rls-extensions/` | real-life-stack | Unsere Erweiterungen. |
-| Trust-Scores, Payment | `04-hmc-extensions/` | human-money-core | Sebastians Erweiterungen. |
+| Trust-Scores, Transactions | `04-hmc-extensions/` | human-money-core | Sebastians Erweiterungen. |
 
 Die Trennung folgt der Frage: **Braucht Sebastian das?** Ja → WoT Core. Hilfreich → WoT Sync. Nein → Extensions oder anderes Repo.
 
@@ -64,7 +64,7 @@ Implementierungsspezifische Erweiterungen für Sebastians Payment-System.
 | # | Extension | Beschreibung |
 |---|-----------|-------------|
 | H01 | [Trust-Scores](04-hmc-extensions/H01-trust-scores.md) | Quantitative Vertrauensstufen, Propagation, Hop-Limits |
-| H02 | [Payment](04-hmc-extensions/H02-payment.md) | Gutscheine, Double-Spend-Prevention, SecureContainer |
+| H02 | [Transactions](04-hmc-extensions/H02-transactions.md) | Gutscheine, Double-Spend-Prevention, SecureContainer |
 
 ### `research/` — Forschung
 
