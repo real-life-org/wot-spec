@@ -33,7 +33,7 @@ Erweitert WoT Attestations um quantitative Vertrauensstufen, Haftung und Trust-P
 
 ## SD-JWT Trust Lists (aus Sebastians ADR-04)
 
-Gebündelte Trust Lists mit Selective Disclosure. Siehe [003 Attestations](../core/003-attestations.md), Abschnitt Human Money Extension.
+Gebündelte Trust Lists mit Selective Disclosure. Siehe [003 Attestations](../wot-core/003-attestations.md), Abschnitt Human Money Extension.
 
 ## Reziprokes Routing (aus Sebastians ADR-05)
 
