@@ -108,16 +108,70 @@ Die Signatur wird gemäß [Core 002](../01-wot-core/002-signaturen-und-verifikat
 | `inbox` | Inbox | Direkte Nachricht (Attestation, Invite, etc.) |
 | `ack` | Beide | Empfangsbestätigung |
 
+## Broker-Zuordnung
+
+### Persönlicher Broker
+
+Jeder User hat einen persönlichen Broker für seine privaten Dokumente (Identität, Keys, Kontakte). Das ist typischerweise der Broker der Community über die er eingeladen wurde.
+
+Das persönliche Dokument wird automatisch auf **allen Brokern** repliziert bei denen der User registriert ist — für Redundanz. Wenn ein Broker ausfällt, haben die anderen noch alles.
+
+### Space-Broker (Heim-Broker)
+
+Jeder Space hat einen oder mehrere **Heim-Broker**. Beim Erstellen eines Space wird der Broker des Erstellers zum Heim-Broker. Die Broker-URL ist Teil der Space-Metadata.
+
+Beim Einladen in einen Space wird die Broker-URL mitgeschickt. Der eingeladene User verbindet sich automatisch mit diesem Broker für diesen Space.
+
+Ein Space DARF mehrere Heim-Broker haben — für Redundanz. Clients syncen mit allen verfügbaren Brokern. Log-Einträge konvergieren automatisch (selbes Sync-Protokoll, CRDT-Merge).
+
+### Community-Einladung
+
+Wenn ein User über eine Community eingeladen wird, enthält die Einladung:
+
+```
+Community-Einladung:
+  Space-ID + Group Key (verschlüsselt)
+  Broker-URL der Community
+  Profil des Einladenden
+```
+
+Der Community-Broker wird automatisch zum persönlichen Broker und zum Space-Broker. Der neue User ist sofort vernetzt — ein Schritt.
+
+### Standard-Broker
+
+Die App wird mit einem Standard-Broker ausgeliefert als Fallback für User die ohne Einladung starten. Sobald der User einer Community beitritt, kann er zu deren Broker wechseln.
+
+### Broker-Verbindungen eines Users
+
+```
+Alice's App verbindet sich mit:
+  → Broker A (persönlicher Broker + Space 1 + Space 2)
+  → Broker B (Space 3 Heim-Broker)
+  
+Persönliches Dokument: repliziert auf BEIDEN Brokern
+Space 1 + 2: nur auf Broker A
+Space 3: nur auf Broker B
+```
+
 ## Multi-Broker
 
-Ein User DARF mehrere Broker nutzen. Daten werden auf alle repliziert. Wenn Broker A offline ist, nutzt der Client Broker B.
+Broker kommunizieren NICHT untereinander. Es gibt kein Federation-Protokoll. Stattdessen:
 
-```
-Client ──→ Broker A (Community-Broker)
-       └─→ Broker B (eigener Backup-Broker)
-```
+- **Persönliche Dokumente** werden auf alle Broker repliziert (automatisch, für Redundanz)
+- **Space-Dokumente** werden auf die Heim-Broker des Space repliziert
+- Alle Members eines Space müssen bei mindestens einem gemeinsamen Heim-Broker registriert sein
+- Der Client löst alles — die Broker sind nur Speicher
 
-Broker kommunizieren NICHT untereinander. Es gibt kein Federation-Protokoll. Der Client repliziert zu mehreren Brokern — das reicht für Redundanz.
+### Broker-Wechsel
+
+Ein Space-Admin kann den Heim-Broker ändern (z.B. wenn der alte Broker eingestellt wird). Die neue Broker-URL wird in der Space-Metadata aktualisiert. Members migrieren automatisch beim nächsten Sync.
+
+### Broker-Ausfall
+
+Wenn ein Broker offline geht:
+- Lokale Daten bleiben verfügbar (CompactStore)
+- Persönliche Dokumente sind auf anderen Brokern repliziert
+- Spaces die nur diesen Broker haben können nicht syncen bis er wieder da ist oder ein neuer Heim-Broker gesetzt wird
 
 ## Push-Notifications
 
