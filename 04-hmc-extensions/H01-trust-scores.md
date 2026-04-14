@@ -8,14 +8,6 @@
 
 Erweitert WoT Attestations um quantitative Vertrauensstufen, Haftung und Trust-Propagation mit Hop-Limits. Ermöglicht die Berechnung eines numerischen Trust-Scores aus dem Attestation-Graphen.
 
-## Felder
-
-| Feld | Typ | Beschreibung |
-|------|-----|-------------|
-| `credentialSubject.trustLevel` | Integer (0-3) | Vertrauensstufe |
-| `credentialSubject.liability` | String | Haftung in Arbeitsstunden (z.B. `"4.0h"`) |
-| `credentialSubject.hopLimit` | Integer | Maximale Weitergabe-Tiefe |
-
 ## Trust-Levels (aus Sebastians ADR-00)
 
 | Level | Bedeutung | Trust-Wert | Haftung |
@@ -25,21 +17,11 @@ Erweitert WoT Attestations um quantitative Vertrauensstufen, Haftung und Trust-P
 | 2 | Guter Kontakt | 60% | 1,0h |
 | 3 | Enger Vertrauter | 85% | 4,0h |
 
-## Trust-Propagation (aus Sebastians ADR-01)
+## Zwei Formate
 
-- **Einzelner Pfad:** `Trust = Kante₁ × Kante₂ × ... × Kanteₙ`
-- **Multi-Path:** `Trust_Total = 1 - ((1-Trust_Pfad₁) × (1-Trust_Pfad₂) × ...)`
-- **Lokale Berechnung:** Vollständig dezentral auf dem Client (Ego-Graph)
+### Einzelne Trust-Attestation
 
-## SD-JWT Trust Lists (aus Sebastians ADR-04)
-
-Gebündelte Trust Lists mit Selective Disclosure. Siehe [003 Attestations](../01-wot-core/003-attestations.md), Abschnitt Human Money Extension.
-
-## Reziprokes Routing (aus Sebastians ADR-05)
-
-Tit-for-Tat Hop-Limit-Mirroring: Wer seine Liste stark limitiert, wird aus dem Netzwerk herausgefiltert.
-
-## Context
+Kompatibel mit dem WoT Core — eine Aussage pro Kontakt:
 
 ```json
 {
@@ -47,12 +29,85 @@ Tit-for-Tat Hop-Limit-Mirroring: Wer seine Liste stark limitiert, wird aus dem N
     "https://www.w3.org/2018/credentials/v1",
     "https://wot.example/vocab/v1",
     "https://humanmoney.example/vocab/v1"
-  ]
+  ],
+  "type": ["VerifiableCredential", "WotAttestation", "TrustRating"],
+  "issuer": "did:key:z6Mk...alice",
+  "credentialSubject": {
+    "id": "did:key:z6Mk...bob",
+    "claim": "Vertrauensstufe 3",
+    "trustLevel": 3,
+    "liability": "4.0h",
+    "hopLimit": 2
+  },
+  "issuanceDate": "2026-04-13T10:00:00Z",
+  "proof": { ... }
 }
 ```
+
+### Gebündelte Trust List (Sebastians primäres Format)
+
+Alices gesamte Vertrauensliste als ein signiertes Dokument mit mehreren Subjects. Das ist Sebastians Kernmodell — eine Liste pro Nutzer, selektiv schwärzbar via SD-JWT:
+
+```json
+{
+  "@context": [
+    "https://www.w3.org/2018/credentials/v1",
+    "https://wot.example/vocab/v1",
+    "https://humanmoney.example/vocab/v1"
+  ],
+  "type": ["VerifiableCredential", "WotAttestation", "TrustList"],
+  "issuer": "did:key:z6Mk...alice",
+  "credentialSubject": [
+    {
+      "id": "did:key:z6Mk...bob",
+      "trustLevel": 3,
+      "liability": "4.0h",
+      "hopLimit": 2
+    },
+    {
+      "id": "did:key:z6Mk...carol",
+      "trustLevel": 2,
+      "liability": "1.0h",
+      "hopLimit": 1
+    },
+    {
+      "id": "did:key:z6Mk...dave",
+      "trustLevel": 1,
+      "liability": "0.5h",
+      "hopLimit": 1
+    }
+  ],
+  "issuanceDate": "2026-04-13T10:00:00Z",
+  "proof": { ... }
+}
+```
+
+**Selective Disclosure (SD-JWT):** Beim Weiterleiten der Liste können einzelne Einträge geschwärzt werden — die Signatur bleibt gültig. Alice kann Carol nur den Eintrag für Bob zeigen, ohne Dave und Carol's eigenen Eintrag preiszugeben.
+
+**Verteilung:** Im Gegensatz zu qualitativen Attestations (Empfängerprinzip) verteilt der **Sender** seine Trust List aktiv via Gossip an sein Netzwerk. Jeder Knoten leitet die Liste unter Beachtung der Hop-Limits weiter.
+
+## Trust-Propagation (aus Sebastians ADR-01)
+
+- **Einzelner Pfad:** `Trust = Kante₁ × Kante₂ × ... × Kanteₙ`
+- **Multi-Path:** `Trust_Total = 1 - ((1-Trust_Pfad₁) × (1-Trust_Pfad₂) × ...)`
+- **Lokale Berechnung:** Vollständig dezentral auf dem Client (Ego-Graph)
+- **Sybil-Resistenz:** Multiplikative Dämpfung bestraft lange Ketten — Fake-Accounts kommen nie über relevante Trust-Werte
+
+## Reziprokes Routing (aus Sebastians ADR-05)
+
+Tit-for-Tat Hop-Limit-Mirroring: Wenn Alice Carol nur Hop-Limit 1 gibt, spiegelt Carol das zurück. Wer seine Liste stark limitiert, verliert Netzwerk-Reichweite. Spieltheoretisch stabile Balance zwischen Privatsphäre und Netzwerknutzen.
+
+## Gossip-Propagation (aus Sebastians ADR-06)
+
+Vertrauenslisten werden via Gossip verteilt:
+- **Sent-Log:** Sender merkt sich 180 Tage lang welche Listen er wem geschickt hat
+- **Delta-Sync:** Nur neue oder geänderte Einträge werden gesendet
+- **Hop-Priorisierung:** Nahe Kontakte (Hop=1) werden zuerst gesendet
+- **Piggybacking:** Trust-Deltas werden an reguläre Transaktionen angehängt
 
 ## Zu klären
 
 - Detaillierte Spec der Trust-Berechnung (mit Sebastian)
-- Sybil-Resistenz durch multiplikative Dämpfung
+- Passt das VC-Format für seine SD-JWT-Listen? (W3C VC-SD wird standardisiert)
 - Spieltheoretische Analyse der Hop-Limits
+- Gossip-Protokoll: könnte es über unseren Broker/Sync laufen statt nur P2P?
