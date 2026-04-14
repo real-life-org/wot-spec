@@ -52,20 +52,20 @@ Die Infrastruktur für verschlüsselte Datensynchronisation. Nicht WoT-spezifisc
 
 Implementierungsspezifische Erweiterungen für die Real Life App.
 
-| Extension | Beschreibung |
-|-----------|-------------|
-| [Display](03-rls-extensions/reallife-display.md) | Badges (Emoji, Farbe, Form), Event- und Ortsbezüge |
-| [Datenmodell](03-rls-extensions/datenmodell.md) | Items, Spaces, Relations |
-| [Mitgliedschaft](03-rls-extensions/mitgliedschaft-und-gruppen.md) | Rollen, Einladungen, Key Rotation |
+| # | Extension | Beschreibung |
+|---|-----------|-------------|
+| R01 | [Display](03-rls-extensions/R01-display.md) | Badges (Emoji, Farbe, Form), Event- und Ortsbezüge |
+| R02 | [Datenmodell](03-rls-extensions/R02-datenmodell.md) | Items, Spaces, Relations |
+| R03 | [Mitgliedschaft](03-rls-extensions/R03-mitgliedschaft-und-gruppen.md) | Rollen, Einladungen, Key Rotation |
 
 ### `04-hmc-extensions/` — Human Money Core Extensions
 
 Implementierungsspezifische Erweiterungen für Sebastians Payment-System.
 
-| Extension | Beschreibung |
-|-----------|-------------|
-| [Trust-Scores](04-hmc-extensions/humanmoney-trust-scores.md) | Quantitative Vertrauensstufen, Propagation, Hop-Limits |
-| [Payment](04-hmc-extensions/humanmoney-payment.md) | Gutscheine, Double-Spend-Prevention, SecureContainer |
+| # | Extension | Beschreibung |
+|---|-----------|-------------|
+| H01 | [Trust-Scores](04-hmc-extensions/H01-trust-scores.md) | Quantitative Vertrauensstufen, Propagation, Hop-Limits |
+| H02 | [Payment](04-hmc-extensions/H02-payment.md) | Gutscheine, Double-Spend-Prevention, SecureContainer |
 
 ### `research/` — Forschung
 
