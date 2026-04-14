@@ -96,7 +96,7 @@ Alle Nachrichten zwischen Peers (über Broker oder direkt) verwenden ein gemeins
 }
 ```
 
-Die Signatur wird gemäß [Core 002](../wot-core/002-signaturen-und-verifikation.md) erstellt — JCS-kanonisiert, SHA-256 gehasht, Ed25519 signiert. Sie deckt alle Felder außer `sig` selbst ab.
+Die Signatur wird gemäß [Core 002](../01-wot-core/002-signaturen-und-verifikation.md) erstellt — JCS-kanonisiert, SHA-256 gehasht, Ed25519 signiert. Sie deckt alle Felder außer `sig` selbst ab.
 
 ### Nachrichtentypen
 

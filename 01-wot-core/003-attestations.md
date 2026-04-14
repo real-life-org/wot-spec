@@ -195,7 +195,7 @@ Januar:  Alice → Bob: "ist zuverlässig"
 Juni:    Alice → Bob: "hat mich enttäuscht"
 ```
 
-Beide Aussagen existieren. Beide sind signiert und wahr — zum jeweiligen Zeitpunkt. Die Trust-Propagation (siehe [Human Money Extension: Trust-Scores](../hmc-extensions/humanmoney-trust-scores.md)) berücksichtigt beides — neuere Aussagen wiegen schwerer.
+Beide Aussagen existieren. Beide sind signiert und wahr — zum jeweiligen Zeitpunkt. Die Trust-Propagation (siehe [Human Money Extension: Trust-Scores](../04-hmc-extensions/humanmoney-trust-scores.md)) berücksichtigt beides — neuere Aussagen wiegen schwerer.
 
 Für formale Widerrufe DARF eine Implementierung den W3C VC `credentialStatus`-Mechanismus nutzen.
 

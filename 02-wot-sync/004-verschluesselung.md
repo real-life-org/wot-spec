@@ -16,7 +16,7 @@ Dieses Dokument spezifiziert wie Daten im Sync Layer verschlüsselt werden — f
 
 ## Verschlüsselungs-Schlüssel
 
-Aus dem Master-Seed (siehe [Core 001](../wot-core/001-identitaet-und-schluesselableitung.md)):
+Aus dem Master-Seed (siehe [Core 001](../01-wot-core/001-identitaet-und-schluesselableitung.md)):
 
 ```
 Master Seed
@@ -101,7 +101,7 @@ Der Broker sieht niemals Klartext.
 
 ## Speicher-Verschlüsselung (At Rest)
 
-Wie Seed und andere sensible Daten auf dem Gerät geschützt werden ist Sache der Implementierung (siehe [Core 001](../wot-core/001-identitaet-und-schluesselableitung.md), Abschnitt "Seed-Schutz auf dem Gerät").
+Wie Seed und andere sensible Daten auf dem Gerät geschützt werden ist Sache der Implementierung (siehe [Core 001](../01-wot-core/001-identitaet-und-schluesselableitung.md), Abschnitt "Seed-Schutz auf dem Gerät").
 
 ## Zukünftige Erweiterungen
 

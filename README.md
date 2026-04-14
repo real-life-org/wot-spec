@@ -15,11 +15,11 @@ Ein modulares Protokoll das ermöglicht:
 
 | Was | Ordner | Ziel-Repository | Warum |
 |-----|--------|----------------|-------|
-| Identität, Signaturen, Attestations | `wot-core/` | web-of-trust | Das Protokoll. Gemeinsam mit Sebastian. |
-| Verschlüsselung, Sync, Transport, Discovery | `wot-sync/` | web-of-trust | Die Infrastruktur. Jede Local-First-App könnte das nutzen. |
+| Identität, Signaturen, Attestations | `01-wot-core/` | web-of-trust | Das Protokoll. Gemeinsam mit Sebastian. |
+| Verschlüsselung, Sync, Transport, Discovery | `02-wot-sync/` | web-of-trust | Die Infrastruktur. Jede Local-First-App könnte das nutzen. |
 | Datenmodell, Gruppen, Mitgliedschaft | — (nicht hier) | real-life-stack | RLS-spezifisch. |
-| Trust-Scores, Payment | `hmc-extensions/` | human-money-core | Sebastians Erweiterungen. |
-| Display/Badges | `rls-extensions/` | real-life-stack | Unsere Erweiterungen. |
+| Trust-Scores, Payment | `04-hmc-extensions/` | human-money-core | Sebastians Erweiterungen. |
+| Display/Badges | `03-rls-extensions/` | real-life-stack | Unsere Erweiterungen. |
 
 Die Trennung folgt der Frage: **Braucht Sebastian das?** Ja → WoT Core. Hilfreich → WoT Sync. Nein → Extensions oder anderes Repo.
 
@@ -27,43 +27,45 @@ Dieses Repository ist ein **Research-Repository**. Die Dokumente werden nach Fer
 
 ## Struktur
 
-### `wot-core/` — WoT Core
+### `01-wot-core/` — WoT Core
 
 Das Fundament. Was jede Implementierung verstehen muss um Teil des Web of Trust zu sein.
 
 | # | Dokument | Beschreibung |
 |---|----------|-------------|
-| 001 | [Identität und Schlüsselableitung](wot-core/001-identitaet-und-schluesselableitung.md) | BIP39 → Ed25519 → did:key |
-| 002 | [Signaturen und Verifikation](wot-core/002-signaturen-und-verifikation.md) | Ed25519, JWS, JCS, SHA-256 |
-| 003 | [Attestations](wot-core/003-attestations.md) | W3C Verifiable Credentials als signierte Aussagen |
+| 001 | [Identität und Schlüsselableitung](01-wot-core/001-identitaet-und-schluesselableitung.md) | BIP39 → Ed25519 → did:key |
+| 002 | [Signaturen und Verifikation](01-wot-core/002-signaturen-und-verifikation.md) | Ed25519, JWS, JCS, SHA-256 |
+| 003 | [Attestations](01-wot-core/003-attestations.md) | W3C Verifiable Credentials als signierte Aussagen |
 
-### `wot-sync/` — Sync Layer
+### `02-wot-sync/` — Sync Layer
 
 Die Infrastruktur für verschlüsselte Datensynchronisation. Nicht WoT-spezifisch — jede Local-First-App könnte das nutzen.
 
 | # | Dokument | Beschreibung |
 |---|----------|-------------|
-| 004 | [Verschlüsselung](wot-sync/004-verschluesselung.md) | AES-256-GCM, ECIES, Gruppen-Verschlüsselung |
-| 005 | [Sync-Protokoll](wot-sync/005-sync-protokoll.md) | Append-only Logs, Sedimentree, RIBLT |
-| 006 | [Transport und Broker](wot-sync/006-transport-und-broker.md) | Broker, Inbox, Push, Multi-Broker |
-| 007 | [Discovery](wot-sync/007-discovery.md) | Peer- und Broker-Findung |
+| 004 | [Verschlüsselung](02-wot-sync/004-verschluesselung.md) | AES-256-GCM, ECIES, Gruppen-Verschlüsselung |
+| 005 | [Sync-Protokoll](02-wot-sync/005-sync-protokoll.md) | Append-only Logs, Sedimentree, RIBLT |
+| 006 | [Transport und Broker](02-wot-sync/006-transport-und-broker.md) | Broker, Inbox, Push, Multi-Broker |
+| 007 | [Discovery](02-wot-sync/007-discovery.md) | Peer- und Broker-Findung |
 
-### `hmc-extensions/` — Human Money Core Extensions
-
-Implementierungsspezifische Erweiterungen für Sebastians Payment-System.
-
-| Extension | Beschreibung |
-|-----------|-------------|
-| [Trust-Scores](hmc-extensions/humanmoney-trust-scores.md) | Quantitative Vertrauensstufen, Propagation, Hop-Limits |
-| [Payment](hmc-extensions/humanmoney-payment.md) | Gutscheine, Double-Spend-Prevention, SecureContainer |
-
-### `rls-extensions/` — Real Life Stack Extensions
+### `03-rls-extensions/` — Real Life Stack Extensions
 
 Implementierungsspezifische Erweiterungen für die Real Life App.
 
 | Extension | Beschreibung |
 |-----------|-------------|
-| [Display](rls-extensions/reallife-display.md) | Badges (Emoji, Farbe, Form), Event- und Ortsbezüge |
+| [Display](03-rls-extensions/reallife-display.md) | Badges (Emoji, Farbe, Form), Event- und Ortsbezüge |
+| [Datenmodell](03-rls-extensions/datenmodell.md) | Items, Spaces, Relations |
+| [Mitgliedschaft](03-rls-extensions/mitgliedschaft-und-gruppen.md) | Rollen, Einladungen, Key Rotation |
+
+### `04-hmc-extensions/` — Human Money Core Extensions
+
+Implementierungsspezifische Erweiterungen für Sebastians Payment-System.
+
+| Extension | Beschreibung |
+|-----------|-------------|
+| [Trust-Scores](04-hmc-extensions/humanmoney-trust-scores.md) | Quantitative Vertrauensstufen, Propagation, Hop-Limits |
+| [Payment](04-hmc-extensions/humanmoney-payment.md) | Gutscheine, Double-Spend-Prevention, SecureContainer |
 
 ### `research/` — Forschung
 
