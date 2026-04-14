@@ -54,9 +54,9 @@ Implementierungsspezifische Erweiterungen für die Real Life App.
 
 | # | Extension | Beschreibung |
 |---|-----------|-------------|
-| R01 | [Display](03-rls-extensions/R01-display.md) | Badges (Emoji, Farbe, Form), Event- und Ortsbezüge |
-| R02 | [Datenmodell](03-rls-extensions/R02-datenmodell.md) | Items, Spaces, Relations |
-| R03 | [Mitgliedschaft](03-rls-extensions/R03-mitgliedschaft-und-gruppen.md) | Rollen, Einladungen, Key Rotation |
+| R01 | [Datenmodell](03-rls-extensions/R01-datenmodell.md) | Items, Spaces, Relations |
+| R02 | [Mitgliedschaft](03-rls-extensions/R02-mitgliedschaft-und-gruppen.md) | Rollen, Einladungen, Key Rotation |
+| R03 | [Display](03-rls-extensions/R03-display.md) | Badges (Emoji, Farbe, Form), Event- und Ortsbezüge |
 
 ### `04-hmc-extensions/` — Human Money Core Extensions
 
