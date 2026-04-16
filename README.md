@@ -2,6 +2,18 @@
 
 Eine offene, implementierungsunabhängige Spezifikation für ein dezentrales Web of Trust — Identität, Attestations und Vertrauensnetzwerke basierend auf echten Begegnungen.
 
+## Was ist WoT?
+
+Peer-to-Peer Verifiable Credentials über E2EE Local-First Sync.
+
+Konkreter besteht das Protokoll aus drei Teilen:
+
+1. **Ein VC-Profil** — Attestations als W3C Verifiable Credentials mit eigenem Vocabulary (WotAttestation), Ed25519-Signaturen und Empfängerprinzip
+2. **Ein DID-Profil** — Selbstbestimmte Identität via `did:key` + Ed25519, abgeleitet aus einem BIP39-Seed
+3. **Ein verschlüsseltes Local-First Sync-Protokoll** — E2EE, Append-only Logs, Broker-as-Peer
+
+WoT definiert keine neuen kryptografischen Standards — es kombiniert bestehende (W3C VC, DID, Ed25519, AES-256-GCM) zu einem interoperablen Profil für dezentrale Vertrauensnetzwerke.
+
 ## Ziel
 
 Ein modulares Protokoll das ermöglicht:
