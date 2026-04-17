@@ -86,6 +86,21 @@ Alices gesamte Vertrauensliste als ein signiertes Dokument mit mehreren Subjects
 
 **Verteilung:** Im Gegensatz zu qualitativen Attestations (Empfängerprinzip) verteilt der **Sender** seine Trust List aktiv via Gossip an sein Netzwerk. Jeder Knoten leitet die Liste unter Beachtung der Hop-Limits weiter.
 
+### Verhältnis zu WoT Core Attestations
+
+Trust Lists und qualitative Attestations sind verschiedene Dinge die koexistieren:
+
+| | Qualitative Attestation (WoT Core) | Trust List (HMC Extension) |
+|---|---|---|
+| **Inhalt** | Freitext-Aussage ("kann gut programmieren") | Numerische Bewertung (Trust-Level 0-3) |
+| **Granularität** | Eine Aussage pro VC | Alle Kontakte in einem Dokument |
+| **Eigentum** | Empfänger besitzt (Empfängerprinzip) | Sender besitzt und verteilt (Senderprinzip) |
+| **Verteilung** | Empfänger zeigt selektiv | Sender verteilt via Gossip |
+| **Veränderung** | Unveränderlich — neue Attestation ersetzt alte | Neue Version der Liste ersetzt alte |
+| **Semantik** | Geschenk — "das sage ich über dich" | Weltsicht — "so sehe ich mein Netzwerk" |
+
+Beide Formate sind signiert und versioniert — das signierte Dokument selbst ist in beiden Fällen unveränderlich. Bei Trust Lists wird eine neue Version erstellt und neu signiert wenn sich Bewertungen ändern.
+
 ## Trust-Propagation (aus Sebastians ADR-01)
 
 - **Einzelner Pfad:** `Trust = Kante₁ × Kante₂ × ... × Kanteₙ`
@@ -110,4 +125,4 @@ Vertrauenslisten werden via Gossip verteilt:
 - Detaillierte Spec der Trust-Berechnung (mit Sebastian)
 - Passt das VC-Format für seine SD-JWT-Listen? (W3C VC-SD wird standardisiert)
 - Spieltheoretische Analyse der Hop-Limits
-- Gossip-Protokoll: könnte es über unseren Broker/Sync laufen statt nur P2P?
+- ~~Gossip-Protokoll: könnte es über unseren Broker/Sync laufen statt nur P2P?~~ → Ja, siehe [H03 Gossip-Propagation](H03-gossip.md)

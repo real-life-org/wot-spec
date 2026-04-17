@@ -70,13 +70,15 @@ Aus demselben Seed werden weitere Schlüssel abgeleitet. Jeder Schlüssel verwen
 | Schlüssel | HKDF Info | Zweck | Spezifiziert in |
 |-----------|-----------|-------|----------------|
 | Signatur (Master) | `"wot/identity/ed25519/v1"` | Identität, Attestations | Dieses Dokument |
-| Verschlüsselung | `"wot/encryption/x25519/v1"` | Asymmetrische Verschlüsselung (X25519) | [Spec 004](../02-wot-sync/004-verschluesselung.md) |
+| Verschlüsselung | `"wot/encryption/x25519/v1"` | Asymmetrische Verschlüsselung (X25519) | [Spec 005](../02-wot-sync/005-verschluesselung.md) |
 
 Alle Schlüssel sind deterministisch aus demselben Seed ableitbar. Durch die verschiedenen Info-Strings sind sie kryptographisch unabhängig voneinander.
 
+**Warum separater HKDF-Pfad statt birationale Abbildung:** Einige Implementierungen (z.B. Web Crypto API in Browsern) erzeugen Ed25519-Keys als `non-extractable` — der Private Key kann nur zum Signieren verwendet werden, ist aber als Byte-Folge nicht lesbar. Die birationale Abbildung (Ed25519 → Curve25519 → X25519) erfordert Zugriff auf den rohen Private Key und ist deshalb in Browser-Umgebungen nicht möglich. Der separate HKDF-Pfad funktioniert überall — Browser, Desktop, Mobile, Rust, JavaScript — und ist deshalb die normative Methode.
+
 ### Multi-Device
 
-Geräte werden über Device-UUIDs unterschieden, nicht über eigene Schlüsselpaare. Jedes Gerät generiert beim ersten Start eine zufällige UUID und nutzt den Master-Schlüssel für Signaturen. Siehe [Spec 005: Sync-Protokoll](../02-wot-sync/005-sync-protokoll.md) für Details.
+Geräte werden über Device-UUIDs unterschieden, nicht über eigene Schlüsselpaare. Jedes Gerät generiert beim ersten Start eine zufällige UUID und nutzt den Master-Schlüssel für Signaturen. Siehe [Spec 006: Sync-Protokoll](../02-wot-sync/006-sync-protokoll.md) für Details.
 
 ### Seed-Schutz auf dem Gerät
 

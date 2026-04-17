@@ -1,4 +1,4 @@
-# WoT Sync 005: Sync-Protokoll
+# WoT Sync 006: Sync-Protokoll
 
 - **Status:** Entwurf
 - **Autoren:** Anton Tranelis
@@ -11,7 +11,7 @@ Dieses Dokument spezifiziert wie Daten zwischen Peers synchronisiert werden — 
 ## Referenzierte Standards
 
 - **Ed25519** (RFC 8032) — Signatur der Log-Einträge
-- **AES-256-GCM** (NIST SP 800-38D) — Verschlüsselung der Payloads (siehe [Sync 004](004-verschluesselung.md))
+- **AES-256-GCM** (NIST SP 800-38D) — Verschlüsselung der Payloads (siehe [Sync 005](005-verschluesselung.md))
 
 ## Grundprinzip
 
@@ -53,29 +53,61 @@ Jeder Peer führt einen Append-only Log pro Dokument. Jeder Eintrag ist ein vers
 
 ### Log-Eintrag
 
+Ein Log-Eintrag ist ein **JWS Compact Serialization** (wie alle signierten Daten im Protokoll).
+
+**JWS-Payload (nach Base64URL-Dekodierung):**
+
 ```json
 {
   "seq": 42,
   "deviceId": "550e8400-e29b-41d4-a716-446655440000",
-  "docId": "space-abc123",
-  "data": "verschlüsselter Blob (CRDT-Update)",
-  "timestamp": "2026-04-13T10:00:00Z",
-  "sig": "Ed25519-Signatur des Master Key"
+  "docId": "7f3a2b10-4c5d-4e6f-8a7b-9c0d1e2f3a4b",
+  "authorDid": "did:key:z6MkhaXgBZDvotDkL5257faiztiGiC2QtKLGpbnnEGta2doK",
+  "keyGeneration": 3,
+  "data": "<Base64URL-kodierter verschlüsselter Blob>",
+  "timestamp": "2026-04-16T10:00:00Z"
 }
 ```
 
-| Feld | Typ | Beschreibung |
-|------|-----|-------------|
-| `seq` | Integer | Aufsteigend, pro deviceId pro docId |
-| `deviceId` | UUID | Welches Gerät hat den Eintrag erzeugt |
-| `docId` | String | Zu welchem Dokument gehört der Eintrag |
-| `data` | Bytes | Verschlüsselter Payload (AES-256-GCM mit Space Key) |
-| `timestamp` | ISO 8601 | Wann erzeugt |
-| `sig` | String | Ed25519-Signatur des Master Key über alle anderen Felder |
+| Feld | Typ | Pflicht | Beschreibung |
+|------|-----|---------|-------------|
+| `seq` | Integer | Ja | Aufsteigend, pro deviceId pro docId. Beginnt bei 0. |
+| `deviceId` | UUID v4 | Ja | Welches Gerät hat den Eintrag erzeugt |
+| `docId` | UUID v4 | Ja | Zu welchem Dokument gehört der Eintrag |
+| `authorDid` | DID | Ja | DID des Autors (für Signatur-Verifikation) |
+| `keyGeneration` | Integer | Ja | Generation des Space Keys der zur Verschlüsselung verwendet wurde (siehe [Sync 005](005-verschluesselung.md)) |
+| `data` | String | Ja | Base64URL-kodierter AES-256-GCM Ciphertext (Nonce + Ciphertext + Auth Tag, siehe [Sync 005](005-verschluesselung.md)) |
+| `timestamp` | ISO 8601 | Ja | Erstellungszeitpunkt (UTC) |
+
+### Signatur des Log-Eintrags
+
+Signatur und Verifikation gemäß [Core 002](../01-wot-core/002-signaturen-und-verifikation.md) — identisch mit dem Message Envelope (siehe [Sync 007](007-transport-und-broker.md#signatur)):
+
+1. Payload mit JCS kanonisieren (RFC 8785)
+2. JCS-Bytes als Base64URL kodieren
+3. Signing Input: `BASE64URL(header) + "." + BASE64URL(jcs_payload)`
+4. Ed25519-Signatur über die Signing-Input-Bytes
+5. Ergebnis: JWS Compact String (`header.payload.signature`)
+
+Ein Empfänger verifiziert die Signatur indem er `authorDid` aus dem Payload auflöst und den Public Key extrahiert.
+
+### Verschlüsselter Payload (`data`)
+
+Der `data`-Blob enthält ein mit AES-256-GCM verschlüsseltes CRDT-Update:
+
+```
+Klartext (CRDT-Update, z.B. Yjs-Binary)
+  → AES-256-GCM verschlüsseln mit Space Key (Generation = keyGeneration)
+  → Nonce (12 Bytes) + Ciphertext + Auth Tag (16 Bytes)
+  → Base64URL kodieren
+  → in `data`-Feld schreiben
+```
 
 ### CRDT-Agnostik
 
-Der `data`-Blob ist opak. Das Sync-Protokoll weiß nicht ob da ein Yjs-Update, ein Automerge-Change oder etwas anderes drin steckt. Der CRDT-Adapter auf dem Client entschlüsselt den Blob und wendet ihn an.
+Der entschlüsselte Payload ist opak. Das Sync-Protokoll weiß nicht ob da ein Yjs-Update, ein Automerge-Change oder etwas anderes drin steckt. Der CRDT-Adapter auf dem Client entschlüsselt den Blob und wendet ihn an.
+
+Welcher CRDT-Typ verwendet wird, ist im Space-Metadata festgelegt (nicht im Log-Eintrag). Alle Members eines Space verwenden denselben CRDT-Typ.
 
 ### Warum das den Loop löst
 
@@ -146,7 +178,7 @@ Peer A verbindet sich mit Peer B
 ```
 Broker empfängt neuen Eintrag
   → Peer ist nicht verbunden
-  → Push via UnifiedPush/ntfy (siehe Sync 006)
+  → Push via UnifiedPush/ntfy (siehe Sync 007)
   → Peer wacht auf, verbindet sich, holt fehlende Einträge
 ```
 
@@ -171,7 +203,7 @@ Nicht alles läuft über den Log. Einige Nachrichten werden direkt zugestellt:
 - **Verifications** — Challenge-Response bei Begegnung
 - **Key-Rotation** — Neuer Space Key nach Member-Entfernung
 
-Diese Nachrichten gehen über die Inbox des Brokers (siehe [Sync 006](006-transport-und-broker.md)), nicht über den Log.
+Diese Nachrichten gehen über die Inbox des Brokers (siehe [Sync 007](007-transport-und-broker.md)), nicht über den Log.
 
 ## Herkunft der Ideen
 

@@ -1,4 +1,4 @@
-# WoT Sync 006: Transport und Broker
+# WoT Sync 007: Transport und Broker
 
 - **Status:** Entwurf
 - **Autoren:** Anton Tranelis
@@ -29,7 +29,7 @@ Ein Broker ist ein Peer mit Superkräften:
 
 ### Was ein Broker speichert
 
-- **Log-Einträge** — verschlüsselte Append-only Logs für alle Dokumente seiner User (siehe [Sync 005](005-sync-protokoll.md))
+- **Log-Einträge** — verschlüsselte Append-only Logs für alle Dokumente seiner User (siehe [Sync 006](006-sync-protokoll.md))
 - **Inbox-Nachrichten** — verschlüsselte direkte Nachrichten (Attestations, Einladungen, Key-Rotation). Werden nach Zustellung gelöscht.
 - **Push-Endpoints** — UnifiedPush-Registrierungen für Offline-Notifications
 
@@ -81,32 +81,95 @@ Store-and-Forward: der Broker speichert bis der Empfänger abholt und bestätigt
 
 ## Message Envelope
 
-Alle Nachrichten zwischen Peers (über Broker oder direkt) verwenden ein gemeinsames Envelope-Format:
+Alle Nachrichten zwischen Peers (über Broker oder direkt) verwenden ein gemeinsames Envelope-Format. Das Envelope ist ein **JWS Compact Serialization** (RFC 7515) — dasselbe Signaturformat wie für Attestations (siehe [Core 002](../01-wot-core/002-signaturen-und-verifikation.md)).
+
+### Format
+
+```
+BASE64URL(header) . BASE64URL(payload) . BASE64URL(signature)
+```
+
+**Header:**
+
+```json
+{"alg":"EdDSA","typ":"JWT"}
+```
+
+**Payload (nach Base64URL-Dekodierung):**
 
 ```json
 {
   "v": 1,
-  "id": "uuid",
-  "type": "log-entry | inbox | sync-request | ack",
-  "fromDid": "did:key:z6Mk...",
-  "toDid": "did:key:z6Mk...",
-  "createdAt": "2026-04-13T10:00:00Z",
-  "payload": "...",
-  "sig": "Ed25519-Signatur"
+  "id": "550e8400-e29b-41d4-a716-446655440000",
+  "type": "log-entry",
+  "fromDid": "did:key:z6MkhaXgBZDvotDkL5257faiztiGiC2QtKLGpbnnEGta2doK",
+  "toDid": "did:key:z6MkpTHR8VNsBxYAAWHut2Geadd9jSwuBV8xRoAnwWsdvktH",
+  "docId": "7f3a2b10-4c5d-4e6f-8a7b-9c0d1e2f3a4b",
+  "createdAt": "2026-04-16T10:00:00Z",
+  "payload": "<Base64URL-kodierter verschlüsselter Inhalt>"
 }
 ```
 
-Die Signatur wird gemäß [Core 002](../01-wot-core/002-signaturen-und-verifikation.md) erstellt — JCS-kanonisiert, SHA-256 gehasht, Ed25519 signiert. Sie deckt alle Felder außer `sig` selbst ab.
+### Felder (im JWS-Payload)
+
+| Feld | Typ | Pflicht | Beschreibung |
+|------|-----|---------|-------------|
+| `v` | Integer | Ja | Protokoll-Version (aktuell: `1`) |
+| `id` | UUID v4 | Ja | Eindeutige Nachrichten-ID |
+| `type` | String | Ja | Nachrichtentyp (siehe Tabelle unten) |
+| `fromDid` | DID | Ja | Absender-DID |
+| `toDid` | DID | Bedingt | Empfänger-DID. Pflicht bei Inbox-Nachrichten. Bei Broadcast (z.B. `log-entry`) kann es die DID des Brokers oder leer sein. |
+| `docId` | UUID v4 | Bedingt | Dokument-ID. Pflicht bei `log-entry`, `sync-request`, `sync-response`. |
+| `createdAt` | ISO 8601 | Ja | Erstellungszeitpunkt (UTC) |
+| `payload` | String | Bedingt | Base64URL-kodierter Inhalt. Verschlüsselt bei Daten, Klartext bei Steuerungsnachrichten (`sync-request`, `ack`). |
+
+### Signatur
+
+Signatur und Verifikation gemäß [Core 002](../01-wot-core/002-signaturen-und-verifikation.md):
+
+1. Payload mit JCS kanonisieren (RFC 8785)
+2. JCS-Bytes als Base64URL kodieren
+3. Signing Input: `BASE64URL(header) + "." + BASE64URL(jcs_payload)`
+4. Ed25519-Signatur über die Signing-Input-Bytes
+5. Ergebnis: `header.payload.signature` als JWS Compact String
+
+**Verifikation:**
+
+1. JWS am `.` aufteilen → Header, Payload, Signatur
+2. `fromDid` aus dem dekodierten Payload auslesen → Public Key extrahieren
+3. Ed25519-Verify(public_key, signing_input_bytes, signature)
+
+Ein Format für alles — Attestations, Envelopes, Log-Einträge. Kompatibel mit SD-JWT als Erweiterung für Trust Lists.
 
 ### Nachrichtentypen
+
+#### WoT Sync (dieses Dokument)
 
 | Type | Kanal | Beschreibung |
 |------|-------|-------------|
 | `log-entry` | Log-Sync | Neuer verschlüsselter Log-Eintrag |
-| `sync-request` | Log-Sync | "Was hast du, was ich nicht habe?" |
-| `sync-response` | Log-Sync | Fehlende Log-Einträge |
-| `inbox` | Inbox | Direkte Nachricht (Attestation, Invite, etc.) |
-| `ack` | Beide | Empfangsbestätigung |
+| `sync-request` | Log-Sync | Anfrage: "Was hast du seit seq X für docId Y?" |
+| `sync-response` | Log-Sync | Antwort: fehlende Log-Einträge |
+| `inbox` | Inbox | Direkte verschlüsselte Nachricht (Attestation, etc.) |
+| `ack` | Beide | Empfangsbestätigung (referenziert `id` der Original-Nachricht) |
+
+#### Gruppen ([Sync 009](009-gruppen.md))
+
+| Type | Kanal | Beschreibung |
+|------|-------|-------------|
+| `space-invite` | Inbox | Einladung in einen Space (Space Key + Broker-URLs) |
+| `key-rotation` | Inbox | Neuer Space Key nach Member-Entfernung |
+| `member-update` | Inbox | Mitgliedschafts-Änderung (hinzugefügt/entfernt) |
+
+#### HMC Extension ([H03 Gossip](../04-hmc-extensions/H03-gossip.md))
+
+| Type | Kanal | Beschreibung |
+|------|-------|-------------|
+| `trust-list-delta` | Inbox | Trust-List-Update (SD-JWT, selektiv offengelegt) |
+
+### Erweiterbarkeit
+
+Neue Nachrichtentypen DÜRFEN von Extensions definiert werden. Ein Client der einen unbekannten Typ empfängt MUSS die Nachricht ignorieren (nicht verwerfen — der Broker speichert sie weiterhin für andere Clients die den Typ verstehen).
 
 ## Broker-Zuordnung
 

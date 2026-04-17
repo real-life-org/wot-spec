@@ -1,4 +1,4 @@
-# WoT Spec 005: Sync and Transport — Research Document
+# WoT Spec 006: Sync and Transport — Research Document
 
 - **Status:** Research
 - **Authors:** Anton Tranelis

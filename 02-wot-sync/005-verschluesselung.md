@@ -1,4 +1,4 @@
-# WoT Sync 004: Verschlüsselung
+# WoT Sync 005: Verschlüsselung
 
 - **Status:** Entwurf
 - **Autoren:** Anton Tranelis
@@ -26,7 +26,7 @@ Master Seed
 
 Der Verschlüsselungs-Schlüssel wird auf einem separaten HKDF-Pfad vom Identitäts-Schlüssel abgeleitet. Beide sind deterministisch aus demselben Seed. Beide sind auf allen Geräten des Users verfügbar.
 
-Alternativ DÜRFEN Implementierungen den X25519-Schlüssel direkt aus dem Ed25519-Schlüssel über die birationale Abbildung (Montgomery-Form) ableiten. Beide Ansätze erzeugen gültige X25519-Schlüssel.
+Die birationale Abbildung (Ed25519 → Curve25519 → X25519) ist NICHT erlaubt — Browser-Implementierungen (Web Crypto API) erzeugen Ed25519-Keys als `non-extractable` und können den rohen Private Key nicht für die Umrechnung auslesen. Der separate HKDF-Pfad ist die einzige normative Methode. Siehe [Core 001](../01-wot-core/001-identitaet-und-schluesselableitung.md#weitere-schlüssel).
 
 ## Symmetrische Verschlüsselung
 
@@ -91,7 +91,7 @@ Bei Entfernung eines Mitglieds:
 
 ### Encrypt-then-Sync
 
-CRDT-Änderungen werden vor der Synchronisierung verschlüsselt. Jeder Log-Eintrag (siehe [Sync 005](005-sync-protokoll.md)) enthält:
+CRDT-Änderungen werden vor der Synchronisierung verschlüsselt. Jeder Log-Eintrag (siehe [Sync 006](006-sync-protokoll.md)) enthält:
 
 - Verschlüsselten Payload (AES-256-GCM mit dem Space-Schlüssel)
 - Nonce
@@ -115,6 +115,6 @@ Für 1:1-Nachrichten mit Forward Secrecy könnte in Zukunft ein Double-Ratchet-P
 | **Gruppen-Verschlüsselung** | Space Keys (zufällig, generationsbasiert) | Nicht eingebaut | ✅ Space Keys |
 | **Symmetrischer Algorithmus** | AES-256-GCM (Web Crypto) | ChaCha20-Poly1305 | ✅ AES-256-GCM |
 | **HKDF Info (P2P)** | `"wot-ecies-v1"` | `"secure-container-kek"` | **`"wot/ecies/v1"`** |
-| **X25519-Ableitung** | Separater HKDF-Pfad | Birationale Abbildung | ✅ Beide erlaubt |
+| **X25519-Ableitung** | Separater HKDF-Pfad | Birationale Abbildung | ✅ **Separater HKDF-Pfad** (normativ) |
 | **Nonce** | 12 Bytes zufällig | 12 Bytes zufällig | ✅ 12 Bytes zufällig |
 | **Multi-Empfänger** | Nicht eingebaut | SecureContainer (Double-Key-Wrapping) | Nicht im Sync Layer (siehe Extensions) |

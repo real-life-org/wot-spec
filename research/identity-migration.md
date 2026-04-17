@@ -1,4 +1,4 @@
-# WoT Spec 004: Identity Migration (Key Rotation)
+# WoT Spec 006: Identity Migration (Key Rotation)
 
 - **Status:** Draft
 - **Authors:** Anton Tranelis

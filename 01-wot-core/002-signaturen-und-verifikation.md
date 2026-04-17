@@ -56,8 +56,9 @@ Der Payload wird als Byte-Folge behandelt — nicht neu serialisiert. Der Sender
 - Selbstbeschreibend — Header enthält den Algorithmus
 - W3C-kompatibel (Verifiable Credentials nutzen JWS)
 - Empfänger braucht keine Vorab-Kenntnis über das Format
+- SD-JWT (Selective Disclosure) baut auf JWS auf — Sebastians Trust Lists sind damit eine natürliche Erweiterung
 
-Für Use Cases die Detached Signatures benötigen (z.B. Multi-Signer-Dokumente wie Gutscheine) kann das Format als Extension spezifiziert werden.
+JWS ist das **einzige Signaturformat** im WoT-Protokoll. Attestations, Message Envelopes und Log-Einträge verwenden alle JWS Compact Serialization. Ein Format, eine Toolchain.
 
 ## Kanonisierung
 
@@ -110,6 +111,77 @@ Für die Verifikation werden benötigt:
 
 Kein externer Key-Server oder Zertifikatskette nötig — die DID selbst enthält den Public Key.
 
+## Testvektor
+
+Schritt-für-Schritt-Beispiel mit konkreten Werten.
+
+### Eingabe
+
+**Payload (JSON):**
+
+```json
+{"claim":"kann gut programmieren","id":"did:key:z6MkpTHR8VNsBxYAAWHut2Geadd9jSwuBV8xRoAnwWsdvktH"}
+```
+
+**Signierer-DID:**
+
+```
+did:key:z6MkhaXgBZDvotDkL5257faiztiGiC2QtKLGpbnnEGta2doK
+```
+
+### Schritt 1: JCS-Kanonisierung
+
+Der Payload wird mit JCS (RFC 8785) kanonisiert. Bei diesem Beispiel sind die Keys bereits alphabetisch sortiert und es gibt kein Whitespace — die JCS-Ausgabe ist identisch mit der Eingabe:
+
+```
+{"claim":"kann gut programmieren","id":"did:key:z6MkpTHR8VNsBxYAAWHut2Geadd9jSwuBV8xRoAnwWsdvktH"}
+```
+
+### Schritt 2: Base64URL-Kodierung
+
+**Header:**
+
+```json
+{"alg":"EdDSA","typ":"JWT"}
+```
+
+→ Base64URL: `eyJhbGciOiJFZERTQSIsInR5cCI6IkpXVCJ9`
+
+**Payload (JCS-Bytes):**
+
+→ Base64URL: `eyJjbGFpbSI6Imthbm4gZ3V0IHByb2dyYW1taWVyZW4iLCJpZCI6ImRpZDprZXk6ejZNa3BUSFI4Vk5zQnhZQUFXSHV0MkdlYWRkOWpTd3VCVjh4Um9BbndXc2R2a3RIIn0`
+
+### Schritt 3: Signing Input
+
+```
+eyJhbGciOiJFZERTQSIsInR5cCI6IkpXVCJ9.eyJjbGFpbSI6Imthbm4gZ3V0IHByb2dyYW1taWVyZW4iLCJpZCI6ImRpZDprZXk6ejZNa3BUSFI4Vk5zQnhZQUFXSHV0MkdlYWRkOWpTd3VCVjh4Um9BbndXc2R2a3RIIn0
+```
+
+Header + `.` + Payload, als UTF-8 Bytes.
+
+### Schritt 4: Ed25519-Signatur
+
+Die UTF-8 Bytes des Signing Input werden direkt mit dem Ed25519 Private Key signiert (kein zusätzliches Hashing — Ed25519 hasht intern mit SHA-512).
+
+→ 64 Bytes Signatur → Base64URL kodieren
+
+### Schritt 5: JWS Compact Serialization
+
+```
+<Header>.<Payload>.<Signatur>
+```
+
+Alle drei Teile Base64URL-kodiert, verbunden mit `.`.
+
+### Verifikation
+
+1. JWS in Header, Payload, Signatur aufteilen (am `.`)
+2. `did:key:z6Mk...` → Multibase dekodieren → `0xed01` entfernen → 32 Bytes Ed25519 Public Key
+3. Signing Input rekonstruieren: Header + `.` + Payload
+4. Ed25519-Verify(public_key, signing_input_bytes, signature) → `true`
+
+**Wichtig:** Ed25519 signiert direkt die Bytes — kein SHA-256 Hash dazwischen. SHA-256 wird nur für andere Zwecke im Protokoll verwendet (z.B. Content-Adressierung), nicht für die JWS-Signatur selbst.
+
 ## Aktuelle Implementierungen
 
 | | WoT Core | Human Money Core | Spec |
@@ -132,4 +204,4 @@ Kein externer Key-Server oder Zertifikatskette nötig — die DID selbst enthäl
 
 Diese Änderungen betreffen die Signatur-Formate, nicht die Schlüsselableitung — bestehende DIDs bleiben gültig.
 
-Das Message Envelope Format wird in [Spec 005](005-transport-und-broker.md) (Transport und Broker) spezifiziert.
+Das Message Envelope Format wird in [Sync 007](../02-wot-sync/007-transport-und-broker.md) spezifiziert.
