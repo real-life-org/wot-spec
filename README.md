@@ -85,6 +85,7 @@ Nicht WoT-spezifisch — jede Local-First-App könnte das nutzen.
 | [Briefing Sebastian](research/briefing-sebastian.md) | Zusammenfassung und offene Fragen für Sebastian |
 | [Interop und Zielgruppe](research/interop-und-zielgruppe.md) | Standards (DIDComm, OpenID4VC), Zielgruppen, eIDAS-Kontext |
 | [DIDComm Migration](research/didcomm-migration.md) | Analyse, Roadmap, fehlende Teile, Sicherheitsanalyse |
+| [Verbreitungsstrategie](research/verbreitungsstrategie.md) | 5-Jahres-Vision, Schlüsselpartner, eIDAS-Kontext |
 
 ## Implementierungen
 
