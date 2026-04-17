@@ -10,7 +10,19 @@ Das Protokoll besteht aus zwei Paketen:
 
 **WoT Sync** — Verschlüsselter Local-First Sync mit E2EE, Append-only Logs und Broker-as-Peer.
 
-WoT definiert keine neuen kryptografischen Standards — es kombiniert bestehende (DID, W3C VC, Ed25519, JWS, AES-256-GCM) zu einem interoperablen Profil.
+WoT definiert keine neuen Standards — es kombiniert bestehende zu einem interoperablen Profil:
+
+| Standard | Verwendung |
+|----------|-----------|
+| [DID](https://www.w3.org/TR/did-core/) (W3C) | Dezentrale Identität (`did:key`) |
+| [Verifiable Credentials](https://www.w3.org/TR/vc-data-model-2.0/) (W3C) | Signierte Aussagen (Attestations) |
+| [DIDComm v2](https://identity.foundation/didcomm-messaging/spec/v2.0/) (DIF) | Nachrichtenformat und Verschlüsselung |
+| [Ed25519](https://datatracker.ietf.org/doc/html/rfc8032) (RFC 8032) | Signaturen |
+| [JWS](https://datatracker.ietf.org/doc/html/rfc7515) / [JWE](https://datatracker.ietf.org/doc/html/rfc7516) (RFC 7515/7516) | Signatur- und Verschlüsselungsformat |
+| [JCS](https://datatracker.ietf.org/doc/html/rfc8785) (RFC 8785) | Kanonisierung |
+| [BIP39](https://github.com/bitcoin/bips/blob/master/bip-0039.mediawiki) | Mnemonic-Seed für Schlüsselableitung |
+| [X25519](https://datatracker.ietf.org/doc/html/rfc7748) (RFC 7748) | Key Agreement (Authcrypt / ECDH-1PU) |
+| [AES-256-GCM](https://csrc.nist.gov/publications/detail/sp/800-38d/final) (NIST) | Symmetrische Verschlüsselung |
 
 ## Architektur
 

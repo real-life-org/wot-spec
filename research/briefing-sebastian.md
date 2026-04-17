@@ -1,125 +1,112 @@
 # Briefing für Sebastian
 
-*Stand: 13. April 2026*
+*Stand: 17. April 2026*
 
 Lieber Sebastian,
 
-wir haben in den letzten Tagen intensiv an der WoT-Spezifikation gearbeitet. Hier ist eine Zusammenfassung — als Grundlage für unser nächstes Gespräch.
+wir haben in den letzten Tagen intensiv an der WoT-Spezifikation gearbeitet. Hier ist der aktuelle Stand — als Grundlage für unser nächstes Gespräch.
 
-## Was wir gemacht haben
+## Was ist WoT?
 
-Wir haben das Web of Trust Protokoll in klare Schichten aufgeteilt und spezifiziert. Die Spec liegt auf Codeberg: `codeberg.org/web-of-trust/spec`
+Ein Protokoll für dezentrale Vertrauensnetzwerke basierend auf echten Begegnungen. Zwei Menschen treffen sich, verifizieren ihre Identität, und stellen sich gegenseitig signierte Aussagen aus — kryptographisch verifizierbar, offline-fähig, ohne zentrale Instanz.
 
-### WoT Core (3 Dokumente — das gemeinsame Fundament)
+WoT definiert keine neuen Standards — es kombiniert bestehende (DID, W3C VC, DIDComm, Ed25519, JWS, AES-256-GCM) zu einem interoperablen Profil.
+
+## Die Spec
+
+Die Spec liegt auf Codeberg: `codeberg.org/web-of-trust/spec`
+
+### WoT Core (4 Dokumente — das gemeinsame Fundament)
 
 | # | Thema | Status |
 |---|-------|--------|
-| 001 | Identität und Schlüsselableitung (BIP39 → Ed25519 → did:key) | Entwurf, offene Fragen für dich |
+| 001 | Identität und Schlüsselableitung (BIP39 → Ed25519 → did:key) | Entwurf |
 | 002 | Signaturen und Verifikation (JWS, JCS, SHA-256) | Entwurf |
 | 003 | Attestations (W3C Verifiable Credentials) | Entwurf |
+| 004 | Verifikation (QR-Code, Challenge-Response) | Entwurf |
 
-### WoT Sync Layer (4 Dokumente — unsere Infrastruktur)
+### WoT Sync (5 Dokumente — die Infrastruktur)
 
-Verschlüsselung, Sync-Protokoll, Transport/Broker, Discovery. Das ist unser Sync-System — du brauchst das nicht zu übernehmen, aber du könntest es nutzen.
+| # | Thema | Status |
+|---|-------|--------|
+| 005 | Verschlüsselung (AES-256-GCM, Authcrypt/ECDH-1PU) | Entwurf |
+| 006 | Sync-Protokoll (Append-only Logs, Sedimentree, RIBLT) | Entwurf |
+| 007 | Transport und Broker (DIDComm, Capabilities, Inbox pro Device) | Entwurf |
+| 008 | Discovery (Broker-Discovery, Profil-Service) | Entwurf |
+| 009 | Gruppen und Mitgliedschaft (Rollen, Einladungen, Key Rotation) | Entwurf |
 
 ### Extensions
 
-Deine ADRs sind als Extensions abgebildet:
-- **H01 Trust-Scores** — dein quantitatives Vertrauensmodell (30/60/85%, Hop-Limits, Propagation)
-- **H02 Transactions** — Gutscheine, Double-Spend, SecureContainer
+| # | Thema | Status |
+|---|-------|--------|
+| R01 | Badges (Emoji, Farbe, Form) | Platzhalter |
+| H01 | Trust-Scores (dein quantitatives Modell) | Entwurf |
+| H02 | Transactions (Gutscheine, Double-Spend) | Platzhalter |
+| H03 | Gossip-Propagation (Trust Lists über unsere Inbox) | Entwurf |
 
-## Der Kern-Vorschlag: W3C Verifiable Credentials als gemeinsames Format
+## Entscheidungen die wir getroffen haben
 
-Wir schlagen vor, Attestations als **W3C Verifiable Credentials** zu formatieren. Das hätte für beide Seiten Vorteile:
+### JWS als einziges Signaturformat
 
-**Deine Trust List als VC:**
+Alle signierten Daten im Protokoll nutzen JWS Compact Serialization (RFC 7515). Attestations, Nachrichten, Log-Einträge — ein Format für alles. SD-JWT (was du für deine Listen nutzt) baut auf JWS auf und ist damit eine natürliche Erweiterung.
 
-```json
-{
-  "@context": ["https://www.w3.org/2018/credentials/v1", "https://wot.example/vocab/v1"],
-  "type": ["VerifiableCredential", "WotAttestation"],
-  "issuer": "did:key:z6Mk...alice",
-  "credentialSubject": {
-    "id": "did:key:z6Mk...bob",
-    "claim": "Vertrauensstufe 3",
-    "trustLevel": 3,
-    "liability": "4.0h"
-  },
-  "proof": { "type": "Ed25519Signature2020", ... }
-}
+**Was das für dich heißt:** Dein SD-JWT-Format ist kompatibel. Du müsstest SHA3-256 → SHA-256 und Base58 → Base64URL umstellen.
+
+### DIDComm v2 als Nachrichtenformat
+
+Unser Nachrichtenformat folgt dem DIDComm v2 Plaintext Message Format (DIF). Die Verschlüsselung für 1:1-Nachrichten nutzt Authcrypt (ECDH-1PU) — der DIDComm-Standard.
+
+**Warum:** Interoperabilität mit dem dezentralen Ökosystem (Circles, Nostr, Briar und andere Projekte die dezentrale Identität brauchen). DIDComm teilt unsere Werte: P2P, offline-fähig, zensurresistent.
+
+**Was das für dich heißt:** Dein Gossip-Protokoll (H03) nutzt unsere Inbox als Transport — die jetzt DIDComm-kompatibel ist. Deine Trust-List-Deltas sind DIDComm-Nachrichten mit SD-JWT im Body.
+
+### X25519 via separatem HKDF (nicht birationale Abbildung)
+
+Der Verschlüsselungs-Key (X25519) wird über einen eigenen HKDF-Pfad abgeleitet (`"wot/encryption/x25519/v1"`), nicht über die birationale Abbildung aus dem Ed25519-Key.
+
+**Warum:** Browser-Implementierungen (Web Crypto API) erzeugen Ed25519-Keys als `non-extractable` — der Private Key kann nicht für die Umrechnung ausgelesen werden. Der separate HKDF-Pfad funktioniert überall.
+
+**Was das für dich heißt:** Du müsstest deinen X25519-Pfad umstellen — ein Change in deiner Krypto-Utils. Die Ed25519-Keys und DIDs bleiben gleich.
+
+### Qualitative Attestations und Trust Lists koexistieren
+
+Wir haben ausgearbeitet wie unsere qualitativen Attestations (Empfängerprinzip) und deine quantitativen Trust Lists (Senderprinzip) koexistieren:
+
+| | Qualitative Attestation (Core) | Trust List (HMC Extension) |
+|---|---|---|
+| Inhalt | Freitext ("kann gut programmieren") | Trust-Level 0-3 |
+| Eigentum | Empfänger besitzt | Sender verteilt |
+| Veränderung | Neue Attestation ersetzt alte | Neue Listenversion ersetzt alte |
+| Semantik | Geschenk | Weltsicht |
+
+Beides auf demselben Identitäts-Layer (DID + Ed25519), verschiedene Verteilungswege für verschiedene Bedeutungen.
+
+## Was noch offen ist (für unser Gespräch)
+
+### 1. Key-Stretching
+
+Du nutzt PBKDF2 mit 100k Runden zusätzlich zum BIP39-PBKDF2. Wir nicht. Wenn Stretching Teil des Standard-Pfades wird, ändern sich alle DIDs — eine Migration ist nötig. Lohnt sich das?
+
+### 2. VCs als gemeinsames Attestation-Format
+
+Funktioniert W3C VC als Verpackung für dein SD-JWT-Modell? Der Overhead ist ~100 Bytes pro Attestation (@context, type). Dafür bekommst du Interop mit dem gesamten VC-Ökosystem.
+
+## Die Struktur
+
 ```
-
-**Unsere Attestation als VC:**
-
-```json
-{
-  "@context": ["https://www.w3.org/2018/credentials/v1", "https://wot.example/vocab/v1"],
-  "type": ["VerifiableCredential", "WotAttestation"],
-  "issuer": "did:key:z6Mk...alice",
-  "credentialSubject": {
-    "id": "did:key:z6Mk...bob",
-    "claim": "kann gut programmieren"
-  },
-  "proof": { "type": "Ed25519Signature2020", ... }
-}
+01-wot-core/         ← Das gemeinsame Fundament (001-004)
+02-wot-sync/         ← Sync-Infrastruktur (005-009)
+03-rls-extensions/   ← Unsere Extensions (Badges)
+04-hmc-extensions/   ← Deine Extensions (Trust-Scores, Transactions, Gossip)
+research/            ← Forschung, Test-Vektoren, Interop-Analyse
 ```
-
-Selbes Format, verschiedene Claim-Typen. Deine Trust-Levels über deinen eigenen Context (`humanmoney.example/vocab/v1`), unsere Attestations über unseren. Was man nicht kennt, ignoriert man — die Signatur bleibt trotzdem verifizierbar.
-
-SD-JWT (was du für deine Listen nutzt) wird als W3C VC-SD standardisiert — du könntest dein SD-JWT-Format als VC-kompatibel verpacken ohne es grundlegend zu ändern.
 
 ## Was beide Systeme davon hätten
 
-**Deine App** könnte unsere qualitativen Attestations anzeigen — "Bob kann gut programmieren", "Bob ist zuverlässig" neben deinem Trust-Level 85%. Das gibt Profilen Tiefe.
+**Deine App** könnte unsere qualitativen Attestations anzeigen — "Bob kann gut programmieren", "Bob ist zuverlässig" neben deinem Trust-Level 85%.
 
-**Unsere App** könnte deine Trust-Scores anzeigen — "Alice vertraut Bob zu 85%" neben unseren Pfad-Anzeigen. Das gibt uns quantitative Signale.
+**Unsere App** könnte deine Trust-Scores anzeigen — "Alice vertraut Bob zu 85%" neben unseren Pfad-Anzeigen.
+
+**Beide Apps** wären DIDComm-kompatibel — andere dezentrale Projekte könnten mit uns interagieren ohne unser internes Protokoll zu kennen.
 
 Beides auf demselben Vertrauensgraphen. Qualitativ und quantitativ als verschiedene Facetten derselben Beziehungen.
-
-## Wo wir übereinstimmen
-
-- **did:key + Ed25519** — identisch
-- **Offline-First** — gleiche Philosophie
-- **Asymmetrisches Vertrauen** — gleiche Richtung
-- **Nur positive Aussagen** — kein Downvote bei beiden
-- **Lokale Berechnung** — kein globaler Konsens
-
-## Offene Fragen für unser Gespräch
-
-### 1. HKDF Info-Strings und Seed-Länge
-
-Wir nutzen verschiedene HKDF Info-Strings (`"wot-identity-v1"` vs. `"human-money-core/ed25519"`) und verschiedene Seed-Längen (32 vs. 64 Bytes). Jede Änderung bedeutet Migration aller DIDs. Frage: lohnt sich die Harmonisierung? Wenn ja, einmal alle Fragen zusammen entscheiden und einmal migrieren.
-
-### 2. Signaturen
-
-Wir schlagen vor: JWS + JCS (RFC 8785) + SHA-256 + Base64URL. Du nutzt: Detached + JCS + SHA3-256 + Base58. JCS haben wir von dir übernommen — das ist der richtige Standard. Bei Hash und Encoding sehen wir SHA-256 und Base64URL als pragmatischer (Web Crypto API nativ). Detached Signatures können als Extension für Multi-Signer Use Cases (Gutscheine) leben.
-
-### 3. VCs als gemeinsames Attestation-Format
-
-Funktioniert das für dich? Dein SD-JWT-Modell bleibt erhalten — es wird nur VC-kompatibel verpackt. Die Frage ist ob der Overhead (~100 Bytes pro Attestation für @context und type) akzeptabel ist.
-
-### 4. Verteilung: Empfänger- vs. Senderprinzip
-
-Unsere Attestations gehören dem Empfänger (Holder = Subject). Deine Trust Lists verteilt der Sender via Gossip. Beides kann koexistieren — verschiedene Verteilungswege für verschiedene Claim-Typen. Geschenke gehen an den Empfänger, Bewertungen verteilt der Sender.
-
-### 5. Deine Device-Prefixes
-
-Wie bilden wir die in der gemeinsamen Spec ab? Wir nutzen Device-UUIDs für unseren Sync. Du nutzt Device-Prefixes für Wallet-Isolation und Double-Spend-Prevention. Beides funktioniert — aber sollen wir einen gemeinsamen Mechanismus definieren?
-
-## Die Struktur der Spec
-
-```
-01-wot-core/         ← Das gemeinsame Fundament (001-003)
-02-wot-sync/         ← Unsere Sync-Infrastruktur (004-007)
-03-rls-extensions/   ← Unsere Extensions (Datenmodell, Gruppen, Badges)
-04-hmc-extensions/   ← Deine Extensions (Trust-Scores, Transactions)
-research/            ← Forschungsmaterial
-```
-
-Dein quantitatives Vertrauensmodell mit Trust-Levels, Hop-Limits, Gossip und Pfadberechnung ist als Extension (H01/H02) abgebildet — nicht weil es weniger wichtig ist, sondern weil es spezifisch für den Human Money Use Case ist. Der Core bleibt schlank: Identität, Signaturen, Attestations.
-
-## Was ich mir wünsche
-
-Dass wir einen gemeinsamen Standard finden für das Fundament (did:key, Ed25519, Attestation-Format) und dass jeder darauf aufbaut was er braucht. Dein quantitatives Modell und unser qualitatives Modell schließen sich nicht aus — sie ergänzen sich. Und wenn beides auf VCs aufbaut, können beide Systeme voneinander profitieren ohne sich gegenseitig einzuschränken.
-
-Wann hast du Zeit für einen Call?
