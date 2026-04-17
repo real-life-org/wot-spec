@@ -10,7 +10,7 @@ Spezifiziert wie Trust Lists über die bestehende WoT Sync Infrastruktur (Inbox,
 
 ## Grundprinzip
 
-Die Gossip-Propagation nutzt den **Inbox-Kanal** (siehe [Sync 007](../02-wot-sync/007-transport-und-broker.md)) als Transportweg. Der Broker braucht keine Änderungen — er sieht nur verschlüsselte Inbox-Nachrichten wie immer.
+Die Gossip-Propagation nutzt den **Inbox-Kanal** (siehe [Sync 007](../02-wot-sync/007-transport-und-broker.md)), verschlüsselt mit DIDComm Authcrypt, als Transportweg. Der Broker braucht keine Änderungen — er sieht nur verschlüsselte Inbox-Nachrichten wie immer.
 
 ```
 Alice aktualisiert ihre Trust List
@@ -30,23 +30,22 @@ Broker sieht: verschlüsselte Inbox-Nachrichten
 
 ## Nachrichtentyp: `trust-list-delta`
 
-Im Message Envelope (siehe [Sync 007](../02-wot-sync/007-transport-und-broker.md#message-envelope)) wird ein neuer Typ definiert:
-
-**JWS-Payload:**
+Im Message Envelope (siehe [Sync 007](../02-wot-sync/007-transport-und-broker.md#message-envelope-didcomm-kompatibel)) wird ein neuer Typ definiert, verschlüsselt mit Authcrypt:
 
 ```json
 {
-  "v": 1,
   "id": "uuid",
-  "type": "trust-list-delta",
-  "fromDid": "did:key:z6Mk...alice",
-  "toDid": "did:key:z6Mk...bob",
-  "createdAt": "2026-04-16T10:00:00Z",
-  "payload": "<verschlüsseltes SD-JWT mit selektiv offengelegten Einträgen>"
+  "type": "https://wot.example/protocols/trust-list-delta/1.0",
+  "from": "did:key:z6Mk...alice",
+  "to": ["did:key:z6Mk...bob"],
+  "created_time": "2026-04-17T10:00:00Z",
+  "body": {
+    "delta": "<SD-JWT mit selektiv offengelegten Einträgen>"
+  }
 }
 ```
 
-Die Payload enthält die Trust List (oder ein Delta) als SD-JWT — selektiv offengelegt für den jeweiligen Empfänger. Der Empfänger sieht nur die Einträge die der Sender für ihn freigegeben hat.
+Die `body.delta` enthält die Trust List (oder ein Delta) als SD-JWT — selektiv offengelegt für den jeweiligen Empfänger. Der Empfänger sieht nur die Einträge die der Sender für ihn freigegeben hat.
 
 ## Client-Logik
 

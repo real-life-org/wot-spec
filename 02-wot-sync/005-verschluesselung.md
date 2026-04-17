@@ -11,8 +11,11 @@ Dieses Dokument spezifiziert wie Daten im Sync Layer verschlüsselt werden — f
 ## Referenzierte Standards
 
 - **X25519** (RFC 7748) — Diffie-Hellman Key Exchange auf Curve25519
+- **ECDH-1PU** (IETF Draft) — Authentifiziertes Key Agreement (Authcrypt)
+- **JWE** (RFC 7516) — JSON Web Encryption
 - **HKDF** (RFC 5869) — Schlüsselableitung aus Shared Secrets
 - **AES-256-GCM** (NIST SP 800-38D) — Authentifizierte symmetrische Verschlüsselung
+- **DIDComm v2** (DIF) — Messaging-Standard für Verschlüsselung zwischen DIDs
 
 ## Verschlüsselungs-Schlüssel
 
@@ -44,29 +47,45 @@ Die birationale Abbildung (Ed25519 → Curve25519 → X25519) ist NICHT erlaubt 
 
 Die Nonce wird dem Ciphertext vorangestellt. AES-256-GCM ist nativ in der Web Crypto API aller Browser verfügbar und Hardware-beschleunigt (AES-NI).
 
-## Peer-to-Peer-Verschlüsselung (ECIES)
+## Peer-to-Peer-Verschlüsselung (Authcrypt)
 
-Für direkte Nachrichten zwischen zwei Parteien (Attestations, Einladungen, Key-Austausch):
+Für direkte Nachrichten zwischen zwei Parteien (Attestations, Einladungen, Key-Austausch). Das Verfahren folgt dem **DIDComm Authcrypt** Standard (ECDH-1PU, [RFC Draft](https://datatracker.ietf.org/doc/html/draft-madden-jose-ecdh-1pu)) und verwendet ausschließlich Web Crypto API Operationen.
 
 ### Verschlüsselung (Sender → Empfänger)
 
 1. Ephemeres X25519-Schlüsselpaar generieren
-2. ECDH durchführen: `shared_secret = ephemeral_private × recipient_public`
-3. Symmetrischen Schlüssel via HKDF-SHA256 ableiten:
-   - Input: Shared Secret (32 Bytes)
+2. Zwei ECDH-Operationen durchführen:
+   - `shared_secret_static = sender_static_private × recipient_public`
+   - `shared_secret_ephemeral = ephemeral_private × recipient_public`
+3. Beide Secrets kombinieren und symmetrischen Schlüssel via HKDF-SHA256 ableiten:
+   - Input: `shared_secret_ephemeral || shared_secret_static`
    - Salt: leer
-   - Info: `"wot/ecies/v1"`
+   - Info: `"wot/authcrypt/v1"`
    - Ausgabe: 256-Bit AES-Schlüssel
 4. Klartext mit AES-256-GCM verschlüsseln
-5. Ausgabe: `{ ephemeral_public_key, nonce, ciphertext }`
+5. Verpacken als JWE (JSON Web Encryption, RFC 7516)
 
 ### Entschlüsselung (Empfänger)
 
-1. ECDH durchführen: `shared_secret = recipient_private × ephemeral_public`
-2. Denselben AES-Schlüssel via HKDF ableiten (gleiche Parameter)
-3. Ciphertext entschlüsseln
+1. Ephemeral Public Key und Sender-DID aus dem JWE-Header lesen
+2. Zwei ECDH-Operationen durchführen:
+   - `shared_secret_static = recipient_private × sender_static_public`
+   - `shared_secret_ephemeral = recipient_private × ephemeral_public`
+3. Beide Secrets kombinieren, denselben AES-Schlüssel via HKDF ableiten
+4. Ciphertext entschlüsseln
 
-Der ephemere Schlüssel wird nur einmal verwendet — jede Nachricht hat einen neuen.
+### Warum Authcrypt statt ECIES
+
+Authcrypt bindet die Sender-Identität kryptographisch in die Verschlüsselung ein — der Empfänger weiß nicht nur dass die Nachricht für ihn ist, sondern auch **von wem** sie kommt, ohne auf eine separate Signatur angewiesen zu sein. Zusätzlich ist Authcrypt das DIDComm-Standardverfahren, was Interoperabilität mit dem DIDComm-Ökosystem sicherstellt.
+
+### Web Crypto API
+
+Alle Operationen sind nativ in der Web Crypto API verfügbar:
+- `crypto.subtle.deriveBits("X25519", ...)` — beide ECDH-Operationen
+- `crypto.subtle.deriveBits("HKDF", ...)` — Schlüsselableitung
+- `crypto.subtle.encrypt("AES-GCM", ...)` — Verschlüsselung
+
+Keine externe Krypto-Bibliothek nötig.
 
 ## Gruppen-Verschlüsselung (Spaces)
 
@@ -103,18 +122,14 @@ Der Broker sieht niemals Klartext.
 
 Wie Seed und andere sensible Daten auf dem Gerät geschützt werden ist Sache der Implementierung (siehe [Core 001](../01-wot-core/001-identitaet-und-schluesselableitung.md), Abschnitt "Seed-Schutz auf dem Gerät").
 
-## Zukünftige Erweiterungen
-
-Für 1:1-Nachrichten mit Forward Secrecy könnte in Zukunft ein Double-Ratchet-Protokoll (wie bei Signal) evaluiert werden. Aktuell bietet ECIES mit ephemeren Schlüsseln ausreichenden Schutz für unsere Anwendungsfälle.
-
 ## Aktuelle Implementierungen
 
 | | WoT Core | Human Money Core | Spec |
 |---|---|---|---|
-| **P2P-Verschlüsselung** | ECIES (X25519 + HKDF + AES-256-GCM) | SecureContainer (X25519 + HKDF + ChaCha20) | ✅ ECIES + AES-256-GCM |
+| **P2P-Verschlüsselung** | ECIES (X25519 + HKDF + AES-256-GCM) | SecureContainer (X25519 + HKDF + ChaCha20) | ✅ **Authcrypt** (ECDH-1PU + AES-256-GCM) |
 | **Gruppen-Verschlüsselung** | Space Keys (zufällig, generationsbasiert) | Nicht eingebaut | ✅ Space Keys |
 | **Symmetrischer Algorithmus** | AES-256-GCM (Web Crypto) | ChaCha20-Poly1305 | ✅ AES-256-GCM |
-| **HKDF Info (P2P)** | `"wot-ecies-v1"` | `"secure-container-kek"` | **`"wot/ecies/v1"`** |
+| **HKDF Info (P2P)** | `"wot-ecies-v1"` | `"secure-container-kek"` | **`"wot/authcrypt/v1"`** |
 | **X25519-Ableitung** | Separater HKDF-Pfad | Birationale Abbildung | ✅ **Separater HKDF-Pfad** (normativ) |
 | **Nonce** | 12 Bytes zufällig | 12 Bytes zufällig | ✅ 12 Bytes zufällig |
-| **Multi-Empfänger** | Nicht eingebaut | SecureContainer (Double-Key-Wrapping) | Nicht im Sync Layer (siehe Extensions) |
+| **DIDComm-kompatibel** | Nein (ECIES) | Nein (SecureContainer) | ✅ Ja (Authcrypt + JWE) |

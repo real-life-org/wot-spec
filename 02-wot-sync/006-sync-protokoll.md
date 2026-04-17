@@ -53,9 +53,9 @@ Jeder Peer führt einen Append-only Log pro Dokument. Jeder Eintrag ist ein vers
 
 ### Log-Eintrag
 
-Ein Log-Eintrag ist ein **JWS Compact Serialization** (wie alle signierten Daten im Protokoll).
+Ein Log-Eintrag ist ein **JWS-signierter Datensatz**. Er wird über das DIDComm-Envelope als `body` einer `log-entry`-Nachricht transportiert (siehe [Sync 007](007-transport-und-broker.md#message-envelope-didcomm-kompatibel)), ist aber selbst kein DIDComm-Message — er ist ein Datensatz der im Append-only Log persistiert wird.
 
-**JWS-Payload (nach Base64URL-Dekodierung):**
+**JWS-Payload:**
 
 ```json
 {
@@ -65,7 +65,7 @@ Ein Log-Eintrag ist ein **JWS Compact Serialization** (wie alle signierten Daten
   "authorDid": "did:key:z6MkhaXgBZDvotDkL5257faiztiGiC2QtKLGpbnnEGta2doK",
   "keyGeneration": 3,
   "data": "<Base64URL-kodierter verschlüsselter Blob>",
-  "timestamp": "2026-04-16T10:00:00Z"
+  "timestamp": "2026-04-17T10:00:00Z"
 }
 ```
 
@@ -81,15 +81,34 @@ Ein Log-Eintrag ist ein **JWS Compact Serialization** (wie alle signierten Daten
 
 ### Signatur des Log-Eintrags
 
-Signatur und Verifikation gemäß [Core 002](../01-wot-core/002-signaturen-und-verifikation.md) — identisch mit dem Message Envelope (siehe [Sync 007](007-transport-und-broker.md#signatur)):
+Der Log-Eintrag wird als JWS signiert — gemäß [Core 002](../01-wot-core/002-signaturen-und-verifikation.md):
 
 1. Payload mit JCS kanonisieren (RFC 8785)
 2. JCS-Bytes als Base64URL kodieren
 3. Signing Input: `BASE64URL(header) + "." + BASE64URL(jcs_payload)`
 4. Ed25519-Signatur über die Signing-Input-Bytes
-5. Ergebnis: JWS Compact String (`header.payload.signature`)
+5. Ergebnis: JWS Compact String
 
 Ein Empfänger verifiziert die Signatur indem er `authorDid` aus dem Payload auflöst und den Public Key extrahiert.
+
+### Transport über DIDComm
+
+Ein Log-Eintrag wird als `body` einer DIDComm-Nachricht transportiert:
+
+```json
+{
+  "id": "uuid",
+  "type": "https://wot.example/protocols/log-entry/1.0",
+  "from": "did:key:z6Mk...alice",
+  "to": ["did:key:z6Mk...broker"],
+  "created_time": "2026-04-17T10:00:00Z",
+  "body": {
+    "entry": "<JWS Compact String des Log-Eintrags>"
+  }
+}
+```
+
+Der Log-Eintrag ist bereits mit dem Space Key verschlüsselt (AES-256-GCM) und JWS-signiert. Die DIDComm-Nachricht transportiert ihn nur — keine zusätzliche Authcrypt-Verschlüsselung nötig.
 
 ### Verschlüsselter Payload (`data`)
 

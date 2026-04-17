@@ -69,19 +69,16 @@ Alice (Member oder Admin) lädt Bob ein:
 
 ### Einladungs-Nachricht
 
-Neuer Inbox-Nachrichtentyp `space-invite`, als JWS Compact (siehe [Sync 009](007-transport-und-broker.md#message-envelope)):
-
-**JWS-Payload:**
+Neuer Inbox-Nachrichtentyp `space-invite` als DIDComm-Nachricht (siehe [Sync 007](007-transport-und-broker.md#message-envelope-didcomm-kompatibel)), verschlüsselt mit Authcrypt:
 
 ```json
 {
-  "v": 1,
   "id": "uuid",
-  "type": "space-invite",
-  "fromDid": "did:key:z6Mk...alice",
-  "toDid": "did:key:z6Mk...bob",
-  "createdAt": "2026-04-16T10:00:00Z",
-  "payload": "<ECIES-verschlüsselt: { spaceId, brokerUrls, keys }>"
+  "type": "https://wot.example/protocols/space-invite/1.0",
+  "from": "did:key:z6Mk...alice",
+  "to": ["did:key:z6Mk...bob"],
+  "created_time": "2026-04-17T10:00:00Z",
+  "body": { "spaceId": "uuid", "brokerUrls": ["..."], "keys": [...], "capability": "..." }
 }
 ```
 
@@ -152,25 +149,22 @@ Admin entfernt Bob:
 
 ### Key-Rotation Nachricht
 
-Neuer Inbox-Nachrichtentyp `key-rotation`, als JWS Compact:
-
-**JWS-Payload:**
+Neuer Inbox-Nachrichtentyp `key-rotation` als DIDComm-Nachricht, verschlüsselt mit Authcrypt:
 
 ```json
 {
-  "v": 1,
   "id": "uuid",
-  "type": "key-rotation",
-  "fromDid": "did:key:z6Mk...alice",
-  "toDid": "did:key:z6Mk...carol",
-  "createdAt": "2026-04-16T10:00:00Z",
-  "payload": "<ECIES-verschlüsselt: { spaceId, generation, key, capability }>"
+  "type": "https://wot.example/protocols/key-rotation/1.0",
+  "from": "did:key:z6Mk...alice",
+  "to": ["did:key:z6Mk...carol"],
+  "created_time": "2026-04-17T10:00:00Z",
+  "body": { "spaceId": "uuid", "generation": 4, "key": "<base64url>", "capability": "<JWS>" }
 }
 ```
 
-Die Payload enthält den neuen Space Key und eine neue Capability mit erhöhter Generation. Alte Capabilities werden damit ungültig (siehe [Sync 007](007-transport-und-broker.md#capability-widerruf)).
+Die `body` enthält den neuen Space Key und eine neue Capability mit erhöhter Generation. Alte Capabilities werden damit ungültig (siehe [Sync 007](007-transport-und-broker.md#capability-widerruf)).
 
-Der Admin sendet eine `key-rotation` Nachricht an **jedes** verbleibende Mitglied einzeln — jede Nachricht individuell ECIES-verschlüsselt.
+Der Admin sendet eine `key-rotation` Nachricht an **jedes** verbleibende Mitglied einzeln — jede Nachricht individuell mit Authcrypt verschlüsselt.
 
 ### Forward Secrecy
 
