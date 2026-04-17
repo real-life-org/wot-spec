@@ -88,6 +88,7 @@ Hintergrundmaterial, Analysen und Architektur-Entwürfe.
 | [Sync & Transport Forschung](research/sync-and-transport.md) | Design-Space Exploration (10 Projekte, 4 Papers, 9 Talks) |
 | [Sync-Architektur](research/sync-architektur.md) | Drei-Schichten-Modell (Deutsch) |
 | [Identity Migration](research/identity-migration.md) | Schlüsselrotation bei DID-Wechsel |
+| [Test-Vektoren](research/test-vektoren.md) | Kanonische Krypto-Werte für Interoperabilitäts-Tests |
 
 ## Architektur
 
