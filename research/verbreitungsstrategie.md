@@ -119,3 +119,38 @@ In einer Welt voller AI-generierter Identitäten ist der Beweis "ich habe diesen
 ### Die Alternative muss existieren bevor sie gebraucht wird
 
 Man kann keine Infrastruktur bauen wenn die Krise da ist. Signal existierte bevor Snowden kam. Tor existierte bevor Wikileaks es brauchte. Unser WoT muss funktionieren, skalieren und interoperabel sein **bevor** der große Moment kommt. Deshalb bauen wir jetzt.
+
+## DIDComm-Ökosystem stärken
+
+DIDComm braucht keine bessere Spec — die ist gut. DIDComm braucht **eine Geschichte und echte User.** Wir haben beides.
+
+### Was DIDComm fehlt
+
+- **Laufende Implementierungen mit echten Usern** — DIF sucht aktiv danach. Wir wären eine der ersten Apps mit DIDComm v2 in Produktion.
+- **Use Cases jenseits von Enterprise SSI** — Mitarbeiterausweise und Supply Chain sind langweilig. Vertrauensnetzwerke aus echten Begegnungen bewegen Menschen.
+- **Eine Gegenerzählung zu OpenID4VC/eIDAS** — aktuell dominiert die EU-Perspektive die Diskussion. DIDComm hat keine vergleichbare Geschichte.
+
+### Was wir tun können
+
+**Kurzfristig:**
+- DIF beitreten (kostenlos unter 500 Personen)
+- WoT-Protokolle als DIDComm-Protokolle einreichen (Challenge-Response, Attestation-Austausch, Trust-Propagation)
+- Interop-Tests publizieren (Web Crypto API + SICPA-Library)
+
+**Mittelfristig:**
+- Unseren Broker als DIDComm-Mediator veröffentlichen (Open Source)
+- Talks auf DIF-Meetings, IIW, CCC, FOSDEM — nicht über Technik sondern über den Use Case
+- Vergleichsdokument: eIDAS vs. WoT — sachlich, Feature für Feature
+
+### Die eIDAS-Diskussion nutzen
+
+Die Kritiker der EU-Wallet (epicenter.works, Digitalcourage, CCC, EFF) haben ein Problem: sie können sagen was sie **nicht** wollen, aber nicht was sie **stattdessen** wollen. Wir können diese Lücke füllen:
+
+- Kontakt zu Datenschutz-Organisationen: "Wir haben die technische Lösung für das Problem das ihr beschreibt."
+- Material für Politiker und Journalisten: "So funktioniert dezentrale Identität — einfach erklärt."
+- Live-Demo: zwei Apps (Real Life + Human Money) kommunizieren über DIDComm. "So sieht die Alternative aus."
+- Workshops auf Festivals, Community-Treffen, Kooperativen-Tagungen. Nicht Kryptografie erklären sondern: "Scannt euch gegenseitig — jetzt habt ihr ein Vertrauensnetzwerk."
+
+### Unser Beitrag
+
+Nicht Code-Contributions zur DIDComm-Spec, sondern der Beweis dass es funktioniert und dass Menschen es wollen. Eine laufende Implementierung mit echten Communities ist wertvoller als jede theoretische Diskussion.
