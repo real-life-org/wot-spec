@@ -97,11 +97,12 @@ Die Payload enthält (nach Entschlüsselung):
     { "generation": 1, "key": "<base64url>" },
     { "generation": 2, "key": "<base64url>" },
     { "generation": 3, "key": "<base64url>" }
-  ]
+  ],
+  "capability": "<JWS — Capability signiert vom Admin>"
 }
 ```
 
-Alle bisherigen Schlüssel werden mitgegeben, damit Bob auch historische Daten entschlüsseln kann. Der Schlüssel der höchsten Generation ist der aktuelle Schreibschlüssel.
+Alle bisherigen Schlüssel werden mitgegeben, damit Bob auch historische Daten entschlüsseln kann. Der Schlüssel der höchsten Generation ist der aktuelle Schreibschlüssel. Die Capability berechtigt Bob, dieses Dokument über den Broker zu syncen (siehe [Sync 007](007-transport-und-broker.md#autorisierung-capabilities)).
 
 ### Annahme und Ablehnung
 
@@ -163,9 +164,11 @@ Neuer Inbox-Nachrichtentyp `key-rotation`, als JWS Compact:
   "fromDid": "did:key:z6Mk...alice",
   "toDid": "did:key:z6Mk...carol",
   "createdAt": "2026-04-16T10:00:00Z",
-  "payload": "<ECIES-verschlüsselt: { spaceId, generation, key }>"
+  "payload": "<ECIES-verschlüsselt: { spaceId, generation, key, capability }>"
 }
 ```
+
+Die Payload enthält den neuen Space Key und eine neue Capability mit erhöhter Generation. Alte Capabilities werden damit ungültig (siehe [Sync 007](007-transport-und-broker.md#capability-widerruf)).
 
 Der Admin sendet eine `key-rotation` Nachricht an **jedes** verbleibende Mitglied einzeln — jede Nachricht individuell ECIES-verschlüsselt.
 

@@ -25,12 +25,15 @@ Ein Broker ist ein Peer mit Superkräften:
 | Speichert Daten | Lokal für sich | Für alle berechtigten Peers |
 | Push Notifications | Nein | Ja |
 | Erreichbar | Nur im LAN / NAT Traversal | Öffentliche IP |
+| Autorisierung | Client prüft Membership lokal | Capabilities vom Admin |
 | Betrieben von | User | Community oder Anbieter |
 
 ### Was ein Broker speichert
 
 - **Log-Einträge** — verschlüsselte Append-only Logs für alle Dokumente seiner User (siehe [Sync 006](006-sync-protokoll.md))
-- **Inbox-Nachrichten** — verschlüsselte direkte Nachrichten (Attestations, Einladungen, Key-Rotation). Werden nach Zustellung gelöscht.
+- **Inbox-Nachrichten** — verschlüsselte direkte Nachrichten (Attestations, Einladungen, Key-Rotation). Pro Device vorgehalten, gelöscht nach ACK aller Geräte.
+- **Capabilities** — signierte Zugriffsberechtigung pro User pro Dokument (vom Admin ausgestellt)
+- **Device-Registrierungen** — welche Device-IDs zu welcher DID gehören
 - **Push-Endpoints** — UnifiedPush-Registrierungen für Offline-Notifications
 
 ### Was ein Broker NICHT sieht
@@ -39,6 +42,7 @@ Ein Broker ist ein Peer mit Superkräften:
 - Welcher CRDT-Typ verwendet wird
 - Den Inhalt der Dokumente
 - Den Inhalt der Inbox-Nachrichten
+- Die Mitgliederliste eines Space (verschlüsselt)
 
 ### Community-betriebene Broker
 
@@ -50,6 +54,118 @@ Ein Broker ist ein einfacher Service:
 - Sendet Push-Notifications wenn User offline sind
 
 Kein Domain-Name nötig (IP reicht). Kein Verständnis der Daten nötig. Kein CRDT-Code nötig.
+
+## Zwei Schichten
+
+Das Sync-Protokoll ([Sync 006](006-sync-protokoll.md)) ist **peer-agnostisch** — es funktioniert identisch zwischen zwei Handys, zwischen Handy und Broker, oder zwischen zwei Brokern. Jeder Peer spricht dasselbe Protokoll.
+
+Der Broker fügt eine **Schicht darüber** hinzu:
+
+```
+┌──────────────────────────────────────────────────┐
+│  Broker-Schicht (nur Broker)                     │
+│  Authentisierung, Autorisierung (Capabilities),  │
+│  Inbox (Store-and-Forward, pro Device), Push     │
+├──────────────────────────────────────────────────┤
+│  Sync-Protokoll (alle Peers gleich)              │
+│  Log-Einträge austauschen, JWS verifizieren      │
+└──────────────────────────────────────────────────┘
+```
+
+Im **direkten P2P-Modus** (LAN, Bluetooth) fällt die Broker-Schicht weg. Der Client prüft selbst ob der Gegenüber Member ist (Mitgliederliste liegt lokal vor). Keine Capabilities nötig — das Vertrauen ist direkt.
+
+## Authentisierung
+
+Beim Verbindungsaufbau zum Broker authentifiziert sich der Client via **Challenge-Response**:
+
+```
+1. Client verbindet sich (WebSocket)
+2. Client sendet: { type: "register", did: "did:key:z6Mk...", deviceId: "uuid" }
+3. Broker generiert zufällige Nonce (32 Bytes)
+4. Broker sendet: { type: "challenge", nonce: "<Base64URL>" }
+5. Client signiert die Nonce mit Ed25519 Private Key
+6. Client sendet: { type: "challenge-response", did, deviceId, nonce, signature }
+7. Broker verifiziert:
+   - DID auflösen → Public Key
+   - Signatur über Nonce prüfen
+   - OK → Verbindung authentifiziert
+8. Broker sendet: { type: "registered", did, deviceId }
+```
+
+Nach dem Handshake ist die WebSocket-Verbindung authentifiziert. Alle weiteren Nachrichten auf dieser Verbindung gelten als von dieser DID + deviceId kommend.
+
+Die Device-ID (`deviceId`) identifiziert das Gerät stabil — derselbe Wert wie im Sync-Protokoll ([Sync 006](006-sync-protokoll.md#device-identifikation)).
+
+## Autorisierung (Capabilities)
+
+Der Broker ist E2EE — er kann die Mitgliederliste eines Space nicht lesen (verschlüsselt mit dem Space Key). Deshalb braucht er einen externen Beweis, dass ein Client auf ein Dokument zugreifen darf.
+
+### Capability-Format
+
+Eine Capability ist ein JWS, signiert vom Space-Admin:
+
+**JWS-Payload:**
+
+```json
+{
+  "type": "capability",
+  "issuer": "did:key:z6Mk...admin",
+  "audience": "did:key:z6Mk...bob",
+  "docId": "7f3a2b10-4c5d-4e6f-8a7b-9c0d1e2f3a4b",
+  "permissions": ["read", "write"],
+  "generation": 3,
+  "createdAt": "2026-04-16T10:00:00Z"
+}
+```
+
+| Feld | Typ | Beschreibung |
+|------|-----|-------------|
+| `issuer` | DID | Der Admin der die Capability ausgestellt hat |
+| `audience` | DID | Für welchen User die Capability gilt |
+| `docId` | UUID | Für welches Dokument |
+| `permissions` | Array | Erlaubte Operationen (`read`, `write`) |
+| `generation` | Integer | Capability-Generation (steigt bei Entfernung) |
+| `createdAt` | ISO 8601 | Erstellungszeitpunkt |
+
+### Capability-Verteilung
+
+Capabilities werden zusammen mit dem Space Key verteilt:
+
+- **Bei Einladung:** Die `space-invite` Inbox-Nachricht enthält den Space Key und die Capability ([Sync 009](009-gruppen.md))
+- **Bei Key-Rotation (Member-Entfernung):** Der Admin erstellt neue Capabilities mit erhöhter Generation für alle verbleibenden Members. Die `key-rotation` Nachricht enthält den neuen Key und die neue Capability.
+
+### Capability-Prüfung am Broker
+
+Wenn ein Client ein Dokument syncen will:
+
+1. Client sendet seine Capability für dieses Dokument
+2. Broker prüft:
+   - JWS-Signatur gültig?
+   - `audience` = authentifizierte DID?
+   - `docId` = angefragtes Dokument?
+   - `generation` = aktuelle Generation? (nicht widerrufen)
+3. OK → Sync erlaubt
+
+### Capability-Widerruf
+
+Bei Member-Entfernung erhöht der Admin die Capability-Generation. Der Broker akzeptiert nur die neueste Generation. Alte Capabilities (niedrigere Generation) werden automatisch ungültig.
+
+Der Admin teilt dem Broker die neue Generation mit — als signierte Nachricht:
+
+```json
+{
+  "type": "capability-revocation",
+  "docId": "7f3a2b10-...",
+  "newGeneration": 4,
+  "revokedDid": "did:key:z6Mk...bob"
+}
+```
+
+Signiert vom Admin, verifizierbar über die DID.
+
+### Persönliche Dokumente
+
+Für das persönliche Dokument (Identität, Keys) stellt der User seine eigene Capability aus — er ist Admin seiner eigenen Daten. Der Broker prüft: `issuer` = `audience` = authentifizierte DID.
 
 ## Zwei Kanäle
 
@@ -72,12 +188,16 @@ Für direkte Nachrichten die nicht über den Log laufen:
 
 ```
 Alice → Broker: "Speichere diese verschlüsselte Nachricht für Bob"
-Bob   → Broker: "Habe ich neue Nachrichten?"
-Broker → Bob:   "Ja, hier ist eine von Alice"
-Bob   → Broker: "Empfangen, kannst du löschen"
+Bob (Handy)  → Broker: "Habe ich neue Nachrichten?"
+Broker → Bob (Handy):  "Ja, hier ist eine von Alice"
+Bob (Handy)  → Broker: "Empfangen" (ACK)
+Bob (Laptop) → Broker: "Habe ich neue Nachrichten?"
+Broker → Bob (Laptop): "Ja, hier ist eine von Alice"
+Bob (Laptop) → Broker: "Empfangen" (ACK)
+Broker: Alle Geräte haben bestätigt → Nachricht löschen
 ```
 
-Store-and-Forward: der Broker speichert bis der Empfänger abholt und bestätigt.
+**Store-and-Forward pro Device:** Der Broker kennt die Device-IDs jedes Users (über die Authentisierung). Inbox-Nachrichten werden für **jedes registrierte Gerät** vorgehalten und erst gelöscht wenn **alle Geräte** ACK gesendet haben. Damit ist garantiert dass kein Gerät eine kritische Nachricht verpasst (Space Key, Capability, Key-Rotation).
 
 ## Message Envelope
 
@@ -277,13 +397,14 @@ Phase 1: Lokal (offline-fähig)
   3. App ist offline benutzbar
 
 Phase 2: Netzwerk
-  4. Mit Broker verbinden (WebSocket)
-  5. Falls lokaler Speicher leer: Daten vom Broker holen
+  4. Mit Broker verbinden (WebSocket + Challenge-Response)
+  5. Capabilities für eigene Dokumente vorlegen
+  6. Falls lokaler Speicher leer: Daten vom Broker holen
 
 Phase 3: Sync
-  6. Fehlende Log-Einträge austauschen (Catch-Up)
-  7. Live-Sync aktivieren (neue Einträge sofort senden/empfangen)
-  8. Inbox-Nachrichten abholen
+  7. Fehlende Log-Einträge austauschen (Catch-Up)
+  8. Live-Sync aktivieren (neue Einträge sofort senden/empfangen)
+  9. Inbox-Nachrichten abholen (pro Device)
 ```
 
 Die App ist nach Phase 1 benutzbar. Phase 2 und 3 laufen im Hintergrund.
