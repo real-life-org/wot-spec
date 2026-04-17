@@ -84,6 +84,7 @@ Nicht WoT-spezifisch — jede Local-First-App könnte das nutzen.
 | [Test-Vektoren](research/test-vektoren.md) | Kanonische Krypto-Werte für Interoperabilitäts-Tests |
 | [Briefing Sebastian](research/briefing-sebastian.md) | Zusammenfassung und offene Fragen für Sebastian |
 | [Interop und Zielgruppe](research/interop-und-zielgruppe.md) | Standards (DIDComm, OpenID4VC), Zielgruppen, eIDAS-Kontext |
+| [DIDComm Migration](research/didcomm-migration.md) | Analyse, Roadmap, fehlende Teile, Sicherheitsanalyse |
 
 ## Implementierungen
 
