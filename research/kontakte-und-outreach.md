@@ -245,6 +245,91 @@ Schlüsselpersonen und Projekte für die Verbreitung des WoT-Protokolls. Prioris
 
 ---
 
+### RadicalxChange Foundation & Plurality Institute
+
+**Wer:** Die intellektuellen und organisatorischen Heimaten der Plurality-Bewegung. RadicalxChange (gegründet 2018 von Glen Weyl) arbeitet an den wirtschaftlichen und politischen Ideen (Quadratic Voting, Quadratic Funding, Harberger Taxes). Das Plurality Institute (jünger, 2024) fokussiert auf praktische Umsetzung.
+
+**Warum relevant:**
+
+- Sie haben die **Vision** und die akademische Legitimität, uns fehlt noch die Einbettung in eine größere Erzählung
+- Sie haben die **Deliberations-Tools** (Pol.is, QF), uns fehlt die Identitäts-Schicht darunter
+- Ihre Sybil-Resistance-Lösungen (Gitcoin Passport, biometrische Ansätze) sind unzureichend — unser WoT könnte eine echte Alternative bieten
+- Schnittmenge in Werten: gegen Techno-Libertarismus UND gegen zentralisierten AI-Staat
+- Audrey Tang ist ein massiver Multiplikator, Glen Weyl ein starker Theoretiker
+
+**Wie kontaktieren:**
+
+- **RadicalxChange:** radicalxchange.org, auf Events (jährliche Konferenz, lokale Chapters)
+- **Plurality Institute:** plurality.institute, Audrey Tang direkt erreichbar (sehr öffentlich aktiv)
+- **Plurality Book Community:** GitHub (pluralitybook/plurality) — Mitarbeit am lebenden Dokument
+
+**Inhalt:**
+
+- Positionierung: "Ihr habt Quadratic Voting/Funding gelöst — aber Sybil-Resistance ohne Staat ist noch offen. Wir haben eine Antwort."
+- Konkret: WoT als Identitäts-/Trust-Schicht für Quadratic Funding in Communities ohne KYC-Zwang
+- Erkennen unsere gemeinsame Front: gegen beide Dystopien (Silicon Valley und Peking)
+- Angebot: Mitarbeit am Plurality-Buch, WoT als eines der "Freedom Tools" referenzieren
+- Event: RadicalxChange Conference Besuch + Vortrag
+
+**Ziel:**
+
+- Positionierung als "Identitäts-Infrastruktur für Plurality-Tools"
+- Akademische/intellektuelle Anbindung an eine etablierte Denk-Bewegung
+- Zugang zu Taiwan-Netzwerk, MIT, akademischer Diskurs
+- Langfristig: Audrey Tang / Glen Weyl als Endorser
+
+---
+
+### Audrey Tang — Taiwan Digital Democracy
+
+**Wer:** Taiwans erste Digitalministerin (2016-2024). Co-Autorin von Plurality. Gründungsfigur von g0v. Weltweit bekannteste Vertreterin einer funktionierenden dezentralen Demokratie.
+
+**Warum relevant:**
+
+- Sie hat gezeigt dass eine liberale digitale Demokratie funktioniert
+- Sie ist ungewöhnlich erreichbar — alle ihre Meetings sind öffentlich transkribiert, sie antwortet auf Mails, sie nimmt Calls an
+- Sie denkt in genau unserer Richtung: Technik für Vielfalt, nicht für Kontrolle
+- Taiwan's Tools könnten unsere Identitäts-Schicht brauchen (außerhalb Taiwans, ohne deren eID)
+
+**Wie kontaktieren:**
+
+- Email direkt (audrey@pdis.nat.gov.tw — ihre öffentliche Adresse, funktioniert noch aus der Ministeriums-Zeit)
+- Über das Plurality-Buch (GitHub)
+- Über g0v-Community-Calls (monatlich, englisch verfügbar)
+
+**Inhalt:**
+
+- WoT als "missing trust layer" für Plurality-Tools außerhalb Taiwans
+- Konkret: wie würde vTaiwan funktionieren ohne Taiwans eID? Antwort: mit WoT
+- Nicht als "bitte hilf uns", sondern als "wir liefern ein Puzzleteil zu deiner Vision"
+
+**Ziel:** Intellektuelle Validierung, potentielle Empfehlung, Netzwerk-Erweiterung in Taiwan und Civic-Tech-Community weltweit.
+
+---
+
+### g0v Community / Taiwan Civic Tech
+
+**Wer:** Die Civic-Tech-Community in Taiwan. Hackathons alle zwei Monate, 200-400 Teilnehmer. Viele internationale Gäste.
+
+**Warum relevant:**
+
+- Community die zeigt wie dezentrale Tech-Entwicklung funktionieren kann
+- Ihre Arbeitsweise (radikale Offenheit, Konsent-Prinzipien) ist fast identisch mit unserer Real Life Org
+- Mögliche Reisedestination für Learning-Expedition
+- Direkte Verbindung zu praktischen Implementierungen (Pol.is, Cofacts, etc.)
+
+**Wie kontaktieren:** g0v.tw, Slack-Community, Hackathon-Teilnahme.
+
+**Inhalt:**
+
+- WoT als Beitrag zum g0v-Ökosystem vorstellen
+- Lernen von ihren Konsens- und Governance-Methoden
+- Eventuell Austausch-Besuch
+
+**Ziel:** Lernen von einer funktionierenden dezentralen Tech-Community. Vernetzung mit Tools die wir nicht selbst bauen müssen.
+
+---
+
 ## Priorität 2: Strategische Partner
 
 ### epicenter.works / Thomas Lohninger
