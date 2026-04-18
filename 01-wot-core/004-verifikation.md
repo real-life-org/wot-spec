@@ -85,11 +85,40 @@ Die Challenge wird als JWS signiert (wie alle signierten Daten im Protokoll):
 ```
 
 Der Empfänger prüft:
-1. Ist die JWS-Signatur gültig für `fromDid`?
+
+1. Ist die JWS-Signatur gültig für `fromDid`? (inklusive `alg=EdDSA` Whitelist, siehe [Core 002](002-signaturen-und-verifikation.md#algorithmus-validierung-muss))
 2. Ist der `timestamp` aktuell (nicht älter als 5 Minuten)?
 3. Ist `toDid` meine eigene DID?
+4. Wurde diese `nonce` noch nicht verwendet? (Nonce-History, siehe unten)
 
-Wenn alle drei Prüfungen bestehen, ist die Identität des Gegenübers verifiziert.
+Wenn alle vier Prüfungen bestehen, ist die Identität des Gegenübers verifiziert.
+
+### Nonce-History (MUSS)
+
+Empfänger MÜSSEN eine Liste bereits gesehener Nonces führen um Replay-Angriffe zu verhindern. Ohne diese Prüfung könnte ein Angreifer eine aufgezeichnete gültige Challenge erneut vorlegen.
+
+**Anforderungen:**
+
+- Mindest-Retention: 24 Stunden (länger als das Challenge-Zeitfenster von 5 Minuten mit großer Sicherheitsmarge)
+- Nonce-Storage kann volatil sein (In-Memory reicht) wenn das Device keine lang-laufenden Sessions unterstützt
+- Bei Neustart: sicherer Fallback ist, alle Challenges der letzten 5 Minuten abzulehnen
+
+**Warum das nötig ist:** Die 32-Byte Zufalls-Nonce macht Kollisionen kryptographisch unwahrscheinlich. Aber bei schwacher RNG (ältere Geräte, eingebettete Systeme) sind Kollisionen möglich. Die Nonce-History ist eine zweite Verteidigungslinie die unabhängig von der RNG-Qualität funktioniert.
+
+```typescript
+const seenNonces = new TimedCache<string>(24 * 3600 * 1000)  // 24h TTL
+
+function verifyChallenge(challenge) {
+  // ... alg-Check, Signatur-Check, Timestamp-Check, toDid-Check
+
+  if (seenNonces.has(challenge.nonce)) {
+    throw new Error('Nonce replay detected')
+  }
+  seenNonces.add(challenge.nonce)
+
+  return true
+}
+```
 
 ### Transportweg
 

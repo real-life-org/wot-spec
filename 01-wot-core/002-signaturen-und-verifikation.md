@@ -105,11 +105,38 @@ Für die Verifikation werden benötigt:
 
 **Ablauf:**
 
-1. Ed25519 Public Key aus der DID extrahieren: `did:key:z...` → Multibase dekodieren → Multicodec-Präfix `0xed01` entfernen → 32 Bytes Public Key
-2. Signing Input rekonstruieren: JWS Header + `.` + JWS Payload (kanonisiert mit JCS)
-3. Ed25519-Signatur gegen Signing Input und Public Key verifizieren
+1. JWS-Header dekodieren und `alg`-Feld prüfen — siehe Algorithmus-Validierung unten
+2. Ed25519 Public Key aus der DID extrahieren: `did:key:z...` → Multibase dekodieren → Multicodec-Präfix `0xed01` entfernen → 32 Bytes Public Key
+3. Signing Input rekonstruieren: JWS Header + `.` + JWS Payload (kanonisiert mit JCS)
+4. Ed25519-Signatur gegen Signing Input und Public Key verifizieren
 
 Kein externer Key-Server oder Zertifikatskette nötig — die DID selbst enthält den Public Key.
+
+### Algorithmus-Validierung (MUSS)
+
+Verifier MÜSSEN das `alg`-Feld im JWS-Header prüfen **bevor** die Signatur verifiziert wird. Nur `"EdDSA"` ist akzeptiert. Jede andere Angabe MUSS zur sofortigen Ablehnung führen — insbesondere:
+
+- `"none"` (keine Signatur) — ABLEHNEN
+- `"HS256"`, `"HS384"`, `"HS512"` (HMAC) — ABLEHNEN
+- `"RS256"`, `"RS384"`, `"RS512"` (RSA) — ABLEHNEN
+- `"ES256"`, `"ES384"`, `"ES512"` (ECDSA) — ABLEHNEN
+- Beliebige andere Werte — ABLEHNEN
+
+**Warum diese Strenge:** Eine klassische JWS-Sicherheitslücke ist die Algorithmus-Konfusion. Wenn ein Verifier `alg=HS256` akzeptiert, könnte ein Angreifer den Public Key (der öffentlich aus der DID verfügbar ist) als HMAC-Secret nutzen und beliebige Nachrichten "signieren". Die Validierung gegen eine Whitelist ist die einzige Verteidigung.
+
+```typescript
+function verifyJws(jws: string, did: string): boolean {
+  const [headerB64, ...] = jws.split('.')
+  const header = JSON.parse(base64urlDecode(headerB64))
+
+  // MUSS: Algorithmus-Whitelist
+  if (header.alg !== 'EdDSA') {
+    throw new Error(`Rejected algorithm: ${header.alg}`)
+  }
+
+  // ... weitere Verifikation
+}
+```
 
 ## Testvektor
 

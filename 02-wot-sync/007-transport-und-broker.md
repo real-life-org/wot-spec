@@ -116,18 +116,25 @@ Eine Capability ist ein JWS, signiert vom Space-Admin:
   "docId": "7f3a2b10-4c5d-4e6f-8a7b-9c0d1e2f3a4b",
   "permissions": ["read", "write"],
   "generation": 3,
-  "createdAt": "2026-04-16T10:00:00Z"
+  "issuedAt": "2026-04-18T10:00:00Z",
+  "validUntil": "2026-10-18T10:00:00Z"
 }
 ```
 
-| Feld | Typ | Beschreibung |
-|------|-----|-------------|
-| `issuer` | DID | Der Admin der die Capability ausgestellt hat |
-| `audience` | DID | Für welchen User die Capability gilt |
-| `docId` | UUID | Für welches Dokument |
-| `permissions` | Array | Erlaubte Operationen (`read`, `write`) |
-| `generation` | Integer | Capability-Generation (steigt bei Entfernung) |
-| `createdAt` | ISO 8601 | Erstellungszeitpunkt |
+| Feld | Typ | Pflicht | Beschreibung |
+|------|-----|---------|-------------|
+| `issuer` | DID | Ja | Der Admin der die Capability ausgestellt hat |
+| `audience` | DID | Ja | Für welchen User die Capability gilt |
+| `docId` | UUID | Ja | Für welches Dokument |
+| `permissions` | Array | Ja | Erlaubte Operationen (`read`, `write`) |
+| `generation` | Integer | Ja | Capability-Generation (steigt bei Entfernung) |
+| `issuedAt` | ISO 8601 | Ja | Erstellungszeitpunkt |
+| `validUntil` | ISO 8601 | Ja | Ablaufzeitpunkt — nach diesem Moment ist die Capability ungültig |
+
+**Empfohlene Gültigkeitsdauer:**
+- Normale Spaces: 6 Monate
+- Hochsensitive Spaces: 1 Monat oder kürzer
+- Persönliches Dokument (self-issued): 1 Jahr
 
 ### Capability-Verteilung
 
@@ -135,6 +142,7 @@ Capabilities werden zusammen mit dem Space Key verteilt:
 
 - **Bei Einladung:** Die `space-invite` Inbox-Nachricht enthält den Space Key und die Capability ([Sync 009](009-gruppen.md))
 - **Bei Key-Rotation (Member-Entfernung):** Der Admin erstellt neue Capabilities mit erhöhter Generation für alle verbleibenden Members. Die `key-rotation` Nachricht enthält den neuen Key und die neue Capability.
+- **Vor Ablauf:** Der Admin erneuert Capabilities für alle aktiven Members rechtzeitig vor `validUntil`. Clients können aktiv eine Erneuerung anfragen wenn ihre Capability sich dem Ablauf nähert.
 
 ### Capability-Prüfung am Broker
 
@@ -142,11 +150,18 @@ Wenn ein Client ein Dokument syncen will:
 
 1. Client sendet seine Capability für dieses Dokument
 2. Broker prüft:
-   - JWS-Signatur gültig?
+   - JWS-Signatur gültig? (inklusive `alg=EdDSA`, siehe [Core 002](../01-wot-core/002-signaturen-und-verifikation.md#algorithmus-validierung-muss))
    - `audience` = authentifizierte DID?
    - `docId` = angefragtes Dokument?
    - `generation` = aktuelle Generation? (nicht widerrufen)
+   - `now < validUntil`? (nicht abgelaufen)
 3. OK → Sync erlaubt
+
+### Warum Capability-Ablauf nötig ist
+
+Ohne `validUntil` sind Capabilities unbegrenzt gültig — bis zur nächsten Key-Rotation. Das erzeugt das "Left but never removed"-Problem: ein Member der den Space freiwillig verlässt behält theoretisch Zugriff bis der Admin eine Rotation auslöst (was er vielleicht nie tut, weil kein offensichtlicher Anlass besteht).
+
+Mit `validUntil` läuft die Berechtigung automatisch ab. Aktive Members bekommen rechtzeitig eine erneuerte Capability. Inaktive Members verlieren den Zugriff ohne dass jemand aktiv handeln muss.
 
 ### Capability-Widerruf
 
