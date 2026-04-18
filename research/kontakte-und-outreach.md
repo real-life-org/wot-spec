@@ -1,8 +1,8 @@
 # Kontakte und Outreach
 
-*Stand: 17. April 2026*
+*Stand: 18. April 2026*
 
-Schlüsselpersonen und Projekte für die Verbreitung des WoT-Protokolls. Priorisiert nach Relevanz und Erreichbarkeit.
+Schlüsselpersonen und Projekte für die Verbreitung des WoT-Protokolls. Priorisiert nach Relevanz und Erreichbarkeit. Viele Kontakte stammen aus der [DWeb Principles Signatarliste](https://getdweb.net/principles/) — Menschen die sich öffentlich zu dezentralen Werten bekannt haben.
 
 ## Priorität 1: Direkte Relevanz
 
@@ -89,6 +89,159 @@ Schlüsselpersonen und Projekte für die Verbreitung des WoT-Protokolls. Prioris
 - Frage: Interesse an einer Kollaboration? Könnten wir ein Plugin für die Extension bauen?
 
 **Ziel:** Technische Kollaboration, WoT-Verifikation in die Nostr-WoT-Extension integrieren
+
+---
+
+### Joachim Lohkamp — ehemals Jolocom
+
+**Wer:** Gründer von **Jolocom** (Berlin), einem der wenigen deutschen SSI-Pioniere. Jolocom GmbH ist seit April 2023 in Insolvenz, aber Joachim ist weiter in der SSI-Szene aktiv und DWeb-Principles-Signatar.
+
+**Warum relevant:**
+- Jahrzehnte Erfahrung mit DID/SSI, besonders DIDComm-basiert
+- Tiefes Verständnis warum SSI-Firmen in Europa gescheitert sind (eIDAS-Entscheidung zu OpenID4VC war ein massiver Schlag)
+- Berliner Szene — erreichbar für persönliches Treffen
+- Seine "War Stories" sind Gold wert: was wir vermeiden sollten
+
+**Wie kontaktieren:** LinkedIn, oder über die Berliner Tech-/SSI-Szene (Jolocom-Community, DWeb Berlin Node).
+
+**Inhalt:**
+- Nicht als "Geschäftsanbahnung" sondern als Austausch: "Wir bauen einen WoT-Ansatz der aus deinen Erfahrungen lernen will"
+- Konkrete Fragen: Warum hat Jolocom nicht skaliert? Was würdest du anders machen? Was übersehen wir?
+- Angebot: Rolle im Projekt (Berater, Kontakt-Multiplikator, vielleicht aktiver Mitarbeiter)
+
+**Ziel:** Mentor/Berater gewinnen mit tiefer SSI-Erfahrung. Vermeiden dass wir dieselben Fehler machen.
+
+---
+
+### DWeb Berlin Node
+
+**Wer:** Regionales Meetup der DWeb-Community in Berlin.
+
+**Warum relevant:** Direkter Zugang zur Berliner dezentralen Tech-Szene. Nimmt vermutlich auch Joachim Lohkamp und andere DWeb-Signatare mit auf.
+
+**Wie kontaktieren:** Über getdweb.net/nodes/ oder Matrix/Discord.
+
+**Inhalt:**
+- Teilnahme an nächstem Meetup
+- WoT vorstellen in entspanntem Community-Kontext
+- Netzwerken vor DWeb Camp im Juli
+
+**Ziel:** Lokales Netzwerk aufbauen, Sichtbarkeit vor DWeb Camp.
+
+---
+
+### Benedict Lau / Dawn Walker — Hypha Worker Co-op
+
+**Wer:** Toronto-basierte Worker-Cooperative die dezentrale Tech für Communities und Kooperativen baut. Beide sind DWeb-Principles-Contributors.
+
+**Warum relevant:** Sie entwickeln **exakt für unsere Zielgruppe** (Ring 1 in unserer Verbreitungsstrategie). Platform Cooperativism, Commons, Community-Netzwerke. Ihre Werte decken sich mit unseren.
+
+**Wie kontaktieren:** hypha.coop, oder über DWeb Camp.
+
+**Inhalt:**
+- WoT als mögliche Infrastruktur für ihre Kooperativen-Tools vorstellen
+- Frage: Welche Identitäts-/Trust-Herausforderungen haben Kooperativen die ihr bedient?
+- Potenzial: Kooperation oder zumindest Austausch über Use Cases
+
+**Ziel:** Reale Use Cases verstehen. Mögliche Partnerschaft für Kooperativen-Tools.
+
+---
+
+### Rabble / Evan Henshaw-Plath — Nos.social
+
+**Wer:** Früher Twitter-Ingenieur (Moxie Marlinspike-Ära), langjähriger P2P/Scuttlebutt-Aktivist. Baut **Nos.social**, ein dezentrales soziales Netzwerk. DWeb-Signatar.
+
+**Warum relevant:**
+- Öffentlich extrem sichtbar (Twitter, Nostr)
+- Nutzt Nostr mit Trust-Layer — genau die Brücke die wir in unserer Interop-Strategie sehen
+- Ideologisch passend: gegen Big Tech, für dezentrale Infrastruktur
+- Gutes Netzwerk in der P2P-Szene
+
+**Wie kontaktieren:** Twitter (@rabble), Nostr (npub...), oder Mastodon.
+
+**Inhalt:**
+- Nostr+WoT-Idee vorstellen: In-Person-Verifikation als zusätzliches Trust-Signal
+- Konkret: Könnte Nos.social WoT-Verifikation als Feature integrieren?
+- Offener Austausch über dezentrale Identität und AI-Bot-Problem
+
+**Ziel:** Potenzieller Nostr-Bridge-Partner. Öffentliche Sichtbarkeit durch seinen Einfluss.
+
+---
+
+### Allen "Gunner" Gunn — Aspiration Tech
+
+**Wer:** Executive Director von Aspiration Tech, spezialisiert auf Facilitation für Non-Profits und soziale Bewegungen. DWeb-Principles-Contributor, seit 20+ Jahren in der Tech-for-Good-Szene aktiv.
+
+**Warum relevant:**
+- Kann uns bei Workshops und Outreach in der NGO-Welt helfen
+- Riesiges Netzwerk in der Aktivist:innen- und Non-Profit-Community
+- Facilitation-Expertise hilft beim Building-Community-Aspekt unseres Projekts
+
+**Wie kontaktieren:** aspirationtech.org, oder über DWeb Camp.
+
+**Inhalt:**
+- Nicht Tech-Pitch sondern Community-Building-Gespräch
+- Wie bauen wir Engagement in der DWeb-Community?
+- Potenzielle Workshops zusammen?
+
+**Ziel:** Facilitation- und Community-Building-Unterstützung.
+
+---
+
+### Paul Frazee — Bluesky
+
+**Wer:** Lead Developer bei **Bluesky / AT Protocol**. Vorher Beaker Browser (dezentrale Web-Browser). DWeb-Signatar.
+
+**Warum relevant:**
+- Technisch Top-Qualifizierter im dezentralen Social
+- Bluesky hat gerade Probleme mit Impersonation und Verifikation
+- Offen für Ideen von außen
+
+**Wie kontaktieren:** Bluesky (@pfrazee.com), GitHub.
+
+**Inhalt:**
+- AT Protocol Interop-Ideen: WoT-verifizierte Identitäten mit Bluesky-Profilen verknüpfen
+- In-Person-Verifikation als zusätzliches Signal für Bluesky
+
+**Ziel:** Exploration für AT Protocol Brücke. Nicht sofort umsetzbar, aber strategische Beziehung aufbauen.
+
+---
+
+### Drummond Reed — SSI-Veteran
+
+**Wer:** Pionier seit den frühen SSI-Tagen. Gründungsmitglied **Sovrin Foundation**, **Hyperledger Indy**, tief involviert bei Trust over IP. DWeb-Signatar.
+
+**Warum relevant:**
+- Historisches Wissen über SSI-Standards und warum sie sich durchgesetzt haben oder nicht
+- Kontakte zu allen wichtigen SSI-Playern weltweit
+- Verständnis für Standards-Prozesse (DIF, W3C)
+
+**Wie kontaktieren:** LinkedIn, Trust-over-IP-Community.
+
+**Inhalt:**
+- Feedback auf unsere Spec aus der Perspektive eines SSI-Veteranen
+- Frage: Wo sollten wir uns in der Standards-Landschaft positionieren?
+
+**Ziel:** Strategisches Feedback. Netzwerk-Erweiterung in die Standards-Welt.
+
+---
+
+### Sandro Hawke — W3C Staff
+
+**Wer:** Staff-Mitarbeiter beim W3C. DWeb-Signatar.
+
+**Warum relevant:**
+- Direkter Zugang zur W3C-Welt (VC, DID Standards)
+- Kennt die Standards-Politik von innen
+- Kann helfen unser Protokoll als VC-Profil zu positionieren
+
+**Wie kontaktieren:** Über W3C-Kanäle oder persönlich auf Konferenzen.
+
+**Inhalt:**
+- Unsere Spec als VC-Profil vorstellen
+- Frage: Wie positionieren wir uns im W3C VC-Ökosystem?
+
+**Ziel:** W3C-Perspektive auf unser Projekt. Langfristig vielleicht Community Group.
 
 ---
 
