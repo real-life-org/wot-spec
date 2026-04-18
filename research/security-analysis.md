@@ -4,6 +4,24 @@
 
 Eine kritische Analyse der aktuellen Spec aus Angreifer-Perspektive. Die Schwachstellen reichen von implementierungsabhängigen Problemen bis zu fundamentalen Protokoll-Lücken. Eingeteilt nach Schwere und Wahrscheinlichkeit.
 
+## Status-Übersicht
+
+| ID | Schwachstelle | Schwere | Status |
+|----|---------------|---------|--------|
+| K1 | Admin-Key-Kompromittierung | 🔴 Kritisch | Offen (geplant v1.2) |
+| K2 | AES-GCM Nonce-Reuse | 🔴 Kritisch | Offen (geplant v1.1) |
+| K3 | Fehlende Feld-Level-Permissions | 🔴 Kritisch | Offen (geplant v1.2) |
+| K4 | JWS `alg`-Konfusion | 🔴 Kritisch | ✅ Gelöst (18.04.2026) |
+| S1 | Keine Forward Secrecy | 🟠 Schwer | Offen (geplant v2.0) |
+| S2 | Nonce-Reuse bei Challenge-Response | 🟠 Schwer | ✅ Gelöst (18.04.2026) |
+| S3 | Split-Brain durch Broker | 🟠 Schwer | Offen (geplant v1.1) |
+| S4 | Capability-Replay (kein `validUntil`) | 🟠 Schwer | ✅ Gelöst (18.04.2026) |
+| S5 | Silent Log-Censorship | 🟠 Schwer | Offen (geplant v1.1) |
+| M1-M6 | Relevante Schwachstellen | 🟡 Mittel | M5 gelöst, Rest offen |
+| M5 | JCS Edge-Case Test-Vektoren | 🟡 Mittel | ✅ Gelöst (18.04.2026) |
+
+**4 von 12 identifizierten Schwachstellen sind behoben** (alle Quick Wins aus [security-fixes.md](security-fixes.md)). Die verbleibenden Issues sind nach Aufwand priorisiert und zeitlich geplant.
+
 ## 🔴 Kritische Schwachstellen
 
 ### K1. Admin-Key-Kompromittierung = totale Gruppen-Übernahme
@@ -84,11 +102,13 @@ aber der Schaden ist schon da.
 
 ---
 
-### K4. JWS `alg`-Konfusion
+### K4. JWS `alg`-Konfusion ✅ GELÖST
 
 **Problem:** JWS erlaubt verschiedene Algorithmen im Header. Eine **klassische Schwachstelle** ist das Akzeptieren von `alg=none` oder algorithmischer Konfusion (z.B. Public Key als HMAC-Secret).
 
-**Spec-Lücke:** Unsere Spec sagt `alg=EdDSA` ist Standard, aber schreibt nicht explizit dass **Verifier nur EdDSA akzeptieren dürfen**.
+**Spec-Lücke:** ~~Unsere Spec sagt `alg=EdDSA` ist Standard, aber schreibt nicht explizit dass **Verifier nur EdDSA akzeptieren dürfen**.~~
+
+**Fix (2026-04-18):** In [Core 002](../01-wot-core/002-signaturen-und-verifikation.md#algorithmus-validierung-muss) wurde ein normativer Abschnitt "Algorithmus-Validierung (MUSS)" ergänzt. Verifier MÜSSEN das `alg`-Feld prüfen bevor die Signatur verifiziert wird. Explizite Whitelist: nur `"EdDSA"` akzeptiert, alle anderen Werte (`none`, `HS256`, `RS256`, `ES256`, ...) werden abgelehnt.
 
 **Exploit-Szenario:**
 ```
@@ -125,7 +145,7 @@ Angreifer hat aufgezeichnete Nachrichten (vom Broker, vom Netzwerk-Dump).
 
 ---
 
-### S2. Nonce-Reuse-Attacke bei Challenge-Response
+### S2. Nonce-Reuse-Attacke bei Challenge-Response ✅ GELÖST
 
 **Problem:** Challenge-Nonces sind 32 Bytes. Wenn ein Gerät eine **kompromittierte/schwache RNG** hat (ältere Android-Versionen, billige IoT-Devices), sind Kollisionen möglich.
 
@@ -141,9 +161,9 @@ Angreifer der Challenge 1 aufgezeichnet hat:
   → wird als Alice akzeptiert (Signatur ist gültig)
 ```
 
-**Spec-Lücke:** Keine Anforderung an RNG-Qualität. Keine Nonce-History-Prüfung.
+**Spec-Lücke:** ~~Keine Anforderung an RNG-Qualität. Keine Nonce-History-Prüfung.~~
 
-**Mitigation:** Empfänger MUSS Nonces für mindestens 24h speichern und Wiederholungen ablehnen.
+**Fix (2026-04-18):** In [Core 004](../01-wot-core/004-verifikation.md#nonce-history-muss) wurde ein normativer Abschnitt "Nonce-History (MUSS)" ergänzt. Empfänger müssen gesehene Nonces mindestens 24 Stunden cachen und Wiederholungen ablehnen. Die Prüfung funktioniert unabhängig von der RNG-Qualität des Senders.
 
 ---
 
@@ -171,7 +191,7 @@ Resultat:
 
 ---
 
-### S4. Capability-Replay innerhalb der gleichen Generation
+### S4. Capability-Replay innerhalb der gleichen Generation ✅ GELÖST
 
 **Problem:** Capabilities haben eine `generation`. Aber sie haben **kein `validUntil`**. Ein einmal ausgestellter Capability ist unbegrenzt gültig bis zur nächsten Rotation.
 
@@ -185,9 +205,9 @@ Bob hat die Capability noch, kann weiter auf doc X zugreifen.
 → "Left but never removed" Problem
 ```
 
-**Spec-Lücke:** Spec unterscheidet nicht zwischen "entfernt" und "ausgetreten". Capabilities haben keine Zeit-Begrenzung.
+**Spec-Lücke:** ~~Spec unterscheidet nicht zwischen "entfernt" und "ausgetreten". Capabilities haben keine Zeit-Begrenzung.~~
 
-**Mitigation:** Capabilities MÜSSEN ein `validUntil` haben. Austritte MÜSSEN Key-Rotation triggern.
+**Fix (2026-04-18):** In [Sync 007](../02-wot-sync/007-transport-und-broker.md#autorisierung-capabilities) wurde das Capability-Schema um `validUntil` als Pflichtfeld erweitert. Broker prüft `now < validUntil` vor jedem Zugriff. Empfohlene Default-Gültigkeit: 6 Monate für normale Spaces, 1 Monat für hochsensitive, 1 Jahr für persönliche Dokumente. Aktive Members bekommen rechtzeitig eine erneuerte Capability, inaktive verlieren automatisch den Zugriff.
 
 ---
 
@@ -269,7 +289,7 @@ Resultat:
 
 ---
 
-### M5. JCS-Canonicalization Edge Cases
+### M5. JCS-Canonicalization Edge Cases ✅ GELÖST
 
 **Problem:** RFC 8785 (JCS) hat Edge Cases bei:
 - Unicode-Normalisierung
@@ -277,7 +297,7 @@ Resultat:
 - Leere Strings vs. fehlende Felder
 - Verschiedene Implementierungen können divergieren
 
-**Spec-Lücke:** Keine Test-Vektoren für JCS-Edge-Cases.
+**Spec-Lücke:** ~~Keine Test-Vektoren für JCS-Edge-Cases.~~
 
 **Exploit-Szenario:**
 ```
@@ -290,7 +310,7 @@ Signatur von A verifiziert sich nicht gegen Kanonisierung von B.
   ungültig in anderer Impl zu machen
 ```
 
-**Mitigation:** Umfangreiche Test-Vektoren, inklusive Unicode-Edge-Cases, in die Spec aufnehmen.
+**Fix (2026-04-18):** In [research/test-vektoren.md](test-vektoren.md#4-jcs-kanonisierung-core-002) wurden 11 Test-Vektoren für JCS-Edge-Cases ergänzt, inklusive: alphabetische Sortierung, verschachtelte Objekte, Zahlen-Formate (0.1, 1e-1, -0), Unicode (€, 日本語, 🌍), leere Strings vs null, Escape-Zeichen, leere Container. Jeder Test hat einen SHA-256 Hash der kanonisierten Ausgabe. Eine konforme Implementierung MUSS alle Hashes reproduzieren.
 
 ---
 
