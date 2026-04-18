@@ -24,6 +24,41 @@ Schlüsselpersonen und Projekte für die Verbreitung des WoT-Protokolls. Prioris
 
 ---
 
+### Poetic Technologies (Berlin) — Julio Linares, Ela Kagel, David Dashyan
+
+**Wer:** Berliner Kollektiv-Unternehmen an der Schnittstelle von dezentraler Technologie, Kooperativen-Ökonomie und Krypto-Forschung. Teamgröße klein, interdisziplinär.
+
+**Warum außerordentlich relevant:**
+
+- **Circles Entropy** — sie arbeiten genau an dem Privacy-Problem von Circles (öffentlicher Trust-Graph). Unser E2EE WoT und ihre Zero-Knowledge Proofs sind komplementäre Lösungen für dieselbe Herausforderung.
+- **Proof of Personhood + UBI** — ihre zentrale Forschungsrichtung. Sybil-Resistance ohne Biometrie, ohne staatliche ID. Genau unser Thema aus anderer Richtung (ZK statt Begegnung).
+- **Julio Linares** ist Co-Founder von Circles UBI — **direkte Verbindung** zu Martin Köppelmann und dem Circles-Ökosystem
+- **Ela Kagel** ist eine der wichtigsten Figuren der Berliner Platform-Cooperativism-Szene (Supermarkt Berlin, PC-Consortium-Konferenzen) — kritischer Netzwerk-Knoten
+- **David Dashyan** ist Hauptautor des Circles Entropy Papers (2023) — tief in der Krypto-Forschung
+- **Berlin-basiert** — erreichbar ohne Kontinentalflug
+
+**Wie kontaktieren:**
+
+- poeticte.ch (Kontaktseite)
+- Julio Linares direkt — öffentlich auf Twitter/X (@Julio_Linares_), re:publica-Sprecher
+- Ela Kagel — bekannt in Platform-Cooperativism-Kreisen, findbar über Supermarkt Berlin
+
+**Inhalt:**
+
+- Zwei komplementäre Privacy-Lösungen für Circles vorstellen: euer ZK-Ansatz und unser WoT-Ansatz
+- Konkrete Frage: Wie würde WoT-Verifikation als zusätzliche Sybil-Resistance-Schicht neben Circles Entropy funktionieren?
+- Gemeinsames Interesse: Proof of Personhood ohne Biometrie, ohne Staat
+- Einladung: Gespräch in Berlin (wahrscheinlich im Poetic Tech Büro oder Supermarkt)
+
+**Ziel:**
+
+- Potenzielle technische Kooperation (ZK + WoT als Hybrid-Lösung)
+- Zugang zum Circles-Ökosystem über Julio
+- Zugang zur Berliner Platform-Cooperativism-Szene über Ela
+- Intellektuelle Einbettung in eine kohärente Post-Capitalist-Tech-Bewegung
+
+---
+
 ### Martin Köppelmann — Circles / Gnosis
 
 **Wer:** Gründer von Gnosis, Initiator von Circles UBI. Circles v2 seit Mai 2025 live.
