@@ -2,106 +2,7 @@
 
 *Stand: 2026-04-18*
 
-Konkrete Analyse was es bedeuten würde jede identifizierte Schwachstelle zu beheben. Eingeteilt nach Aufwand: Quick Wins → Moderate Arbeit → Fundamentale Änderungen.
-
-## Quick Wins (1-2 Tage Arbeit)
-
-### Fix K4: JWS `alg` strict enforcement
-
-**Spec-Änderung:** Ein Absatz in 002 Signaturen:
-
-> Verifier MÜSSEN das `alg`-Feld im JWS-Header prüfen. Nur `"EdDSA"` ist akzeptiert. Jede andere Angabe (inklusive `"none"`, `"HS256"`, `"RS256"`) MUSS zur Ablehnung der Nachricht führen, noch bevor die Signatur verifiziert wird.
-
-**Implementierung:**
-```typescript
-function verifyJws(jws: string) {
-  const header = JSON.parse(base64urlDecode(jws.split('.')[0]))
-  if (header.alg !== 'EdDSA') {
-    throw new Error('Invalid algorithm')  // Reject before verify
-  }
-  // ... normal verification
-}
-```
-
-**Trade-off:** Keiner. Reine Sicherheits-Verbesserung.
-
-**Breaking Change:** Nein.
-
-**Aufwand:** 30 Minuten + Tests.
-
----
-
-### Fix S2: Nonce-History im Challenge-Response
-
-**Spec-Änderung:** In 004 Verifikation:
-
-> Empfänger MÜSSEN empfangene Challenge-Nonces für mindestens 24 Stunden speichern. Eine Challenge mit bereits gesehener Nonce MUSS abgelehnt werden.
-
-**Implementierung:** Ein bounded Cache (LRU oder Time-based):
-```typescript
-const seenNonces = new TimedCache<string>(24 * 3600 * 1000)
-
-function acceptChallenge(challenge) {
-  if (seenNonces.has(challenge.nonce)) {
-    throw new Error('Nonce replay detected')
-  }
-  seenNonces.add(challenge.nonce)
-  // ... normal validation
-}
-```
-
-**Trade-off:** Etwas Memory auf dem Gerät (bei 1000 Challenges/Tag à 32 Bytes = 32KB — vernachlässigbar).
-
-**Breaking Change:** Nein.
-
-**Aufwand:** 1-2 Stunden.
-
----
-
-### Fix S4: Capability `validUntil`
-
-**Spec-Änderung:** Das Capability-Schema ergänzen:
-
-```json
-{
-  "type": "capability",
-  "issuer": "did:key:z6Mk...",
-  "audience": "did:key:z6Mk...",
-  "docId": "...",
-  "permissions": ["read", "write"],
-  "generation": 3,
-  "issuedAt": "2026-04-18T10:00:00Z",
-  "validUntil": "2026-10-18T10:00:00Z"  // NEU
-}
-```
-
-Broker prüft: `now < validUntil` vor jedem Zugriff.
-
-**Trade-off:** Admin muss Capabilities regelmäßig erneuern. Erhöht Workload leicht. Aber: erzwingt sichere Praxis.
-
-**Default-Empfehlung:** 6 Monate Gültigkeit. Bei kritischen Spaces kürzer.
-
-**Breaking Change:** Teilweise — bestehende Capabilities ohne `validUntil` müssten als "legacy" akzeptiert werden oder migriert.
-
-**Aufwand:** Halber Tag (Schema, Prüfung, Erneuerungs-Logik).
-
----
-
-### Fix M5: JCS Test-Vektoren
-
-**Spec-Änderung:** Erweiterung der Test-Vektoren um Edge-Cases:
-- Unicode-Zeichen (€, 日本語, 🌍)
-- Zahlen-Edge-Cases (0.1, 1e-1, -0, Infinity)
-- Leere Strings vs null vs missing
-- Verschachtelte Objekte mit unsortierten Keys
-
-**Implementierung:** Test-Suite in der Spec, die alle konformen Implementierungen bestehen müssen.
-
-**Trade-off:** Keiner. Nur Dokumentations-Arbeit.
-
-**Aufwand:** Halber Tag.
-
----
+Konkrete Analyse was es bedeuten würde jede identifizierte Schwachstelle zu beheben. Die Quick Wins (alg-Strict, Nonce-History, Capability validUntil, JCS-Test-Vektoren) wurden am 18.04.2026 umgesetzt und aus diesem Dokument entfernt. Verbleibend: Moderate Arbeit und Fundamentale Änderungen.
 
 ## Moderate Arbeit (1-2 Wochen)
 
@@ -360,14 +261,10 @@ Empfänger verifiziert:
 
 ---
 
-## Priorisierungs-Matrix
+## Priorisierungs-Matrix (verbleibende Issues)
 
 | Fix | Aufwand | Impact | Priorität |
 |-----|---------|--------|-----------|
-| K4: alg-Strict | 30 min | Hoch | **Sofort** |
-| S2: Nonce-History | 2h | Mittel | **Sofort** |
-| S4: Capability TTL | 4h | Mittel | **Sofort** |
-| M5: JCS Test-Vektoren | 4h | Niedrig | **Sofort** |
 | K2: Deterministische Nonces | 1 Woche | Hoch | **v1.1** |
 | M4: Rate-Limiting | 3-5 Tage | Mittel | **v1.1** |
 | M6: Device-TTL | 1-2 Wochen | Hoch | **v1.1** |
@@ -379,31 +276,20 @@ Empfänger verifiziert:
 
 ## Gesamt-Aufwand für Production-Ready
 
-**Minimum für v1.0 Production:**
-- Alle Quick Wins (~3 Tage)
-- K2 (Nonce-Reuse Fix, ~1 Woche)
-- **Total: ~2 Wochen**
+Die vier Quick Wins sind bereits in der Spec (18.04.2026). Damit ist v1.0 auf "Community-Tool sicher" Niveau.
 
 **Für "nicht-trivial-secure" (gegen casual attackers):**
-- Alles aus v1.0
-- + M6 (Device-TTL), S3 (Split-Brain), M4 (Rate-Limiting), K3 (Admin Metadata), K1 (Multi-Admin)
-- **Total: ~6-8 Wochen**
+K2 (Nonce-Reuse), M6 (Device-TTL), S3 (Split-Brain), M4 (Rate-Limiting), K3 (Admin Metadata), K1 (Multi-Admin) — **~6-8 Wochen**.
 
 **Für "adversarial-hard" (gegen state-level attackers):**
-- Alles aus v1.1
-- + S1 (Double-Ratchet), Capability-Chains
-- **Total: 6-12 Monate**
+Zusätzlich S1 (Double-Ratchet), Capability-Chains — **6-12 Monate**.
 
 ## Strategische Empfehlung
 
-**Phase 1 (jetzt, 2 Wochen):** Quick Wins + Nonce-Fix. Damit sind wir auf "Community-Tool sicher" Niveau.
+**Phase 1 (erledigt, 18.04.2026):** Quick Wins. Spec ist auf "Community-Tool sicher" Niveau.
 
-**Phase 2 (nächste 2 Monate):** Multi-Admin, Device-TTL, Split-Brain-Detection. Damit sind wir auf "für ernste Projekte sicher" Niveau — vergleichbar mit Matrix, Signal (ohne deren Forward Secrecy).
+**Phase 2 (nächste 2-3 Monate):** K2 Nonce-Fix + Multi-Admin + Device-TTL + Split-Brain-Detection. Damit "für ernste Projekte sicher" Niveau — vergleichbar mit Matrix, Signal (ohne deren Forward Secrecy).
 
-**Phase 3 (2027):** Forward Secrecy via Double-Ratchet ODER warten auf Keyhive für kryptographische Permissions. Dann sind wir auf "ernste Sicherheit gegen Staat" Niveau.
+**Phase 3 (2027):** Forward Secrecy via Double-Ratchet ODER warten auf Keyhive für kryptographische Permissions. Dann "ernste Sicherheit gegen Staat" Niveau.
 
-Die kritische Einsicht: **Phase 1 ist schnell und günstig zu haben.** Es gibt keinen guten Grund das nicht sofort zu machen. Die Spec wird dadurch ernster genommen und die Sicherheit messbar besser.
-
-Phase 2 ist mittelfristige Arbeit die die Implementierung erfordert.
-
-Phase 3 ist entweder ein eigenes großes Projekt oder Warten auf Ökosystem-Entwicklung (Keyhive/Beelay).
+Phase 2 ist mittelfristige Arbeit die die Implementierung erfordert. Phase 3 ist entweder ein eigenes großes Projekt oder Warten auf Ökosystem-Entwicklung (Keyhive/Beelay).
