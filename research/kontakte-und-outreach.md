@@ -58,6 +58,23 @@ Schlüsselpersonen und Projekte für die Verbreitung des WoT-Protokolls. Prioris
 
 ---
 
+### DWeb / Internet Archive
+
+**Wer:** Globales Netzwerk für dezentrale Web-Technologien, seit 2016 von Brewster Kahle (Internet Archive) initiiert. Veranstalter des DWeb Camps (Juli 2026 in Brandenburg).
+
+**Warum relevant:** Ihre [fünf Prinzipien](https://getdweb.net/principles) (Human Agency, Distributed Benefits, Mutual Respect, Humanity, Ecological Awareness) decken sich nahezu vollständig mit unseren Werten. Dezentral organisiert über regionale Nodes — u.a. Berlin. Mitglieder: Aktivisten, Forscher, Entwickler aus P2P-, SSI-, Privacy-, Fediverse-Community. Genau unser Tribe.
+
+**Wie kontaktieren:** Matrix, Discord, oder direkt vor Ort beim DWeb Camp (8.-12. Juli 2026 in Brandenburg). Berlin Node für regionale Meetups.
+
+**Inhalt:**
+- DWeb Principles offiziell unterschreiben/bekennen (in Satzung oder Spec)
+- Beim DWeb Camp 2026 teilnehmen — Hands-on Session zum WoT anbieten
+- Berlin Node besuchen vor dem Camp für erste Kontakte
+
+**Ziel:** DWeb-Community als natürliche Heimat unseres Projekts. Erste öffentliche Präsentation des WoT bei Menschen die die Werte teilen. Langfristig: eventuell Fulda-Node gründen.
+
+---
+
 ### Leon Acosta / Nostr WoT Extension
 
 **Wer:** Entwickler der Nostr WoT Browser Extension (nostr-wot.com). Hat den Artikel "Nostr Solved Censorship. Now Let's Solve Trust." geschrieben.
