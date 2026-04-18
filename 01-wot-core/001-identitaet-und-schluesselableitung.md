@@ -71,6 +71,7 @@ Aus demselben Seed werden weitere Schlüssel abgeleitet. Jeder Schlüssel verwen
 |-----------|-----------|-------|----------------|
 | Signatur (Master) | `"wot/identity/ed25519/v1"` | Identität, Attestations | Dieses Dokument |
 | Verschlüsselung | `"wot/encryption/x25519/v1"` | Asymmetrische Verschlüsselung (X25519) | [Spec 005](../02-wot-sync/005-verschluesselung.md) |
+| Personal Doc | `"wot/personal-doc/v1"` | Symmetrische Verschlüsselung des Personal Doc (AES-256) | [Spec 010](../02-wot-sync/010-personal-doc.md) |
 
 Alle Schlüssel sind deterministisch aus demselben Seed ableitbar. Durch die verschiedenen Info-Strings sind sie kryptographisch unabhängig voneinander.
 

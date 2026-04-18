@@ -64,6 +64,7 @@ Nicht WoT-spezifisch — jede Local-First-App könnte das nutzen.
 | 007 | [Transport und Broker](02-wot-sync/007-transport-und-broker.md) | Broker, Authentisierung, Capabilities, Inbox, Push |
 | 008 | [Discovery](02-wot-sync/008-discovery.md) | Broker-Discovery, Profil-Service |
 | 009 | [Gruppen und Mitgliedschaft](02-wot-sync/009-gruppen.md) | Rollen, Einladungen, Key Rotation |
+| 010 | [Personal Doc und Cross-Device Sync](02-wot-sync/010-personal-doc.md) | Struktur, Key-Derivation, Device-Management |
 
 ### Extensions
 

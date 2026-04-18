@@ -1,0 +1,337 @@
+# WoT Sync 010: Personal Doc und Cross-Device Sync
+
+- **Status:** Entwurf
+- **Autoren:** Anton Tranelis
+- **Datum:** 2026-04-18
+
+## Zusammenfassung
+
+Das **Personal Doc** ist das persönliche Dokument eines Users — synchronisiert zwischen seinen eigenen Geräten, verschlüsselt mit einem aus dem Seed abgeleiteten Schlüssel, und enthält die Daten die zu seiner Identität gehören (Profil, Kontakte, Attestations, Space-Mitgliedschaften, Device-Registrierungen).
+
+Technisch nutzt das Personal Doc dieselbe Sync-Infrastruktur wie Gruppen-Dokumente (Log-Protokoll, Broker, DIDComm-Transport). Der Unterschied liegt im **Key-Management**: Der Personal Doc Key wird deterministisch aus dem Seed abgeleitet statt zufällig generiert und geteilt.
+
+## Referenzierte Dokumente
+
+- [Core 001: Identität](../01-wot-core/001-identitaet-und-schluesselableitung.md) — Seed, HKDF-Ableitung
+- [Sync 005: Verschlüsselung](005-verschluesselung.md) — AES-256-GCM, Nonce-Konstruktion
+- [Sync 006: Sync-Protokoll](006-sync-protokoll.md) — Log-Struktur, seq-Konsistenz
+- [Sync 007: Transport und Broker](007-transport-und-broker.md) — Multi-Broker-Replikation
+- [Sync 009: Gruppen](009-gruppen.md) — Vergleichspunkt für das Key-Modell
+
+## Abgrenzung: Personal Doc vs. Space-Dokumente
+
+Beide nutzen dieselbe Log-Struktur, dasselbe Sync-Protokoll, dieselbe Verschlüsselung. Der fundamentale Unterschied ist das **Key-Management**:
+
+| | Space-Dokument | Personal Doc |
+|---|---|---|
+| **Key-Erzeugung** | Zufällig vom Admin generiert | Deterministisch aus Seed abgeleitet |
+| **Key-Verteilung** | Per Authcrypt an Members (ECIES-ähnlich) | Kein Transport nötig — jedes Device leitet selbst ab |
+| **Member-Liste** | Explizit als Feld (`members[]`) | Implizit: alle Devices mit gleichem Seed |
+| **Key-Rotation** | Bei Member-Entfernung | Nur bei Seed-Kompromittierung → Identity-Migration |
+| **Authorisierung** | Admin stellt Capabilities aus | User ist sein eigener Admin |
+| **Document-ID** | Zufällig beim Erstellen | Deterministisch aus Personal Doc Key |
+| **Replikation** | Auf Heim-Brokern des Space | Auf allen Brokern des Users (Redundanz) |
+
+Diese Unterschiede ergeben sich aus der Natur der Sache: ein Space ist ein soziales Artefakt zwischen mehreren Menschen, ein Personal Doc ist die digitale Repräsentation einer einzelnen Identität.
+
+## Struktur des Personal Doc
+
+Das Personal Doc ist ein CRDT-Dokument (siehe [Sync 006: CRDT-Agnostik](006-sync-protokoll.md#crdt-agnostik)) mit folgenden Kern-Feldern:
+
+```
+PersonalDoc
+├── profile          — Öffentliches Profil (Name, Bio, Avatar)
+├── devices          — Registrierte Geräte des Users
+├── contacts         — Verifizierte Kontakte (DID → ContactInfo)
+├── verifications    — Verifikations-Records (In-Person-Begegnungen)
+├── attestations     — Empfangene/erstellte Attestations
+├── spaces           — Mitgliedschaften in Spaces
+└── groupKeys        — Space Keys pro (spaceId, generation)
+```
+
+### `profile`
+
+Öffentliche Profil-Daten des Users:
+
+```json
+{
+  "did": "did:key:z6Mk...",
+  "name": "Alice",
+  "bio": "...",
+  "avatar": "<URL oder Base64>",
+  "brokerUrls": ["wss://broker.example.com"],
+  "createdAt": "2026-01-15T...",
+  "updatedAt": "2026-04-18T..."
+}
+```
+
+Dieses Profil wird vom [Profil-Service](008-discovery.md#profil-service) abrufbar gemacht — dort als JWS-signierte Kopie, hier als CRDT-Feld das ohne Signatur gepflegt wird (die Signatur entsteht erst beim Publish).
+
+### `devices`
+
+Liste der registrierten Geräte des Users:
+
+```json
+{
+  "<deviceId>": {
+    "deviceId": "550e8400-e29b-41d4-a716-446655440000",
+    "name": "Alice's Handy",
+    "registeredAt": "2026-01-15T10:00:00Z",
+    "lastActive": "2026-04-18T10:00:00Z",
+    "revokedAt": null
+  }
+}
+```
+
+Jedes Gerät trägt sich beim ersten Start selbst ein. Der User kann in der App Geräte aktiv deaktivieren (siehe [Device-Verlust](#device-verlust)).
+
+### `contacts`
+
+Verifizierte und gespeicherte Kontakte, indexiert nach DID:
+
+```json
+{
+  "did:key:z6Mk...bob": {
+    "did": "did:key:z6Mk...bob",
+    "name": "Bob",
+    "verifiedAt": "2026-02-10T...",
+    "trustLevel": null,
+    "notes": "Treffen bei FoodCoop"
+  }
+}
+```
+
+Das `trustLevel`-Feld ist optional und nur relevant wenn die HMC-Extension (Trust Lists, [H01](../04-hmc-extensions/H01-trust-scores.md)) verwendet wird.
+
+### `verifications`
+
+Aufzeichnungen der In-Person-Verifikationen (siehe [Core 004](../01-wot-core/004-verifikation.md)):
+
+```json
+{
+  "<verification-id>": {
+    "id": "uuid",
+    "counterpartyDid": "did:key:z6Mk...bob",
+    "method": "in-person-qr",
+    "timestamp": "2026-02-10T15:30:00Z",
+    "location": { "lat": 50.55, "lng": 9.67 },
+    "proof": "<JWS Challenge-Response>"
+  }
+}
+```
+
+### `attestations`
+
+Empfangene und erstellte Attestations (siehe [Core 003](../01-wot-core/003-attestations.md)):
+
+```json
+{
+  "<attestation-id>": {
+    "id": "uuid",
+    "direction": "received | issued",
+    "credential": "<vollständiger W3C VC>",
+    "receivedAt": "2026-02-10T15:30:00Z",
+    "accepted": true
+  }
+}
+```
+
+### `spaces`
+
+Mitgliedschaften des Users in Spaces:
+
+```json
+{
+  "<spaceId>": {
+    "spaceId": "uuid",
+    "joinedAt": "2026-03-01T...",
+    "role": "admin | member",
+    "brokerUrls": ["wss://broker.community.org"],
+    "currentKeyGeneration": 3
+  }
+}
+```
+
+### `groupKeys`
+
+Die Space Keys aller Generationen die der User erhalten hat:
+
+```json
+{
+  "<spaceId>:<generation>": {
+    "spaceId": "uuid",
+    "generation": 3,
+    "key": "<Base64URL 32 Bytes>"
+  }
+}
+```
+
+Diese werden benötigt um historische Space-Daten zu entschlüsseln (siehe [Sync 005: Schlüsselrotation](005-verschluesselung.md#schlüsselrotation)).
+
+### Implementierungsspezifische Felder
+
+Eine Implementierung DARF zusätzliche Felder verwalten die für den Betrieb nötig sind aber nicht zum Core-Protokoll gehören — z.B. eine Outbox für unzugestellte Nachrichten, Metadaten zu Delivery-Status, Caches. Diese Felder sind nicht Teil der Spec und MÜSSEN nicht zwischen Implementierungen interoperabel sein.
+
+## Schlüsselableitung
+
+Der Personal Doc Key wird deterministisch aus dem Seed abgeleitet (siehe [Core 001](../01-wot-core/001-identitaet-und-schluesselableitung.md)):
+
+```
+Master Seed
+  → HKDF-SHA256(seed, info="wot/personal-doc/v1") → 32 Bytes
+  → Personal Doc Key (AES-256)
+```
+
+Damit hat jedes Gerät des Users den gleichen Personal Doc Key. Es muss nichts verteilt werden.
+
+### Deterministische Document-ID
+
+Die Dokument-ID des Personal Doc wird aus dem Personal Doc Key abgeleitet:
+
+```
+docId = first_16_bytes(Personal Doc Key)  → formatiert als UUID
+```
+
+Damit hat jedes Gerät des Users die gleiche Document-ID für das Personal Doc. Der Broker kann Log-Einträge unter dieser ID speichern und ausliefern ohne zu wissen dass es ein Personal Doc ist.
+
+## Device-Management
+
+### Device-Registrierung
+
+Wenn ein Gerät mit einem bestehenden Seed initialisiert wird:
+
+```
+1. Device generiert lokale Device-UUID (zufällig, v4)
+2. Device leitet Personal Doc Key und Document-ID aus Seed ab
+3. Device verbindet sich mit Broker (Challenge-Response, siehe Sync 007)
+4. Device holt aktuellen Personal Doc State vom Broker
+5. Device trägt sich selbst in das devices-Feld ein (neuer Log-Eintrag)
+6. Log-Eintrag wird an andere Devices des Users verteilt
+```
+
+Kein explizites Enrollment-Ticket oder Pairing nötig — die Kenntnis des Seed ist die einzige Zugangsberechtigung.
+
+### Device-Deaktivierung
+
+Der User kann in der App ein Device als deaktiviert markieren. Das setzt `revokedAt` auf den aktuellen Zeitstempel:
+
+```json
+{
+  "<deviceId>": {
+    "deviceId": "...",
+    "revokedAt": "2026-04-18T10:00:00Z",
+    "revokedBy": "<other-deviceId>"
+  }
+}
+```
+
+Nach Deaktivierung:
+
+- Andere Mitglieder und Broker wissen dass dieses Device nicht mehr vertrauenswürdig ist
+- Neue Log-Einträge mit dieser `deviceId` werden von anderen Devices abgelehnt
+- Der Broker lehnt Authentisierung mit dieser `deviceId` ab
+- Der User sollte alle Space Keys rotieren (siehe unten)
+
+**Wichtig:** Deaktivierung über das Personal Doc allein reicht nicht bei Seed-Kompromittierung. Wenn jemand den Seed hat, kann er ein neues Device registrieren. Für echten Schutz muss die Identität rotiert werden.
+
+### Device-Verlust
+
+Drei Szenarien:
+
+**1. Gerät ist weg, Seed ist sicher (verloren, defekt)**
+
+- Der User markiert das Device in der App auf einem anderen Gerät als `revoked`
+- Key-Rotation aller Spaces in denen der User Admin ist (vorsichtshalber)
+- Für Spaces wo der User nur Member ist: er informiert die Admins, die rotieren
+
+**2. Gerät ist weg, Seed ist kompromittiert**
+
+- Das Device-Feld zu aktualisieren reicht nicht — der Angreifer könnte ein neues Device registrieren
+- Identity-Migration nötig: neuer Seed, neue DID (siehe [research/identity-migration.md](../research/identity-migration.md))
+- Kontakte müssen über die Migration informiert werden
+- Attestations müssen neu ausgestellt werden oder als migriert markiert werden
+
+**3. Seed-Verlust (z.B. einziges Gerät weg, kein Backup)**
+
+- Kein Zugriff mehr auf Personal Doc, Space Keys, Attestations
+- Recovery nur über Mnemonic-Backup (siehe [Core 001](../01-wot-core/001-identitaet-und-schluesselableitung.md))
+- Ohne Backup: vollständiger Identity-Verlust, neue Identität nötig
+
+## Sync-Mechanismus
+
+Das Personal Doc nutzt **dieselbe Infrastruktur wie Space-Dokumente** (siehe [Sync 006](006-sync-protokoll.md)):
+
+- Append-only Log pro `deviceId`
+- Einträge mit `seq`, `deviceId`, `docId`, `authorDid`, `keyGeneration`, `data`
+- Signierung und Nonce-Konstruktion identisch
+- Transport über DIDComm-Nachrichten
+
+### Self-Addressed Messages
+
+Der Unterschied: Messages werden **an die eigene DID adressiert**. Der Broker routet sie an alle verbundenen Geräte mit dieser DID (außer dem Sender selbst):
+
+```
+Alice (Handy) schreibt neuen Log-Eintrag für Personal Doc
+  → verschlüsselt mit Personal Doc Key
+  → sendet DIDComm-Message mit from=alice, to=[alice]
+  → Broker routet an Alices andere Geräte (Laptop, Tablet)
+  → Diese Geräte entschlüsseln, merged CRDT
+```
+
+### Replikation auf mehreren Brokern
+
+Weil der User mehrere Broker nutzen kann (für Redundanz), wird das Personal Doc **auf allen Brokern des Users repliziert** — siehe [Sync 007: Broker-Zuordnung](007-transport-und-broker.md#broker-zuordnung).
+
+Die Devices kümmern sich selbst um die Multi-Broker-Synchronisierung. Der Broker muss nichts wissen über andere Broker.
+
+### `seq`-Konsistenz
+
+Die in [Sync 006: seq-Konsistenz](006-sync-protokoll.md#seq-konsistenz-muss) definierte MUSS-Anforderung gilt auch hier. Insbesondere nach Device-Restore: bevor das Gerät neue Einträge schreibt, MUSS es den aktuellen State vom Broker abgerufen haben, um den korrekten `seq` zu verwenden.
+
+## Verschlüsselung
+
+Der Personal Doc wird mit dem Personal Doc Key und AES-256-GCM verschlüsselt. Die Nonce-Konstruktion ist dieselbe wie bei Space-Dokumenten (siehe [Sync 005: Nonce-Konstruktion](005-verschluesselung.md#nonce-konstruktion)):
+
+```
+Nonce = SHA-256(deviceId || "|" || seq)[0:12]
+```
+
+Weil der Personal Doc Key deterministisch aus dem Seed abgeleitet wird, haben alle Geräte des Users automatisch den gleichen Key. Es gibt keine Key-Rotation im normalen Betrieb — der Key ändert sich nur bei Identity-Migration.
+
+## Capability-Modell
+
+Der User ist sein eigener Admin für das Personal Doc. Broker prüfen (siehe [Sync 007](007-transport-und-broker.md#autorisierung-capabilities)):
+
+```
+Personal Doc Capability:
+  issuer   = did:key:z6Mk...alice (der User selbst)
+  audience = did:key:z6Mk...alice (derselbe User)
+  docId    = <deterministische Personal Doc ID>
+  permissions = ["read", "write"]
+```
+
+Die Capability ist self-issued und vom User selbst signiert. Sie wird bei der ersten Verbindung zum Broker präsentiert und kann vom User für sich selbst jederzeit neu ausgestellt werden.
+
+## Recovery
+
+Wenn alle Geräte verloren gehen aber der Seed gesichert ist (BIP39-Mnemonic):
+
+```
+1. Neuer Device mit Seed initialisieren
+2. Personal Doc Key und Document-ID aus Seed ableiten
+3. Mit einem bekannten Broker verbinden (Standard-Broker oder aus Backup)
+4. Personal Doc State vom Broker laden
+5. State entschlüsseln mit Personal Doc Key
+6. Neues Device im devices-Feld registrieren
+```
+
+Der Broker speichert das verschlüsselte Personal Doc solange der User bei ihm registriert ist. Es dient damit implizit als **dezentrales Backup** — jeder Broker auf dem das Personal Doc repliziert ist, kann nach Verlust die Wiederherstellung ermöglichen.
+
+Für den Fall dass auch der Broker nicht mehr erreichbar ist, sollte ein zusätzliches lokales Backup (z.B. Vault) genutzt werden.
+
+## Zu klären
+
+- **Migration bei Identity-Rotation:** Wie wird das Personal Doc beim DID-Wechsel übernommen? Details in [identity-migration.md](../research/identity-migration.md).
+- **Mehrere Identitäten pro Gerät:** Soll ein Device mehrere Personal Docs (verschiedene Seeds) gleichzeitig verwalten können? Aktuell nicht spezifiziert.
+- **Verschlüsselung sensibler Felder:** Die `groupKeys` sind hochsensitiv. Zusätzliche Verschlüsselung jenseits des Personal Doc Keys denkbar (z.B. per Hardware-Keystore).
+- **Profil-Publish-Workflow:** Das `profile`-Feld im Personal Doc ist der Master, der Profil-Service ist die öffentliche Kopie. Wie oft wird publiziert, wer kann publish-Berechtigung haben?
