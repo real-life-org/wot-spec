@@ -36,7 +36,7 @@ Die birationale Abbildung (Ed25519 → Curve25519 → X25519) ist NICHT erlaubt 
 **Algorithmus: AES-256-GCM** (AEAD)
 
 - **Schlüssel:** 256 Bit
-- **Nonce:** 96 Bit (12 Bytes), zufällig generiert pro Verschlüsselung
+- **Nonce:** 96 Bit (12 Bytes) — Konstruktion hängt vom Kontext ab (siehe unten)
 - **Auth Tag:** 128 Bit (implizit im Ciphertext)
 
 ### Verschlüsseltes Datenformat
@@ -46,6 +46,32 @@ Die birationale Abbildung (Ed25519 → Curve25519 → X25519) ist NICHT erlaubt 
 ```
 
 Die Nonce wird dem Ciphertext vorangestellt. AES-256-GCM ist nativ in der Web Crypto API aller Browser verfügbar und Hardware-beschleunigt (AES-NI).
+
+### Nonce-Konstruktion
+
+AES-256-GCM ist **katastrophal unsicher** wenn dieselbe (Key, Nonce)-Kombination zweimal verwendet wird (Authentication-Key-Recovery, Klartext-Recovery). Die Spec definiert zwei verschiedene Nonce-Konstruktionen je nach Kontext:
+
+**Für Gruppen-Verschlüsselung (Space Keys): deterministisch aus Log-Eintrag**
+
+```
+Nonce = SHA-256(deviceId || "|" || seq)[0:12]
+```
+
+Eindeutigkeit folgt aus den Protokoll-Garantien:
+
+- `seq` ist monoton aufsteigend pro `deviceId` pro `docId` (siehe [Sync 006](006-sync-protokoll.md))
+- `deviceId` ist per UUID v4 eindeutig pro Device
+- Damit ist `(deviceId, seq)` eindeutig innerhalb eines Dokuments
+- Der Space Key ist pro `docId` (und `keyGeneration`) eindeutig
+- Folge: `(Space Key, Nonce)` kann nicht kollidieren
+
+Voraussetzung: der Client MUSS vor jedem Schreibvorgang den aktuellen `seq`-Stand aus dem Sync-Protokoll abrufen, nicht nur auf lokalen State vertrauen. Bei einer Divergenz (z.B. nach Device-Restore) MUSS der höhere Wert verwendet werden. Siehe [Sync 006](006-sync-protokoll.md#seq-konsistenz-muss).
+
+**Warum deterministisch statt zufällig:** Zufällige 96-Bit-Nonces kollidieren nach 2^48 Nachrichten mit 50% Wahrscheinlichkeit (Birthday-Paradox). Bei schwacher RNG sind Kollisionen früher möglich. Deterministische Konstruktion eliminiert das Problem komplett.
+
+**Für P2P-Verschlüsselung (Authcrypt): zufällig**
+
+Bei Authcrypt wird für jede Nachricht ein **ephemerer X25519-Key** generiert. Der Content Encryption Key (CEK) ist damit pro Nachricht neu — Nonce-Reuse über mehrere Nachrichten ist per Design unmöglich. Die Nonce kann zufällig gewählt werden (12 Bytes).
 
 ## Peer-to-Peer-Verschlüsselung (Authcrypt)
 

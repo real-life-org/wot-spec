@@ -79,6 +79,35 @@ Ein Log-Eintrag ist ein **JWS-signierter Datensatz**. Er wird über das DIDComm-
 | `data` | String | Ja | Base64URL-kodierter AES-256-GCM Ciphertext (Nonce + Ciphertext + Auth Tag, siehe [Sync 005](005-verschluesselung.md)) |
 | `timestamp` | ISO 8601 | Ja | Erstellungszeitpunkt (UTC) |
 
+### seq-Konsistenz (MUSS)
+
+Der `seq`-Wert ist mehr als nur eine Reihenfolge-Nummer — er ist ein **Sicherheits-kritisches Feld**, weil er in die Nonce-Konstruktion für die AES-256-GCM-Verschlüsselung einfließt (siehe [Sync 005](005-verschluesselung.md#nonce-konstruktion)). Ein Wiederverwenden von `seq` durch dasselbe Device führt zu Nonce-Reuse und damit zu einem kompletten Sicherheits-Zusammenbruch.
+
+**Anforderungen:**
+
+- Vor jedem Schreibvorgang MUSS der Client den aktuellen höchsten `seq`-Wert kennen für (`deviceId`, `docId`, `keyGeneration`)
+- Dieser Wert MUSS aus dem persistierten Log gelesen werden, nicht aus volatilem Memory
+- Der neue `seq` MUSS strikt größer sein als alle bisher geschriebenen
+- Bei Divergenz zwischen lokalem Log und Broker-Log MUSS der höhere Wert zugrunde gelegt werden
+
+**Kritische Edge Cases:**
+
+1. **Device-Crash nach Broker-Übermittlung, vor lokaler Persistenz**
+   - Problem: Broker kennt `seq=42` mit Inhalt A, lokales Log kennt nur bis `seq=41`
+   - Nach Restart: Client würde `seq=42` neu vergeben wollen mit Inhalt B
+   - Resultat: gleicher Nonce mit gleichem Key für zwei verschiedene Klartexte → katastrophal
+   - **Lösung:** Client MUSS lokale Persistenz VOR Übermittlung an den Broker durchführen
+
+2. **Device-Restore aus altem Backup**
+   - Problem: Backup enthält `seq=1000`, zwischenzeitlich wurde `seq=1050` geschrieben
+   - Nach Restore: Client würde von `seq=1001` weiter zählen
+   - Resultat: Nonce-Reuse mit bereits existierenden Einträgen
+   - **Lösung:** Nach Restore MUSS der Client zuerst einen Full-Sync mit dem Broker durchführen um den aktuellen Stand zu kennen, bevor neue Einträge geschrieben werden
+
+3. **Multi-Device mit gleichem Seed aber verschiedenen Devices**
+   - Kein Problem: jedes Device hat eigene `deviceId`, eigenen `seq`-Raum
+   - Die Nonces kollidieren nicht zwischen Devices
+
 ### Signatur des Log-Eintrags
 
 Der Log-Eintrag wird als JWS signiert — gemäß [Core 002](../01-wot-core/002-signaturen-und-verifikation.md):

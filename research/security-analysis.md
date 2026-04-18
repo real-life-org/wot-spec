@@ -9,7 +9,6 @@ Eine kritische Analyse der aktuellen Spec aus Angreifer-Perspektive. Die Schwach
 | ID | Schwachstelle | Schwere | Geplant für |
 |----|---------------|---------|-------------|
 | K1 | Admin-Key-Kompromittierung | 🔴 Kritisch | v1.2 |
-| K2 | AES-GCM Nonce-Reuse | 🔴 Kritisch | v1.1 |
 | K3 | Fehlende Feld-Level-Permissions | 🔴 Kritisch | v1.2 |
 | S1 | Keine Forward Secrecy | 🟠 Schwer | v2.0 |
 | S3 | Split-Brain durch Broker | 🟠 Schwer | v1.1 |
@@ -51,37 +50,6 @@ Angreifer bekommt Zugriff auf Alices Gerät (gestohlen, kompromittiert)
 ```
 
 **Mitigation:** Threshold-Signaturen für destruktive Aktionen (M-von-N Admins müssen zustimmen). Alternativ: Cooldown-Period vor Mitglieder-Entfernung.
-
----
-
-### K2. Nonce-Reuse bei AES-256-GCM = katastrophaler Schlüsselverlust
-
-**Problem:** AES-GCM ist **extrem anfällig** gegen Nonce-Reuse. Bei **zwei Nachrichten mit gleicher Nonce und gleichem Key** kann ein Angreifer:
-
-- Klartext-Differenzen berechnen (XOR-Analyse)
-- Den Authentifikations-Key (H) wiederherstellen → beliebige Forgeries möglich
-
-**Spec-Lücke:** Die Spec sagt nur "12 Bytes zufällig pro Verschlüsselung". Das klingt sicher, ist aber bei **2^48 Nachrichten** (Birthday Paradox) bereits problematisch — bei einem aktiven Space mit häufigen Updates realistisch.
-
-**Exploit-Szenario:**
-
-```
-Ein Space existiert seit 3 Jahren, hat viele Mitglieder.
-Der Space Key wird nicht oft rotiert (nur bei Entfernungen).
-Mit schwachem RNG (manche Mobile-Implementierungen) oder
-nach 2^32 Nachrichten (~4 Milliarden) wird eine Nonce-Kollision 
-statistisch signifikant.
-
-→ Angreifer sammelt Ciphertexts, findet Kollision
-→ Kann Space-Daten entschlüsseln
-→ Kann beliebige Forgeries in den Log einschleusen
-```
-
-**Mitigation:**
-
-- Nonce muss deterministisch sein (Counter + Device-ID)
-- ODER: Space Key muss automatisch nach N Nachrichten rotieren
-- ODER: XChaCha20-Poly1305 statt AES-GCM (24-Byte Nonce, kein Birthday Problem)
 
 ---
 
