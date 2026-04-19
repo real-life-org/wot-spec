@@ -1,10 +1,10 @@
 # Briefing für Sebastian
 
-*Stand: 17. April 2026*
+*Stand: 19. April 2026*
 
 Lieber Sebastian,
 
-wir haben in den letzten Tagen intensiv an der WoT-Spezifikation gearbeitet. Hier ist der aktuelle Stand — als Grundlage für unser nächstes Gespräch.
+hier ist der Stand der WoT-Spezifikation, als Grundlage für deine Review. Das Wichtigste zuerst: wir möchten dich bitten, dir die **H01 Trust-Scores** Extension anzuschauen und zu prüfen, ob sie deine Anforderungen für dein quantitatives Modell abdeckt — und natürlich die Einbettung in W3C Verifiable Credentials.
 
 ## Was ist WoT?
 
@@ -16,31 +16,32 @@ WoT definiert keine neuen Standards — es kombiniert bestehende (DID, W3C VC, D
 
 Die Spec liegt auf Codeberg: `codeberg.org/web-of-trust/spec`
 
-### WoT Core (4 Dokumente — das gemeinsame Fundament)
+### WoT Core (das gemeinsame Fundament)
 
-| # | Thema | Status |
-|---|-------|--------|
-| 001 | Identität und Schlüsselableitung (BIP39 → Ed25519 → did:key) | Entwurf |
-| 002 | Signaturen und Verifikation (JWS, JCS, SHA-256) | Entwurf |
-| 003 | Attestations (W3C Verifiable Credentials) | Entwurf |
-| 004 | Verifikation (QR-Code, Challenge-Response) | Entwurf |
+| # | Thema |
+|---|-------|
+| 001 | Identität und Schlüsselableitung (BIP39 → Ed25519 → did:key) |
+| 002 | Signaturen und Verifikation (JWS, JCS, SHA-256) |
+| 003 | Attestations (W3C Verifiable Credentials) |
+| 004 | Verifikation (QR-Code, Challenge-Response) |
 
-### WoT Sync (5 Dokumente — die Infrastruktur)
+### WoT Sync (die Infrastruktur)
 
-| # | Thema | Status |
-|---|-------|--------|
-| 005 | Verschlüsselung (AES-256-GCM, Authcrypt/ECDH-1PU) | Entwurf |
-| 006 | Sync-Protokoll (Append-only Logs, Sedimentree, RIBLT) | Entwurf |
-| 007 | Transport und Broker (DIDComm, Capabilities, Inbox pro Device) | Entwurf |
-| 008 | Discovery (Broker-Discovery, Profil-Service) | Entwurf |
-| 009 | Gruppen und Mitgliedschaft (Rollen, Einladungen, Key Rotation) | Entwurf |
+| # | Thema |
+|---|-------|
+| 005 | Verschlüsselung (AES-256-GCM, Authcrypt/ECDH-1PU) |
+| 006 | Sync-Protokoll (Append-only Logs) |
+| 007 | Transport und Broker (DIDComm, Capabilities, Inbox pro Device) |
+| 008 | Discovery (Broker-Discovery, Profil-Service) |
+| 009 | Gruppen und Mitgliedschaft (Rollen, Einladungen, Key Rotation) |
+| 010 | Personal Doc und Cross-Device-Sync |
 
 ### Extensions
 
 | # | Thema | Status |
 |---|-------|--------|
 | R01 | Badges (Emoji, Farbe, Form) | Platzhalter |
-| H01 | Trust-Scores (dein quantitatives Modell) | Entwurf |
+| H01 | **Trust-Scores (dein quantitatives Modell)** | **Entwurf — bitte reviewen** |
 | H02 | Transactions (Gutscheine, Double-Spend) | Platzhalter |
 | H03 | Gossip-Propagation (Trust Lists über unsere Inbox) | Entwurf |
 
@@ -54,11 +55,20 @@ Alle signierten Daten im Protokoll nutzen JWS Compact Serialization (RFC 7515). 
 
 ### DIDComm v2 als Nachrichtenformat
 
-Unser Nachrichtenformat folgt dem DIDComm v2 Plaintext Message Format (DIF). Die Verschlüsselung für 1:1-Nachrichten nutzt Authcrypt (ECDH-1PU) — der DIDComm-Standard.
+Unser Nachrichtenformat folgt dem DIDComm v2 Plaintext Message Format (DIF) — mit allen für v1.0 relevanten Bausteinen:
+
+- **Plaintext Envelope** mit `id`, `type`, `from`, `to`, `created_time`, `body`
+- **Threading** via `thid` / `pthid` für Request/Response und verschachtelte Konversationen
+- **Authcrypt** (ECDH-1PU) für 1:1-Nachrichten — der DIDComm-Standard
+- **JWE JSON Serialization** als explizites Envelope-Format (Protected Header, Multi-Recipient)
+- **Trust Ping 2.0** als Liveness-Protokoll
+- **Discover Features 2.0** für Protokoll-Kompatibilitäts-Abfragen
+
+Damit sind wir DIDComm-v2-konform auf ~85%. Fehlen noch DID-Dokumente mit Service-Endpoints, Forward/Routing (Mediator-Privacy) und Mediator-Coordination — das ist Phase 3 und nicht blockierend.
 
 **Warum:** Interoperabilität mit dem dezentralen Ökosystem (Circles, Nostr, Briar und andere Projekte die dezentrale Identität brauchen). DIDComm teilt unsere Werte: P2P, offline-fähig, zensurresistent.
 
-**Was das für dich heißt:** Dein Gossip-Protokoll (H03) nutzt unsere Inbox als Transport — die jetzt DIDComm-kompatibel ist. Deine Trust-List-Deltas sind DIDComm-Nachrichten mit SD-JWT im Body.
+**Was das für dich heißt:** Dein Gossip-Protokoll (H03) nutzt unsere Inbox als Transport — die jetzt vollständig DIDComm-kompatibel ist. Deine Trust-List-Deltas sind DIDComm-Nachrichten mit SD-JWT im Body. Details siehe [didcomm-migration.md](didcomm-migration.md).
 
 ### X25519 via separatem HKDF (nicht birationale Abbildung)
 
@@ -81,21 +91,25 @@ Wir haben ausgearbeitet wie unsere qualitativen Attestations (Empfängerprinzip)
 
 Beides auf demselben Identitäts-Layer (DID + Ed25519), verschiedene Verteilungswege für verschiedene Bedeutungen.
 
-## Was noch offen ist (für unser Gespräch)
+## Was wir von dir brauchen
 
-### 1. Key-Stretching
+### 1. Review von H01 — Trust-Scores als VC
 
-Du nutzt PBKDF2 mit 100k Runden zusätzlich zum BIP39-PBKDF2. Wir nicht. Wenn Stretching Teil des Standard-Pfades wird, ändern sich alle DIDs — eine Migration ist nötig. Lohnt sich das?
+Schau dir bitte `04-hmc-extensions/H01-trust-scores.md` an. Die zentrale Frage: deckt unser Vorschlag, dein quantitatives Modell als **W3C Verifiable Credential** zu verpacken, deine Anforderungen ab? Gibt es Aspekte deines Modells (Trust-Level-Semantik, Listen-Versionierung, Gewichtung), die im VC-Format nicht sauber abbildbar sind?
 
-### 2. VCs als gemeinsames Attestation-Format
+### 2. W3C VC als gemeinsames Attestation-Format
 
 Funktioniert W3C VC als Verpackung für dein SD-JWT-Modell? Der Overhead ist ~100 Bytes pro Attestation (@context, type). Dafür bekommst du Interop mit dem gesamten VC-Ökosystem.
+
+### 3. Key-Stretching
+
+Du nutzt PBKDF2 mit 100k Runden zusätzlich zum BIP39-PBKDF2. Wir nicht. Wenn Stretching Teil des Standard-Pfades wird, ändern sich alle DIDs — eine Migration ist nötig. Lohnt sich das?
 
 ## Die Struktur
 
 ```
 01-wot-core/         ← Das gemeinsame Fundament (001-004)
-02-wot-sync/         ← Sync-Infrastruktur (005-009)
+02-wot-sync/         ← Sync-Infrastruktur (005-010)
 03-rls-extensions/   ← Unsere Extensions (Badges)
 04-hmc-extensions/   ← Deine Extensions (Trust-Scores, Transactions, Gossip)
 research/            ← Forschung, Test-Vektoren, Interop-Analyse

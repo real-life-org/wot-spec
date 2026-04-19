@@ -1,29 +1,45 @@
 # Security Analysis — WoT Spec
 
-*Adversarial review. Ursprünglich 2026-04-18. Quick Wins an diesem Tag behoben und aus diesem Dokument entfernt — siehe Commit-History für die vollständige Liste.*
+*Adversarial review, ursprünglich 2026-04-18. Tabellenkopf und Fix-Markierungen aktualisiert 2026-04-19.*
 
 Eine kritische Analyse der aktuellen Spec aus Angreifer-Perspektive. Die Schwachstellen reichen von implementierungsabhängigen Problemen bis zu fundamentalen Protokoll-Lücken. Eingeteilt nach Schwere und Wahrscheinlichkeit.
 
+Aus Transparenzgründen bleibt dieses Dokument vollständig — auch bereits behobene Schwachstellen bleiben dokumentiert, damit sichtbar ist was wir gefunden und wie wir reagiert haben.
+
 ## Status-Übersicht
 
-| ID | Schwachstelle | Schwere | Geplant für |
-|----|---------------|---------|-------------|
-| K1 | Admin-Key-Kompromittierung | 🔴 Kritisch | v1.2 |
-| K3 | Fehlende Feld-Level-Permissions | 🔴 Kritisch | v1.2 |
-| S1 | Keine Forward Secrecy | 🟠 Schwer | v2.0 |
-| S3 | Split-Brain durch Broker | 🟠 Schwer | v1.1 |
-| S5 | Silent Log-Censorship | 🟠 Schwer | v1.1 |
-| M1 | Timing-Angriffe | 🟡 Mittel | v1.1 |
-| M2 | Metadata-Leak | 🟡 Mittel | v2.0 |
-| M3 | Sybil-Resistance-Umgehung | 🟡 Mittel | Forschung |
-| M4 | Attestation-Spam | 🟡 Mittel | v1.1 |
-| M6 | Forgotten-Device | 🟡 Mittel | v1.1 |
+### ✅ Bereits behoben
 
-Pro Issue: Fix-Optionen, Aufwand und Trade-offs siehe [security-fixes.md](security-fixes.md).
+| ID | Schwachstelle | Schwere | Behoben am | Fix |
+|----|---------------|---------|------------|-----|
+| [K2](#k2-nonce-reuse-bei-aes-256-gcm--katastrophaler-schlüsselverlust) | Nonce-Reuse bei AES-256-GCM | 🔴 Kritisch | 2026-04-18 | Deterministische Nonce aus `(deviceId, seq)` — [Sync 005](../02-wot-sync/005-verschluesselung.md) |
+| [K4](#k4-jws-alg-konfusion) | JWS `alg`-Konfusion | 🔴 Kritisch | 2026-04-18 | Normativer `alg=EdDSA`-Strict-Check — [Core 002](../01-wot-core/002-signaturen-und-verifikation.md#algorithmus-validierung-muss) |
+| [S2](#s2-nonce-reuse-attacke-bei-challenge-response) | Nonce-Reuse bei Challenge-Response | 🟠 Schwer | 2026-04-18 | Nonce-History (24h) im Broker — [Sync 007](../02-wot-sync/007-transport-und-broker.md) |
+| [S4](#s4-capability-replay-innerhalb-der-gleichen-generation) | Capability-Replay ohne Ablauf | 🟠 Schwer | 2026-04-18 | `validUntil` als Pflichtfeld — [Sync 007](../02-wot-sync/007-transport-und-broker.md#capability-format) |
+| [M1](#m1-timing-angriffe-bei-decryption) | Timing-Angriffe bei Decryption | 🟡 Mittel | 2026-04-19 | Constant-Time-Anforderung (MUSS) — [Sync 005](../02-wot-sync/005-verschluesselung.md#konstante-laufzeit-constant-time--muss) |
+| [M5](#m5-jcs-canonicalization-edge-cases) | JCS-Canonicalization Edge Cases | 🟡 Mittel | 2026-04-18 | Test-Vektoren (Unicode, Zahlen) — [Core 002](../01-wot-core/002-signaturen-und-verifikation.md) |
+
+### ⏳ Noch offen
+
+| ID | Schwachstelle | Schwere | Geplant für | Fix-Doku |
+|----|---------------|---------|-------------|----------|
+| [K1](#k1-admin-key-kompromittierung--totale-gruppen-übernahme) | Admin-Key-Kompromittierung | 🔴 Kritisch | v1.2 | [security-fixes.md](security-fixes.md#fix-k1-multi-admin--threshold-signatures) |
+| [K3](#k3-fehlende-feld-level-permissions-im-crdt) | Fehlende Feld-Level-Permissions | 🔴 Kritisch | v1.2 | [security-fixes.md](security-fixes.md#fix-k3-admin-only-felder-für-space-metadata) |
+| [S1](#s1-keine-forward-secrecy-bei-inbox-nachrichten) | Keine Forward Secrecy | 🟠 Schwer | v2.0 | [security-fixes.md](security-fixes.md#fix-s1-forward-secrecy-via-double-ratchet) |
+| [S3](#s3-split-brain-durch-broker-manipulation) | Split-Brain durch Broker | 🟠 Schwer | v1.1 | [security-fixes.md](security-fixes.md#fix-s3-split-brain-detection) |
+| [S5](#s5-silent-log-censorship-durch-admin) | Silent Log-Censorship | 🟠 Schwer | v1.1 | impliziert durch S3-Fix |
+| [M2](#m2-metadata-leak-durch-broker) | Metadata-Leak | 🟡 Mittel | v2.0 | Forward/Routing (DIDComm) |
+| [M3](#m3-sybil-resistance-umgehung) | Sybil-Resistance-Umgehung | 🟡 Mittel | Forschung | Community-Governance, Liability-ADR |
+| [M4](#m4-unbegrenzte-attestation-spam) | Attestation-Spam | 🟡 Mittel | v1.1 | [security-fixes.md](security-fixes.md#fix-m4-attestation-rate-limiting) |
+| [M6](#m6-forgotten-device-permanent-backdoor) | Forgotten-Device | 🟡 Mittel | v1.1 | [security-fixes.md](security-fixes.md#fix-m6-device-revokation-und-ttl) |
+
+---
 
 ## 🔴 Kritische Schwachstellen
 
 ### K1. Admin-Key-Kompromittierung = totale Gruppen-Übernahme
+
+**Status:** ⏳ Offen — geplant für v1.2
 
 **Problem:** Ein einziger Schlüssel kontrolliert alles. Wenn der Private Key des Admins (members[0]) kompromittiert wird, kann der Angreifer:
 
@@ -53,7 +69,38 @@ Angreifer bekommt Zugriff auf Alices Gerät (gestohlen, kompromittiert)
 
 ---
 
+### K2. Nonce-Reuse bei AES-256-GCM = katastrophaler Schlüsselverlust
+
+**Status:** ✅ Behoben 2026-04-18 — deterministische Nonce aus `SHA-256(deviceId || "|" || seq)`. Da `(deviceId, seq)` per Spec eindeutig sind, sind Kollisionen ausgeschlossen.
+
+**Problem:** AES-GCM ist **extrem anfällig** gegen Nonce-Reuse. Bei **zwei Nachrichten mit gleicher Nonce und gleichem Key** kann ein Angreifer:
+
+- Klartext-Differenzen berechnen (XOR-Analyse)
+- Den Authentifikations-Key (H) wiederherstellen → beliebige Forgeries möglich
+
+**Spec-Lücke (vor Fix):** Die Spec sagte nur "12 Bytes zufällig pro Verschlüsselung". Das klang sicher, war aber bei **2^48 Nachrichten** (Birthday Paradox) bereits problematisch — bei einem aktiven Space mit häufigen Updates realistisch.
+
+**Exploit-Szenario (vor Fix):**
+
+```
+Ein Space existiert seit 3 Jahren, hat viele Mitglieder.
+Der Space Key wird nicht oft rotiert (nur bei Entfernungen).
+Mit schwachem RNG (manche Mobile-Implementierungen) oder
+nach 2^32 Nachrichten (~4 Milliarden) wird eine Nonce-Kollision
+statistisch signifikant.
+
+→ Angreifer sammelt Ciphertexts, findet Kollision
+→ Kann Space-Daten entschlüsseln
+→ Kann beliebige Forgeries in den Log einschleusen
+```
+
+**Fix:** Nonce wird deterministisch aus `(deviceId, seq)` abgeleitet — Werten die ohnehin per Log-Struktur eindeutig sind. Kein neuer State, kein RNG-Risiko.
+
+---
+
 ### K3. Fehlende Feld-Level-Permissions im CRDT
+
+**Status:** ⏳ Offen — geplant für v1.2
 
 **Problem:** Die Spec ist explizit darin: "Jedes Mitglied mit dem Space Key kann beliebige Daten schreiben." Das ist gewollt — aber es ermöglicht **internen Missbrauch**.
 
@@ -77,9 +124,35 @@ aber der Schaden ist schon da.
 
 ---
 
+### K4. JWS `alg`-Konfusion
+
+**Status:** ✅ Behoben 2026-04-18 — Spec verlangt normativ `alg=EdDSA` und MUSS alle anderen Werte ablehnen.
+
+**Problem:** JWS erlaubt verschiedene Algorithmen im Header. Eine **klassische Schwachstelle** ist das Akzeptieren von `alg=none` oder algorithmischer Konfusion (z.B. Public Key als HMAC-Secret).
+
+**Spec-Lücke (vor Fix):** Unsere Spec sagte `alg=EdDSA` ist Standard, aber schrieb nicht explizit dass **Verifier nur EdDSA akzeptieren dürfen**.
+
+**Exploit-Szenario (vor Fix):**
+
+```
+Ein naive Implementierung liest den JWS-Header, sieht alg=HS256,
+und nutzt den Public Key (der öffentlich aus der DID kommt) als HMAC-Secret.
+→ Angreifer kann beliebige Nachrichten "signieren"
+→ Die Verifikation passt, weil HMAC mit bekanntem "Secret" trivial ist.
+
+Auch möglich: alg=none (keine Signatur)
+→ Verifier akzeptiert unsignierte Nachrichten
+```
+
+**Fix:** Core 002 verlangt jetzt normativ (MUSS): Verifier prüfen das `alg`-Feld strikt gegen die erlaubten Werte (nur `EdDSA`). Abweichende Werte — inklusive `none`, `HS256`, `RS256` — MÜSSEN abgelehnt werden.
+
+---
+
 ## 🟠 Schwere Schwachstellen
 
 ### S1. Keine Forward Secrecy bei Inbox-Nachrichten
+
+**Status:** ⏳ Offen — geplant für v2.0
 
 **Problem:** Authcrypt nutzt den **statischen Sender-Key** für ECDH. Wenn der Sender-Key später kompromittiert wird, können alle historischen Nachrichten entschlüsselt werden.
 
@@ -98,7 +171,34 @@ Angreifer hat aufgezeichnete Nachrichten (vom Broker, vom Netzwerk-Dump).
 
 ---
 
+### S2. Nonce-Reuse-Attacke bei Challenge-Response
+
+**Status:** ✅ Behoben 2026-04-18 — Broker speichert Challenge-Nonces für mindestens 24h und weist Wiederholungen ab.
+
+**Problem:** Challenge-Nonces sind 32 Bytes. Wenn ein Gerät eine **kompromittierte/schwache RNG** hat (ältere Android-Versionen, billige IoT-Devices), sind Kollisionen möglich.
+
+**Exploit-Szenario (vor Fix):**
+
+```
+Alice hat ein altes Android (schwache RNG beim Systemstart)
+Sie erstellt Challenge 1: nonce_A (vorhersagbar)
+Später: Challenge 2: nonce_A (reuse!)
+
+Angreifer der Challenge 1 aufgezeichnet hat:
+  → hat die signierte Response
+  → präsentiert diese als Response auf Challenge 2
+  → wird als Alice akzeptiert (Signatur ist gültig)
+```
+
+**Spec-Lücke (vor Fix):** Keine Nonce-History-Prüfung.
+
+**Fix:** Sync 007 verlangt: der Empfänger MUSS Nonces für mindestens 24h speichern und Wiederholungen ablehnen. Das entschärft schwache RNGs als Bedrohungsquelle.
+
+---
+
 ### S3. Split-Brain durch Broker-Manipulation
+
+**Status:** ⏳ Offen — geplant für v1.1
 
 **Problem:** Der Broker kann Nachrichten selektiv zustellen. Wenn er eine **Mitglieder-Entfernung** nur an einige Clients zustellt, entstehen inkonsistente Sichten.
 
@@ -123,13 +223,38 @@ Resultat:
 
 ---
 
+### S4. Capability-Replay innerhalb der gleichen Generation
+
+**Status:** ✅ Behoben 2026-04-18 — Capabilities haben jetzt ein Pflichtfeld `validUntil`.
+
+**Problem:** Capabilities hatten eine `generation`, aber **kein `validUntil`**. Ein einmal ausgestellter Capability war unbegrenzt gültig bis zur nächsten Rotation.
+
+**Exploit-Szenario (vor Fix):**
+
+```
+Bob bekommt Capability Gen 3 für doc X.
+Bob verlässt den Space (normale Kündigung, keine Entfernung).
+Admin rotiert Keys aber nicht — wozu, Bob hat ja gekündigt?
+
+Bob hat die Capability noch, kann weiter auf doc X zugreifen.
+→ "Left but never removed" Problem
+```
+
+**Spec-Lücke (vor Fix):** Spec unterschied nicht zwischen "entfernt" und "ausgetreten". Capabilities hatten keine Zeit-Begrenzung.
+
+**Fix:** Sync 007 verlangt jetzt `validUntil` als Pflichtfeld. Empfohlene Dauer: 6 Monate (normal), 1 Monat (hochsensitiv), 1 Jahr (persönliches Doc). Der Admin erneuert Capabilities für aktive Members rechtzeitig; inaktive Members verlieren den Zugriff automatisch.
+
+---
+
 ### S5. Silent Log-Censorship durch Admin
+
+**Status:** ⏳ Offen — geplant für v1.1 (impliziert durch S3-Fix)
 
 **Problem:** Ein böswilliger Admin könnte den Log **editieren bevor andere Member ihn verteilt bekommen**. Er sieht einen Log-Eintrag den er nicht mag, verwirft ihn lokal und liefert ihn nicht weiter.
 
 **Spec-Lücke:** Keine Censorship-Detection im Log. Keine End-to-End-Log-Verifikation zwischen nicht-Admin-Peers.
 
-**Mitigation:** Peers sollten direkt syncen können, nicht nur über den Admin/Broker. Bei Divergenz → Alarm.
+**Mitigation:** Peers sollten direkt syncen können, nicht nur über den Admin/Broker. Bei Divergenz → Alarm. Der State-Digest-Mechanismus aus S3-Fix adressiert auch diesen Angriff.
 
 ---
 
@@ -137,15 +262,19 @@ Resultat:
 
 ### M1. Timing-Angriffe bei Decryption
 
+**Status:** ✅ Behoben 2026-04-19 — normative Constant-Time-Anforderung in [Sync 005](../02-wot-sync/005-verschluesselung.md#konstante-laufzeit-constant-time--muss).
+
 **Problem:** Wenn Decryption nicht konstant-zeit implementiert ist, kann ein Angreifer mit vielen Versuchen den Klartext inferieren.
 
-**Abhängigkeit:** Web Crypto API ist in modernen Browsern konstant-zeit. Ältere/Mobile-Implementierungen nicht garantiert.
+**Abhängigkeit:** Web Crypto API ist in modernen Browsern konstant-zeit. Ältere/Mobile-Implementierungen oder Eigenimplementierungen in JavaScript nicht garantiert.
 
-**Mitigation:** Spec sollte "constant-time crypto required" normativ verlangen.
+**Fix:** Sync 005 verlangt jetzt normativ (MUSS): alle Krypto-Operationen (AES-GCM Tag-Verifikation, X25519 Scalar Multiplication, HKDF/HMAC-Vergleich) laufen in konstanter Zeit. Implementierungen MÜSSEN die Web Crypto API oder eine äquivalent auditierte native Bibliothek verwenden — kein JavaScript-Eigenbau von AES, X25519, HKDF oder HMAC.
 
 ---
 
 ### M2. Metadata-Leak durch Broker
+
+**Status:** ⏳ Offen — geplant für v2.0
 
 **Problem:** Broker sieht:
 
@@ -156,11 +285,13 @@ Resultat:
 
 **Spec-Status:** Dokumentiert als bekannte Limitation. Aber für manche Anwendungsfälle (z.B. Journalisten unter autoritärem Regime) katastrophal.
 
-**Mitigation:** Tor-Integration als Option. Cover-Traffic. Onion-Routing zwischen Mediators (DIDComm Forward, aktuell nicht in Spec).
+**Mitigation:** Tor-Integration als Option. Cover-Traffic. Onion-Routing zwischen Mediators (DIDComm Forward, geplant für v2.0).
 
 ---
 
 ### M3. Sybil-Resistance-Umgehung
+
+**Status:** ⏳ Offen — Forschungsthema
 
 **Problem:** In-Person-Verifikation verhindert einfache Bot-Accounts. Aber nicht:
 
@@ -175,6 +306,8 @@ Resultat:
 ---
 
 ### M4. Unbegrenzte Attestation-Spam
+
+**Status:** ⏳ Offen — geplant für v1.1
 
 **Problem:** Jeder kann beliebig viele Attestations für beliebige Subjects erzeugen. Im Empfängerprinzip landen sie in der Inbox.
 
@@ -200,7 +333,38 @@ Resultat:
 
 ---
 
+### M5. JCS-Canonicalization Edge Cases
+
+**Status:** ✅ Behoben 2026-04-18 — Spec enthält jetzt Test-Vektoren für Unicode-Normalisierung und Zahlen-Formatierung.
+
+**Problem:** RFC 8785 (JCS) hat Edge Cases bei:
+
+- Unicode-Normalisierung
+- Number-Formatting (0.1 vs 1e-1)
+- Leere Strings vs. fehlende Felder
+- Verschiedene Implementierungen können divergieren
+
+**Spec-Lücke (vor Fix):** Keine Test-Vektoren für JCS-Edge-Cases.
+
+**Exploit-Szenario (vor Fix):**
+
+```
+Implementierung A kanonisiert: {"name":"€"} → bestimmte Bytes
+Implementierung B kanonisiert: {"name":"€"} → andere Bytes
+
+Signatur von A verifiziert sich nicht gegen Kanonisierung von B.
+→ Interop-Break
+→ Oder: clever craftet, um eine Signatur gültig in einer,
+  ungültig in anderer Impl zu machen
+```
+
+**Fix:** Core 002 enthält jetzt Test-Vektoren mit Unicode-Edge-Cases, Zahlen-Formatierung und Null-/Leer-Feldern. Implementierungen MÜSSEN gegen diese Vektoren testen.
+
+---
+
 ### M6. Forgotten-Device Permanent Backdoor
+
+**Status:** ⏳ Offen — geplant für v1.1
 
 **Problem:** Ein Device-Key lebt unbegrenzt. Wenn Alice ein Gerät hat das sie nicht mehr nutzt (aber nicht offiziell abgemeldet hat), und jemand Zugriff darauf bekommt (Diebstahl, Verkauf, Müll), kann dieser als Alice agieren — **für immer**.
 
@@ -291,7 +455,24 @@ Ein Jahr später wird die Wohnung eingebrochen. Das Telefon wird mitgenommen. Fo
 
 ---
 
-### Exploit D: Das "Time-Travel-Paradox"
+### Exploit D: Die "Signaturen-Ersetzung" (behoben)
+
+**Status:** ✅ Behoben 2026-04-18 (siehe K4).
+
+**Szenario:** Bug in einer Implementierung akzeptiert `alg=none` oder `alg=HS256`.
+
+**Was passierte:**
+
+1. Angreifer baut ein JWS mit `alg=none` und beliebigem Payload
+2. Sendet an naive Implementierung
+3. Implementierung sieht "alg=none", verifiziert nicht
+4. Akzeptiert den Payload als gültig
+
+**Fix:** Core 002 verlangt normativ (MUSS): nur `alg=EdDSA` wird akzeptiert, alle anderen Werte — inklusive `none` — MÜSSEN abgelehnt werden.
+
+---
+
+### Exploit E: Das "Time-Travel-Paradox"
 
 **Szenario:** Zwei Geräte von Alice, beide offline.
 
@@ -308,14 +489,42 @@ Aber: beide signieren als Alice. Beide sind gültig. Beide werden in den Log gem
 
 ---
 
+## Zusammenfassung der Empfehlungen
+
+### Sofort — für Version 1.0 (erledigt 2026-04-18 / 2026-04-19)
+
+1. ✅ **alg=EdDSA strict enforcement** explizit in 002 spezifizieren (K4)
+2. ✅ **Capability validUntil** als Pflichtfeld einführen (S4)
+3. ✅ **Nonce-History** im Challenge-Response-Protokoll (S2)
+4. ✅ **Deterministische Nonces** aus `(deviceId, seq)` (K2)
+5. ✅ **JCS-Test-Vektoren** für Unicode-Edge-Cases (M5)
+6. ✅ **Constant-Time Crypto** normativ verlangen (M1)
+
+### Mittelfristig — v1.1 / v1.2
+
+7. ⏳ **Multi-Admin-Modell** für große Gruppen (K1)
+8. ⏳ **Admin-only Space-Metadata** (K3)
+9. ⏳ **Device-Revokation** und Device-TTL (M6)
+10. ⏳ **State-Digests** zwischen Mitgliedern zur Split-Brain-Detection (S3, S5)
+11. ⏳ **Rate-Limiting** für Attestations (M4)
+
+### Langfristig — v2.0+
+
+12. ⏳ **Double-Ratchet für Inbox** (Forward Secrecy, S1)
+13. ⏳ **Forward/Routing** für Broker-Anonymität (M2)
+14. ⏳ **Capability-Chains** (Keyhive-Style) statt soziale Permissions
+15. ⏳ **Anomaly Detection** für Verifikations-Patterns (M3)
+
 ## Der ehrliche Stand
 
 Die Spec ist ein **guter Wurf** aber nicht Production-Ready für hochsensitive Anwendungen. Für Communities mit bestehender sozialer Kontrolle (Nachbarschaftsnetze, Kooperativen) ist sie ausreichend. Für adversarial-heavy Kontexte (Journalisten, Aktivisten unter Repression) fehlen kritische Schutzmaßnahmen.
 
+Die am 18.04.2026 behobenen Quick Wins schließen die **implementierungsnahen** Lücken — kryptographische Fehler, die bei einer nachlässigen Umsetzung zu katastrophalen Kompromittierungen geführt hätten (K2, K4, S2, S4, M5). Diese Fixes waren billig und haben das Protokoll auf ein solides Fundament gestellt.
+
 Die größten verbleibenden Schwachstellen sind **architektonisch**, nicht kryptographisch:
 
-- Zu mächtiger Admin (Single Point of Failure)
-- Fehlende End-to-End-Bestätigung (Broker kann manipulieren)
-- Keine Forward Secrecy (zeitliche Kompromittierung)
+- Zu mächtiger Admin (Single Point of Failure) — K1, K3
+- Fehlende End-to-End-Bestätigung (Broker kann manipulieren) — S3, S5
+- Keine Forward Secrecy (zeitliche Kompromittierung) — S1
 
-Die Kryptographie selbst ist solide gewählt (moderne Primitive, Standards). Die Protokoll-Logik hat Lücken — die meisten in [security-fixes.md](security-fixes.md) adressiert.
+Die Kryptographie selbst ist solide gewählt (moderne Primitive, Standards). Die Protokoll-Logik hat Lücken — die meisten in [security-fixes.md](security-fixes.md) mit Aufwand und Trade-offs adressiert.

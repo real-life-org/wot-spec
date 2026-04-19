@@ -17,6 +17,22 @@ Dieses Dokument spezifiziert wie Daten im Sync Layer verschlüsselt werden — f
 - **AES-256-GCM** (NIST SP 800-38D) — Authentifizierte symmetrische Verschlüsselung
 - **DIDComm v2** (DIF) — Messaging-Standard für Verschlüsselung zwischen DIDs
 
+## Implementierungsanforderungen
+
+### Konstante Laufzeit (Constant-Time) — MUSS
+
+Alle kryptographischen Operationen dieses Dokuments MÜSSEN in konstanter Zeit ausgeführt werden — die Ausführungsdauer DARF nicht von geheimen Eingaben (Schlüssel, Klartext, Zwischenwerte) abhängen.
+
+Konkret:
+
+- **AES-GCM Tag-Verifikation:** MUSS per bitweiser Gleichheits-Prüfung geschehen. Abbruch bei ungültigem Tag OHNE klartext-abhängige Zeitdifferenz.
+- **X25519 Scalar Multiplication:** MUSS über eine konstant-zeit Implementierung laufen (Montgomery Ladder, keine secret-abhängigen Branches oder Table-Lookups).
+- **HKDF / HMAC-Vergleich:** Byte-Vergleiche von MAC- oder Key-Material MÜSSEN über konstant-zeit Operationen erfolgen (`crypto.subtle.timingSafeEqual` oder äquivalent), NIEMALS über `===` auf Strings oder `==` auf Buffers.
+
+**Normative Implikation:** Implementierungen MÜSSEN die Web Crypto API (`crypto.subtle`) oder eine äquivalent auditierte native Bibliothek (z.B. `@noble/ed25519`, `@noble/hashes`) verwenden. Eigenbau von AES, X25519, HKDF oder HMAC in JavaScript/TypeScript ist NICHT erlaubt — JavaScript-Runtimes bieten keine Garantien für konstante Laufzeit bei bitweisen Operationen auf großen Integern.
+
+**Warum:** Timing-Seitenkanäle erlauben einem Angreifer mit ausreichend vielen Messungen Rückschlüsse auf geheime Werte — besonders bei Decryption-Fehlerpfaden (Padding-Oracles, MAC-Vergleichen). In einem verteilten Protokoll mit vielen Nachrichten von potentiell bösartigen Peers ist dieses Angriffsmodell realistisch. Siehe [Security Analysis M1](../research/security-analysis.md#m1-timing-angriffe-bei-decryption).
+
 ## Verschlüsselungs-Schlüssel
 
 Aus dem Master-Seed (siehe [Core 001](../01-wot-core/001-identitaet-und-schluesselableitung.md)):
@@ -99,6 +115,59 @@ Für direkte Nachrichten zwischen zwei Parteien (Attestations, Einladungen, Key-
    - `shared_secret_ephemeral = recipient_private × ephemeral_public`
 3. Beide Secrets kombinieren, denselben AES-Schlüssel via HKDF ableiten
 4. Ciphertext entschlüsseln
+
+### JWE-Verpackung (JSON Serialization)
+
+Die Authcrypt-Ausgabe wird als **JWE JSON Serialization** (RFC 7516) verpackt — kompatibel mit DIDComm v2 und JOSE-Standards.
+
+Struktur:
+
+```json
+{
+  "protected": "<Base64URL-kodierter JWE Protected Header>",
+  "recipients": [
+    {
+      "header": {
+        "kid": "did:key:z6Mk...bob#key-x25519-1"
+      },
+      "encrypted_key": "<Base64URL-kodierter Content Encryption Key>"
+    }
+  ],
+  "iv": "<Base64URL-kodierte 12-Byte Nonce>",
+  "ciphertext": "<Base64URL-kodierter Ciphertext>",
+  "tag": "<Base64URL-kodierter 16-Byte Auth Tag>"
+}
+```
+
+**Protected Header** (vor Base64URL-Kodierung):
+
+```json
+{
+  "alg": "ECDH-1PU+A256KW",
+  "enc": "A256GCM",
+  "skid": "did:key:z6Mk...alice#key-x25519-1",
+  "apu": "<Base64URL-kodierte Sender-DID>",
+  "apv": "<Base64URL-kodierte Empfänger-DID>",
+  "epk": {
+    "kty": "OKP",
+    "crv": "X25519",
+    "x": "<Base64URL-kodierter Ephemeraler Public Key>"
+  }
+}
+```
+
+Pflichtfelder im Protected Header:
+
+| Feld | Wert | Bedeutung |
+|------|-----|-----------|
+| `alg` | `"ECDH-1PU+A256KW"` | Key Agreement + Key Wrap |
+| `enc` | `"A256GCM"` | Content Encryption |
+| `skid` | DID + Key-ID | Sender Key Identifier (static) |
+| `apu` | Base64URL(DID) | Agreement PartyUInfo (Sender) |
+| `apv` | Base64URL(DID) | Agreement PartyVInfo (Empfänger) |
+| `epk` | JWK X25519 | Ephemeraler Public Key |
+
+**Multi-Empfänger:** Das `recipients`-Array kann mehrere Einträge enthalten — der Content Encryption Key wird für jeden Empfänger separat verschlüsselt (Key Wrapping mit AES-256), der Ciphertext ist nur einmal vorhanden.
 
 ### Warum Authcrypt statt ECIES
 

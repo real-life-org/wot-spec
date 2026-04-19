@@ -1,6 +1,6 @@
 # DIDComm v2 Migration — Analyse und Roadmap
 
-*Stand: 17. April 2026*
+*Stand: 19. April 2026*
 
 ## Was ist DIDComm?
 
@@ -34,27 +34,28 @@ DIDComm ist ein aktiv gepflegter Standard (v2.1, v2.2 in Arbeit) mit formaler Si
 
 ## Aktueller Stand unserer Kompatibilität
 
-### Was wir haben (~60%)
+### Was spezifiziert ist (~85%)
 
 | Schicht | Status | Details |
 |---|---|---|
-| Plaintext Message Format | Kompatibel | `id`, `type` (URI), `from`, `to`, `body` |
-| JWS Signaturen | Kompatibel | Identisch mit DIDComm Signed Messages |
+| Plaintext Message Format | Kompatibel | `id`, `type` (URI), `from`, `to`, `body` ([Sync 007](../02-wot-sync/007-transport-und-broker.md#message-envelope-didcomm-kompatibel)) |
+| JWS Signaturen | Kompatibel | Identisch mit DIDComm Signed Messages ([Core 002](../01-wot-core/002-signaturen-und-verifikation.md)) |
 | Krypto-Primitive | Kompatibel | X25519, AES-256-GCM, Ed25519 |
-| Authcrypt-Verfahren | Spezifiziert | ECDH-1PU, Web Crypto API |
+| Authcrypt-Verfahren | Spezifiziert | ECDH-1PU, Web Crypto API ([Sync 005](../02-wot-sync/005-verschluesselung.md)) |
+| JWE-Verpackung | **Spezifiziert (2026-04-19)** | JSON Serialization mit Protected Header, Multi-Recipient ([Sync 005](../02-wot-sync/005-verschluesselung.md)) |
 | Type-URIs | Kompatibel | `https://wot.example/protocols/.../1.0` |
+| Message Threading | **Spezifiziert (2026-04-19)** | `thid` und `pthid` optional im Envelope ([Sync 007](../02-wot-sync/007-transport-und-broker.md#threading)) |
+| Trust Ping 2.0 | **Spezifiziert (2026-04-19)** | Request/Response mit `response_requested` ([Sync 007](../02-wot-sync/007-transport-und-broker.md#trust-ping)) |
+| Discover Features 2.0 | **Spezifiziert (2026-04-19)** | Queries / Disclosures mit Wildcard-Match ([Sync 007](../02-wot-sync/007-transport-und-broker.md#discover-features)) |
 
-### Was fehlt (~40%)
+### Was noch fehlt (~15%)
 
 | Schicht | Aufwand | Beschreibung |
 |---|---|---|
-| JWE-Verpackung | Mittel | JSON-Struktur um Authcrypt-Ergebnis, ~300 Bytes Overhead |
 | DID-Dokumente | Mittel | Service-Endpoints für Mediator-Routing |
-| Message Threading | Niedrig | `thid` und `pthid` Felder ergänzen |
-| Trust Ping | Niedrig | "Bist du da?" — einfaches Request-Response |
-| Discover Features | Niedrig | "Welche Protokolle unterstützt du?" |
 | Forward/Routing | Hoch | Doppelte Verschlüsselungsschicht für Mediator-Privacy |
 | Mediator Coordination | Mittel | Formales Registrierungsprotokoll |
+| Interop-Test gegen SICPA | Mittel | Praktische Verifikation unserer Eigenimplementierung |
 
 ## Was jeder fehlende Teil konkret bedeutet
 
@@ -210,18 +211,19 @@ Für uns relevant: die Schwächen betreffen hauptsächlich den Forward/Routing-F
 
 ### Roadmap
 
-**Phase 1 (jetzt): Spec-Kompatibilität**
+**Phase 1 (abgeschlossen): Spec-Kompatibilität**
 - Plaintext Message Format ✅
 - Type-URIs ✅
 - JWS Signaturen ✅
 - Authcrypt (ECDH-1PU) ✅
 
-**Phase 2 (nächster Schritt): Vollständige Interop**
-- JWE-Verpackung spezifizieren
-- DID-Dokumente mit Service-Endpoints
-- Threading-Felder
-- Trust Ping + Discover Features
-- Interop-Test gegen SICPA-Library
+**Phase 2 (Spec abgeschlossen 2026-04-19 — Implementation offen):**
+- JWE-Verpackung spezifizieren ✅
+- Threading-Felder (`thid`, `pthid`) ✅
+- Trust Ping 2.0 ✅
+- Discover Features 2.0 ✅
+- DID-Dokumente mit Service-Endpoints ⏳
+- Interop-Test gegen SICPA-Library ⏳
 
 **Phase 3 (Zukunft): Erweiterte Features**
 - Forward/Routing (Mediator-Privacy)

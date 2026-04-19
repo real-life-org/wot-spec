@@ -229,6 +229,8 @@ Alle Nachrichten zwischen Peers (über Broker oder direkt) verwenden das **DIDCo
   "from": "did:key:z6MkhaXgBZDvotDkL5257faiztiGiC2QtKLGpbnnEGta2doK",
   "to": ["did:key:z6MkpTHR8VNsBxYAAWHut2Geadd9jSwuBV8xRoAnwWsdvktH"],
   "created_time": "2026-04-17T10:00:00Z",
+  "thid": "550e8400-e29b-41d4-a716-446655440000",
+  "pthid": "7a1c2f80-aabb-4cdd-9eef-112233445566",
   "body": {
     "docId": "7f3a2b10-4c5d-4e6f-8a7b-9c0d1e2f3a4b",
     "payload": "<Base64URL-kodierter verschlüsselter Inhalt>"
@@ -245,7 +247,19 @@ Alle Nachrichten zwischen Peers (über Broker oder direkt) verwenden das **DIDCo
 | `from` | DID | Ja | Absender-DID |
 | `to` | Array von DIDs | Bedingt | Empfänger-DID(s). Pflicht bei Inbox-Nachrichten. |
 | `created_time` | ISO 8601 | Ja | Erstellungszeitpunkt (UTC). DIDComm spezifiziert Unix-Timestamps — wir verwenden ISO 8601 für Konsistenz mit W3C VCs und konvertieren an der Boundary. |
+| `thid` | UUID v4 | Optional | Thread-ID. Verknüpft Nachrichten die zu einer Konversation gehören (z.B. Request + Response). Die erste Nachricht eines Threads setzt `thid = id`; Folgenachrichten tragen denselben `thid`. |
+| `pthid` | UUID v4 | Optional | Parent-Thread-ID. Verweist auf einen übergeordneten Thread — für verschachtelte Konversationen (z.B. ein Sub-Protokoll das innerhalb eines größeren Flows läuft). |
 | `body` | Object | Ja | Nachrichteninhalt. Struktur abhängig vom `type`. |
+
+### Threading
+
+`thid` und `pthid` sind identisch zu den gleichnamigen DIDComm v2 Feldern. Sie erlauben:
+
+- **Request/Response-Korrelation** — Eine Antwort trägt denselben `thid` wie die Anfrage.
+- **Langlaufende Protokolle** — Mehrstufige Flows (z.B. Gruppen-Einladung mit Annahme/Ablehnung) werden durch einen stabilen `thid` zusammengehalten.
+- **Verschachtelte Protokolle** — Ein Sub-Protokoll referenziert den Eltern-Flow über `pthid`.
+
+Nachrichten ohne `thid` sind Einzelnachrichten ohne Konversationskontext. Nachrichten die eine andere Nachricht direkt beantworten (z.B. `ack`, `sync-response`, `trust-ping-response`) MÜSSEN den `thid` der Original-Nachricht tragen.
 
 ### Signatur (DIDComm Signed Message)
 
@@ -283,13 +297,102 @@ Log-Einträge werden NICHT mit Authcrypt verschlüsselt — sie sind bereits mit
 | `.../key-rotation/1.0` | Inbox | Neuer Space Key nach Member-Entfernung |
 | `.../member-update/1.0` | Inbox | Mitgliedschafts-Änderung (hinzugefügt/entfernt) |
 
+#### DIDComm-Standardprotokolle
+
+| Type-URI | Kanal | Beschreibung |
+|----------|-------|-------------|
+| `.../trust-ping/2.0/ping` | Beide | Liveness-Check zu einem Peer |
+| `.../trust-ping/2.0/ping-response` | Beide | Antwort auf einen Trust Ping |
+| `.../discover-features/2.0/queries` | Beide | Anfrage: "Welche Protokolle / Features unterstützt du?" |
+| `.../discover-features/2.0/disclose` | Beide | Antwort: Liste unterstützter Protokoll-URIs |
+
 #### HMC Extension ([H03 Gossip](../04-hmc-extensions/H03-gossip.md))
 
 | Type-URI | Kanal | Beschreibung |
 |----------|-------|-------------|
 | `.../trust-list-delta/1.0` | Inbox | Trust-List-Update (SD-JWT, selektiv offengelegt) |
 
-Alle Type-URIs verwenden den Präfix `https://wot.example/protocols/`. Dieser Präfix wird durch eine echte Domain ersetzt sobald das WoT Vocabulary registriert ist.
+Alle Type-URIs verwenden den Präfix `https://wot.example/protocols/`. Dieser Präfix wird durch eine echte Domain ersetzt sobald das WoT Vocabulary registriert ist. Die Trust-Ping- und Discover-Features-URIs folgen den DIDComm v2 Conventions — der Pfad (`trust-ping/2.0/ping`, etc.) ist mit DIDComm-Bibliotheken interoperabel.
+
+### Trust Ping
+
+Trust Ping ist ein leichtgewichtiges Liveness-Protokoll — zum Prüfen ob ein Peer erreichbar ist und antwortet, und zum Messen der Round-Trip-Zeit.
+
+**Request (`trust-ping/2.0/ping`):**
+
+```json
+{
+  "id": "a1b2c3d4-...",
+  "type": "https://wot.example/protocols/trust-ping/2.0/ping",
+  "from": "did:key:z6Mk...alice",
+  "to": ["did:key:z6Mk...bob"],
+  "created_time": "2026-04-19T10:00:00Z",
+  "thid": "a1b2c3d4-...",
+  "body": {
+    "response_requested": true
+  }
+}
+```
+
+**Response (`trust-ping/2.0/ping-response`):**
+
+```json
+{
+  "id": "e5f6g7h8-...",
+  "type": "https://wot.example/protocols/trust-ping/2.0/ping-response",
+  "from": "did:key:z6Mk...bob",
+  "to": ["did:key:z6Mk...alice"],
+  "created_time": "2026-04-19T10:00:01Z",
+  "thid": "a1b2c3d4-...",
+  "body": {}
+}
+```
+
+Wenn `response_requested` `false` ist, wird keine Antwort erwartet. Implementierungen MÜSSEN Trust Ping unterstützen — es ist das Mindestprotokoll für Erreichbarkeitsprüfungen.
+
+### Discover Features
+
+Mit Discover Features kann ein Peer nachfragen welche Protokolle / Nachrichtentypen der Gegenüber unterstützt. Das erlaubt einer Implementierung, optionale Extensions nur anzubieten wenn der Peer sie versteht.
+
+**Query (`discover-features/2.0/queries`):**
+
+```json
+{
+  "id": "q1q2q3q4-...",
+  "type": "https://wot.example/protocols/discover-features/2.0/queries",
+  "from": "did:key:z6Mk...alice",
+  "to": ["did:key:z6Mk...bob"],
+  "created_time": "2026-04-19T10:00:00Z",
+  "thid": "q1q2q3q4-...",
+  "body": {
+    "queries": [
+      { "feature-type": "protocol", "match": "https://wot.example/protocols/*" }
+    ]
+  }
+}
+```
+
+**Disclose (`discover-features/2.0/disclose`):**
+
+```json
+{
+  "id": "d1d2d3d4-...",
+  "type": "https://wot.example/protocols/discover-features/2.0/disclose",
+  "from": "did:key:z6Mk...bob",
+  "to": ["did:key:z6Mk...alice"],
+  "created_time": "2026-04-19T10:00:01Z",
+  "thid": "q1q2q3q4-...",
+  "body": {
+    "disclosures": [
+      { "feature-type": "protocol", "id": "https://wot.example/protocols/log-entry/1.0" },
+      { "feature-type": "protocol", "id": "https://wot.example/protocols/trust-ping/2.0" },
+      { "feature-type": "protocol", "id": "https://wot.example/protocols/space-invite/1.0" }
+    ]
+  }
+}
+```
+
+`match` unterstützt einfache Wildcards (`*`). Eine leere Query (`match: "*"`) fordert alle unterstützten Features an. Ein Peer DARF Features verschweigen (z.B. aus Datenschutz-Gründen) — Discover Features ist informativ, nicht autoritativ.
 
 ### Erweiterbarkeit
 

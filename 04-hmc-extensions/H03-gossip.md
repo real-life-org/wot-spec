@@ -114,7 +114,7 @@ Trust Lists brauchen gezielte Zustellung (jeder Empfänger sieht andere Einträg
 ┌──────────────────────────────────────────────┐
 │  HMC Extension (H03)                         │
 │  Trust-List-Deltas, Hop-Limits, Sent-Log,    │
-│  Forward-Logik, SD-JWT Selective Disclosure   │
+│  Forward-Logik, SD-JWT Selective Disclosure  │
 ├──────────────────────────────────────────────┤
 │  WoT Sync (007)                              │
 │  Inbox, Broker, Store-and-Forward, E2EE,     │
