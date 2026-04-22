@@ -13,7 +13,7 @@ Dieses Dokument spezifiziert wie Daten zwischen Peers transportiert werden und w
 - **WebSocket** (RFC 6455) — Primärer Transportkanal
 - **DIDComm v2** (DIF) — Nachrichtenformat und Verschlüsselung
 - **Ed25519** (RFC 8032) — Signatur im Message Envelope
-- **JWE** (RFC 7516) — JSON Web Encryption (Authcrypt)
+- **ECIES** (siehe [Sync 005](005-verschluesselung.md)) — 1:1-Verschlüsselung für Inbox-Nachrichten
 
 ## Broker
 
@@ -46,6 +46,24 @@ Ein Broker ist ein Peer mit Superkräften:
 - Den Inhalt der Inbox-Nachrichten
 - Die Mitgliederliste eines Space (verschlüsselt)
 
+### Broker-Deployment-Klassen — Sicherheitseinordnung
+
+Das Protokoll unterstützt mehrere Broker-Konfigurationen mit unterschiedlichem Sicherheitsniveau:
+
+| Modell | Zensur-Resistenz | Split-Brain-Detection | Typischer Einsatz |
+|---|---|---|---|
+| **Single Broker** | **Niedrig** | Nicht möglich | Private Gruppen mit vertrauenswürdigem Broker-Betreiber |
+| **Multi-Broker (redundant)** | Mittel | Möglich via Head-Vergleich | Community-Spaces |
+| **User-gewählter Broker-Mix** | Hoch | Möglich | Hochsensitive Gruppen |
+
+**Single-Broker-Deployments sind eine explizit niedrigere Sicherheitsklasse:**
+
+- Ein bösartiger oder gehackter Broker kann Nachrichten zurückhalten oder unterdrücken, ohne dass Clients das merken
+- Es gibt keinen zweiten Sync-Pfad über den Inkonsistenzen erkannt werden könnten
+- Der Broker-Betreiber muss als vertrauenswürdiger Akteur angenommen werden
+
+Clients, die in Umgebungen mit hohen Sicherheitsanforderungen arbeiten (kritische Infrastruktur, Aktivismus, Krisenkommunikation), SOLLTEN mehrere Broker parallel nutzen und die Multi-Source-Sync-Logik aus [Sync 006](006-sync-protokoll.md#censorship--und-split-brain-detection) aktivieren.
+
 ### Community-betriebene Broker
 
 Ein Broker ist ein einfacher Service:
@@ -74,7 +92,7 @@ Der Broker fügt eine **Schicht darüber** hinzu:
 └──────────────────────────────────────────────────┘
 ```
 
-Im **direkten P2P-Modus** (LAN, Bluetooth) fällt die Broker-Schicht weg. Der Client prüft selbst ob der Gegenüber Member ist (Mitgliederliste liegt lokal vor). Keine Capabilities nötig — das Vertrauen ist direkt.
+Im **direkten P2P-Modus** (LAN, Bluetooth) fällt die Broker-Schicht weg. Der Client prüft selbst ob der Gegenüber Member ist (Mitgliederliste liegt lokal vor). Keine Capabilities nötig — das Vertrauen ist direkt. Die P2P-Authentisierung ist in [Direkter P2P-Sync](#direkter-p2p-sync) spezifiziert.
 
 ## Authentisierung
 
@@ -98,40 +116,154 @@ Nach dem Handshake ist die WebSocket-Verbindung authentifiziert. Alle weiteren N
 
 Die Device-ID (`deviceId`) identifiziert das Gerät stabil — derselbe Wert wie im Sync-Protokoll ([Sync 006](006-sync-protokoll.md#device-identifikation)).
 
+### Nonce-Handling (MUSS)
+
+Die Challenge-Nonce in der Broker-Authentisierung MUSS denselben Replay-Schutz-Regeln folgen wie die Verifikations-Challenge in [Core 004](../01-wot-core/004-verifikation.md#nonce-history-muss):
+
+- Broker MÜSSEN bereits verwendete Nonces für mindestens 24 Stunden speichern
+- Eine Nonce DARF nur einmal akzeptiert werden
+- Nonces MÜSSEN mindestens 32 Bytes aus einer kryptographisch sicheren Zufallsquelle haben
+- Clients MÜSSEN die Nonce direkt nach Empfang signieren (keine späteren Signaturen auf wiederverwendeten Nonces)
+
+## Device-Registrierung
+
+Der Broker MUSS pro DID eine Liste der zugehörigen Device-IDs führen. Das ist notwendig für:
+
+- **Sequenzierte Log-Einträge** — jeder Log-Eintrag ist identifiziert durch `(deviceId, docId, seq)` (siehe [Sync 006](006-sync-protokoll.md))
+- **Nonce-Konstruktion** — die deterministische AES-GCM-Nonce basiert auf `(deviceId, seq)` (siehe [Sync 005](005-verschluesselung.md#nonce-konstruktion))
+- **Store-and-Forward pro Device** — Inbox-Nachrichten müssen jedem Device zugestellt werden, auch wenn es vorübergehend offline ist
+
+### Erstregistrierung
+
+Wenn ein Client mit einer `(did, deviceId)`-Kombination verbindet, die der Broker noch nicht kennt:
+
+1. Broker führt normale Challenge-Response durch (siehe oben)
+2. Nach erfolgreicher Authentisierung: Broker prüft, ob `deviceId` bereits für eine **andere DID** registriert ist
+   - Falls ja: **Ablehnen** mit `DEVICE_ID_CONFLICT` — Device-IDs MÜSSEN global eindeutig sein
+3. Broker prüft, ob `deviceId` für diese DID in einer Revocation-Liste steht
+   - Falls ja: **Ablehnen** mit `DEVICE_REVOKED`
+4. Broker trägt `(did, deviceId)` dauerhaft in seine Device-Liste ein
+5. Broker antwortet mit `{ type: "registered", did, deviceId, isNewDevice: true }`
+
+### Erneute Verbindung eines bekannten Devices
+
+Wenn derselbe `(did, deviceId)` wiederkommt:
+
+1. Challenge-Response wie gewohnt
+2. Broker erkennt die Kombination als bekannt
+3. Broker antwortet mit `{ type: "registered", did, deviceId, isNewDevice: false }`
+4. Broker liefert ausstehende Nachrichten aus der Device-Inbox aus
+
+### Device-Deaktivierung
+
+Device-Deaktivierung wird über eine **signierte Revocation-Nachricht** kommuniziert:
+
+```json
+{
+  "type": "device-revoke",
+  "did": "did:key:z6Mk...alice",
+  "deviceId": "<UUID zu entfernen>",
+  "revokedAt": "2026-04-22T10:00:00Z"
+}
+```
+
+Signiert mit dem Ed25519-Key der angegebenen DID (Master Key). Der Broker MUSS prüfen:
+
+1. JWS-Signatur gültig gegen den Ed25519-Key aus `did`
+2. Der Broker markiert `(did, deviceId)` als `revoked`
+3. Ausstehende Inbox-Nachrichten für dieses Device werden gelöscht
+4. Zukünftige Verbindungsversuche mit dieser Kombination werden mit `DEVICE_REVOKED` abgelehnt
+
+**Limitation im Shared-Seed-Modell:** Wer den Seed hat, kann eine neue `deviceId` generieren und sich als "neues Device" registrieren. Device-Deaktivierung schützt nicht gegen Seed-Kompromittierung — siehe [Core 001](../01-wot-core/001-identitaet-und-schluesselableitung.md#multi-device--shared-seed-modell). Für echten Schutz muss die Identität rotiert werden.
+
+### Device-Liste im Broker
+
+Der Broker speichert pro DID:
+
+| Feld | Beschreibung |
+|------|-------------|
+| `deviceId` | UUID v4 |
+| `firstSeenAt` | Zeitstempel der Erstregistrierung |
+| `lastSeenAt` | Zeitstempel der letzten Verbindung |
+| `status` | `active`, `revoked` |
+| `revokedAt` | Zeitstempel der Revocation (falls vorhanden) |
+
+Diese Liste ist nicht Teil des E2EE-Modells — der Broker kennt sie im Klartext. Sie enthält keine sensiblen Inhalte, nur Identifikations-Metadaten.
+
+### Race Conditions
+
+**Gleichzeitige Registrierung zweier Devices mit demselben Seed:** Kein Problem. UUIDs sind per Definition (v4) eindeutig — zwei parallele Registrierungen produzieren unterschiedliche Device-IDs. Beide werden akzeptiert.
+
+**Registrierung eines Devices während eine Revocation verarbeitet wird:** Der Broker MUSS Revocations atomisch anwenden. Falls eine Registrierung in dem Moment ankommt, in dem eine Revocation für dieselbe `deviceId` verarbeitet wird, wird die Revocation zuerst angewendet — die Registrierung schlägt dann mit `DEVICE_REVOKED` fehl.
+
+**Conflict bei UUID-Kollision:** Bei v4-UUIDs ist das astronomisch unwahrscheinlich (~2^122 Zustände). Falls es doch passiert (defekte RNG, Restore aus Backup): Broker lehnt mit `DEVICE_ID_CONFLICT` ab, Client muss eine neue UUID generieren.
+
+## Store-and-Forward pro Device
+
+Inbox-Nachrichten werden **pro Device** zwischengespeichert, nicht pro DID. Das garantiert, dass jedes Device die für es bestimmten Nachrichten erhält, auch wenn es vorübergehend offline ist.
+
+### Zustellungs-Regeln
+
+1. Eine Inbox-Nachricht an DID X wird für **jedes aktive Device** dieser DID in die Inbox gelegt
+2. Ein Device acknowledged die Nachricht mit `{ type: "ack", messageId: "..." }`
+3. Die Nachricht wird aus der Inbox dieses Devices gelöscht — sie bleibt aber in den Inboxen anderer Devices, die noch nicht ACKt haben
+4. Wenn **alle aktiven Devices** ACKt haben, ist die Nachricht vollständig zugestellt
+5. Deaktivierte Devices werden bei der Zustellung ignoriert (und ihre Inbox-Einträge gelöscht)
+
+### Retention und Garbage Collection
+
+- Nachrichten, die älter sind als ein definiertes TTL (z.B. 30 Tage) werden auch ohne ACK gelöscht — Implementierer dürfen das konfigurieren
+- Wenn ein Device für längere Zeit (z.B. 90 Tage) nicht verbindet, DARF der Broker es als inaktiv behandeln und seine ausstehenden Nachrichten löschen
+- Für kritische Nachrichten (Space-Einladungen, Key-Rotationen) SOLLTE der Sender einen Liefernachweis implementieren (z.B. erneutes Senden nach Timeout)
+
+### Warum pro Device und nicht pro DID
+
+Das Protokoll garantiert damit, dass jedes Device alle für es relevanten Nachrichten mindestens einmal sieht — insbesondere Space-Einladungen und Key-Rotationen. Das ist ein Fallback für den Fall, dass Personal-Doc-Sync zwischen den Devices des Users zeitweise nicht funktioniert (Offline, Broker-Ausfall, etc.).
+
 ## Autorisierung (Capabilities)
 
 Der Broker ist E2EE — er kann die Mitgliederliste eines Space nicht lesen (verschlüsselt mit dem Space Key). Deshalb braucht er einen externen Beweis, dass ein Client auf ein Dokument zugreifen darf.
 
+### Zwei-Schlüssel-Modell für Spaces
+
+Der Broker kennt pro Space zwei Arten von Schlüsseln:
+
+- **Space Public Key (Ed25519)** — verifiziert **Capabilities** die an einzelne Members ausgestellt werden. Alle Members besitzen den Space Private Key und können Capabilities signieren. Bei Key-Rotation (Member-Entfernung) wird das Keypair erneuert — alte Capabilities werden damit ungültig.
+- **Admin-DID(s)** — abgeleitete, space-spezifische Ed25519-Keys (siehe [Sync 009](009-gruppen.md#admin-key-ableitung)). Nur Admins können **Broker-Management-Nachrichten** signieren (Rotation des Space Keypairs, Admin hinzufügen/entfernen).
+
+Das löst das Delegations-Problem: jeder Member kann einladen (= Capabilities signieren), weil alle den Space Private Key haben. Nur Admins können rotieren.
+
 ### Capability-Format
 
-Eine Capability ist ein JWS, signiert vom Space-Admin:
+Eine Capability ist ein JWS, signiert mit dem **Space Private Key**:
 
 **JWS-Payload:**
 
 ```json
 {
   "type": "capability",
-  "issuer": "did:key:z6Mk...admin",
+  "spaceId": "7f3a2b10-4c5d-4e6f-8a7b-9c0d1e2f3a4b",
   "audience": "did:key:z6Mk...bob",
-  "docId": "7f3a2b10-4c5d-4e6f-8a7b-9c0d1e2f3a4b",
   "permissions": ["read", "write"],
   "generation": 3,
-  "issuedAt": "2026-04-18T10:00:00Z",
-  "validUntil": "2026-10-18T10:00:00Z"
+  "issuedAt": "2026-04-22T10:00:00Z",
+  "validUntil": "2026-10-22T10:00:00Z"
 }
 ```
 
 | Feld | Typ | Pflicht | Beschreibung |
 |------|-----|---------|-------------|
-| `issuer` | DID | Ja | Der Admin der die Capability ausgestellt hat |
+| `spaceId` | UUID | Ja | Für welchen Space die Capability gilt |
 | `audience` | DID | Ja | Für welchen User die Capability gilt |
-| `docId` | UUID | Ja | Für welches Dokument |
 | `permissions` | Array | Ja | Erlaubte Operationen (`read`, `write`) |
-| `generation` | Integer | Ja | Capability-Generation (steigt bei Entfernung) |
+| `generation` | Integer | Ja | Space-Keypair-Generation zu der die Capability gehört |
 | `issuedAt` | ISO 8601 | Ja | Erstellungszeitpunkt |
 | `validUntil` | ISO 8601 | Ja | Ablaufzeitpunkt — nach diesem Moment ist die Capability ungültig |
 
+Der JWS wird mit dem Space Private Key signiert. Der `kid` im JWS-Header ist die Space-ID. Der Broker verifiziert mit dem aktuellen Space Public Key.
+
 **Empfohlene Gültigkeitsdauer:**
+
 - Normale Spaces: 6 Monate
 - Hochsensitive Spaces: 1 Monat oder kürzer
 - Persönliches Dokument (self-issued): 1 Jahr
@@ -140,49 +272,71 @@ Eine Capability ist ein JWS, signiert vom Space-Admin:
 
 Capabilities werden zusammen mit dem Space Key verteilt:
 
-- **Bei Einladung:** Die `space-invite` Inbox-Nachricht enthält den Space Key und die Capability ([Sync 009](009-gruppen.md))
-- **Bei Key-Rotation (Member-Entfernung):** Der Admin erstellt neue Capabilities mit erhöhter Generation für alle verbleibenden Members. Die `key-rotation` Nachricht enthält den neuen Key und die neue Capability.
-- **Vor Ablauf:** Der Admin erneuert Capabilities für alle aktiven Members rechtzeitig vor `validUntil`. Clients können aktiv eine Erneuerung anfragen wenn ihre Capability sich dem Ablauf nähert.
+- **Bei Einladung:** Der Einladende signiert eine Capability mit dem Space Private Key für den Eingeladenen. Die `space-invite` Inbox-Nachricht enthält Space Key, Space Private Key und Capability ([Sync 009](009-gruppen.md)).
+- **Bei Key-Rotation (Member-Entfernung):** Der Admin generiert ein neues Space Keypair. Alle verbleibenden Members bekommen neuen Space Key + neuen Space Private Key + neue Capability (signiert mit dem neuen Key).
+- **Vor Ablauf:** Jedes Mitglied kann sich selbst (oder Peers) eine erneuerte Capability ausstellen, solange das aktuelle Space Keypair gültig ist.
 
 ### Capability-Prüfung am Broker
 
 Wenn ein Client ein Dokument syncen will:
 
-1. Client sendet seine Capability für dieses Dokument
+1. Client sendet seine Capability
 2. Broker prüft:
-   - JWS-Signatur gültig? (inklusive `alg=EdDSA`, siehe [Core 002](../01-wot-core/002-signaturen-und-verifikation.md#algorithmus-validierung-muss))
+   - JWS-Signatur gültig gegen den **aktuellen Space Public Key**? (inklusive `alg=EdDSA`, siehe [Core 002](../01-wot-core/002-signaturen-und-verifikation.md#algorithmus-validierung-muss))
    - `audience` = authentifizierte DID?
-   - `docId` = angefragtes Dokument?
-   - `generation` = aktuelle Generation? (nicht widerrufen)
+   - `spaceId` = angefragter Space?
+   - `generation` = aktuelle Space-Keypair-Generation? (alte Capabilities werden damit implizit widerrufen)
    - `now < validUntil`? (nicht abgelaufen)
 3. OK → Sync erlaubt
 
 ### Warum Capability-Ablauf nötig ist
 
-Ohne `validUntil` sind Capabilities unbegrenzt gültig — bis zur nächsten Key-Rotation. Das erzeugt das "Left but never removed"-Problem: ein Member der den Space freiwillig verlässt behält theoretisch Zugriff bis der Admin eine Rotation auslöst (was er vielleicht nie tut, weil kein offensichtlicher Anlass besteht).
+Ohne `validUntil` sind Capabilities unbegrenzt gültig — bis zur nächsten Key-Rotation. Das erzeugt das "Left but never removed"-Problem: ein Member der den Space freiwillig verlässt behält theoretisch Zugriff bis ein Admin eine Rotation auslöst (was vielleicht nie passiert, weil kein offensichtlicher Anlass besteht).
 
 Mit `validUntil` läuft die Berechtigung automatisch ab. Aktive Members bekommen rechtzeitig eine erneuerte Capability. Inaktive Members verlieren den Zugriff ohne dass jemand aktiv handeln muss.
 
-### Capability-Widerruf
+### Capability-Widerruf über Rotation
 
-Bei Member-Entfernung erhöht der Admin die Capability-Generation. Der Broker akzeptiert nur die neueste Generation. Alte Capabilities (niedrigere Generation) werden automatisch ungültig.
+Bei Member-Entfernung rotiert der Admin das **Space Keypair**. Der Broker akzeptiert ab dem Moment nur Capabilities die gegen den neuen Space Public Key verifizierbar sind — alle alten Capabilities werden automatisch ungültig.
 
-Der Admin teilt dem Broker die neue Generation mit — als signierte Nachricht:
+Der Admin sendet dem Broker eine `space-rotate`-Nachricht:
 
 ```json
 {
-  "type": "capability-revocation",
-  "docId": "7f3a2b10-...",
-  "newGeneration": 4,
-  "revokedDid": "did:key:z6Mk...bob"
+  "type": "space-rotate",
+  "spaceId": "7f3a2b10-...",
+  "newPublicKey": "<base64url>",
+  "newGeneration": 4
 }
 ```
 
-Signiert vom Admin, verifizierbar über die DID.
+Signiert mit dem **Admin Key** (space-spezifisch abgeleitet). Der Broker akzeptiert die Nachricht nur wenn der Admin Key zur registrierten Admin-Liste dieses Space gehört.
+
+### Admin-Management
+
+Admins können weitere Admins hinzufügen oder entfernen:
+
+```json
+{
+  "type": "admin-add",
+  "spaceId": "7f3a2b10-...",
+  "newAdminDid": "did:key:z6Mk...derived-for-space"
+}
+```
+
+```json
+{
+  "type": "admin-remove",
+  "spaceId": "7f3a2b10-...",
+  "removedAdminDid": "did:key:z6Mk...derived-for-space"
+}
+```
+
+Beide Nachrichten müssen mit einem **bestehenden Admin Key** für diesen Space signiert sein.
 
 ### Persönliche Dokumente
 
-Für das persönliche Dokument (Identität, Keys) stellt der User seine eigene Capability aus — er ist Admin seiner eigenen Daten. Der Broker prüft: `issuer` = `audience` = authentifizierte DID.
+Für das persönliche Dokument (Identität, Keys) stellt der User sich seine eigene Capability aus. Das persönliche Dokument hat kein Space Keypair — stattdessen signiert der User die Capability direkt mit seinem **Haupt-Ed25519-Key** (DID). Der Broker prüft: `issuer` = `audience` = authentifizierte DID.
 
 ## Zwei Kanäle
 
@@ -225,7 +379,7 @@ Alle Nachrichten zwischen Peers (über Broker oder direkt) verwenden das **DIDCo
 ```json
 {
   "id": "550e8400-e29b-41d4-a716-446655440000",
-  "type": "https://wot.example/protocols/log-entry/1.0",
+  "type": "https://web-of-trust.de/protocols/log-entry/1.0",
   "from": "did:key:z6MkhaXgBZDvotDkL5257faiztiGiC2QtKLGpbnnEGta2doK",
   "to": ["did:key:z6MkpTHR8VNsBxYAAWHut2Geadd9jSwuBV8xRoAnwWsdvktH"],
   "created_time": "2026-04-17T10:00:00Z",
@@ -259,11 +413,31 @@ Alle Nachrichten zwischen Peers (über Broker oder direkt) verwenden das **DIDCo
 - **Langlaufende Protokolle** — Mehrstufige Flows (z.B. Gruppen-Einladung mit Annahme/Ablehnung) werden durch einen stabilen `thid` zusammengehalten.
 - **Verschachtelte Protokolle** — Ein Sub-Protokoll referenziert den Eltern-Flow über `pthid`.
 
-Nachrichten ohne `thid` sind Einzelnachrichten ohne Konversationskontext. Nachrichten die eine andere Nachricht direkt beantworten (z.B. `ack`, `sync-response`, `trust-ping-response`) MÜSSEN den `thid` der Original-Nachricht tragen.
+Nachrichten ohne `thid` sind Einzelnachrichten ohne Konversationskontext. Nachrichten die eine andere Nachricht direkt beantworten (z.B. `ack`, `sync-response`) MÜSSEN den `thid` der Original-Nachricht tragen.
+
+### Authentifizierung: drei Envelope-Varianten
+
+Unser Message-Envelope kann in drei Formen vorliegen (analog zu DIDComm v2, aber mit unserer eigenen Verschlüsselung):
+
+1. **Plaintext Message** — nackte JSON, keine Envelope-Signatur, keine Envelope-Verschlüsselung
+2. **Signed Message** — Plaintext in JWS verpackt (Envelope-Signatur)
+3. **Encrypted Message** — Body mit **ECIES** verschlüsselt (siehe [Sync 005](005-verschluesselung.md#peer-to-peer-verschlüsselung-ecies)). Der Sender wird nicht durch die Verschlüsselung selbst gebunden, sondern durch eine separate JWS-Signatur im Body oder im Envelope
+
+### Wann wird welche Form verwendet (NORMATIV)
+
+Der Envelope wird NUR dann als **Signed Message** verpackt, wenn der Body nicht bereits kryptographisch authentifiziert ist. Doppelte Authentifizierung (Envelope-JWS über Body mit innerer JWS) ist zu vermeiden — sie erhöht nur Größe und Verarbeitungsaufwand, bringt keinen Sicherheitsgewinn.
+
+| Nachrichtentyp | Authentifizierung durch | Envelope |
+|---|---|---|
+| `log-entry` | Innerer JWS im Body (persistent, dauerhaft verifizierbar) | Plaintext |
+| `sync-request`, `sync-response` | Kontext der authentifizierten WebSocket-Verbindung | Plaintext |
+| `inbox` (Attestation, etc.) | Innerer JWS im Klartext-Body (bindet Sender) + ECIES-Wrap | Encrypted (ECIES) |
+| `space-invite`, `key-rotation`, `member-update` | Innerer JWS im Klartext-Body + ECIES-Wrap | Encrypted (ECIES) |
+| `state-digest`, `state-digest-request` | Envelope-JWS (ephemer) | Signed |
 
 ### Signatur (DIDComm Signed Message)
 
-Nachrichten werden als **JWS Compact Serialization** signiert — identisch mit dem DIDComm Signed Message Format und unseren Attestations ([Core 002](../01-wot-core/002-signaturen-und-verifikation.md)):
+Wenn ein Envelope signiert wird, geschieht das als **JWS Compact Serialization** — identisch mit dem DIDComm Signed Message Format und unseren Attestations ([Core 002](../01-wot-core/002-signaturen-und-verifikation.md)):
 
 1. Plaintext Message mit JCS kanonisieren (RFC 8785)
 2. JCS-Bytes als Base64URL kodieren
@@ -271,11 +445,23 @@ Nachrichten werden als **JWS Compact Serialization** signiert — identisch mit 
 4. Ed25519-Signatur über die Signing-Input-Bytes
 5. Ergebnis: JWS Compact String
 
-### Verschlüsselung (DIDComm Authcrypt)
+### Verschlüsselung (ECIES)
 
-Inbox-Nachrichten (1:1) werden mit **Authcrypt (ECDH-1PU)** verschlüsselt — der DIDComm-Standard für authentifizierte Verschlüsselung. Siehe [Sync 005](005-verschluesselung.md#peer-to-peer-verschlüsselung-authcrypt) für Details.
+Inbox-Nachrichten (1:1) werden mit **ECIES** verschlüsselt — X25519 + HKDF + AES-256-GCM. ECIES allein bindet den Sender nicht kryptographisch; die Sender-Authentifizierung wird durch einen **inneren JWS** hergestellt, der im Klartext-Body signiert ist und vom Empfänger nach der Entschlüsselung verifiziert wird.
 
-Log-Einträge werden NICHT mit Authcrypt verschlüsselt — sie sind bereits mit dem Space Key (AES-256-GCM) verschlüsselt. Authcrypt ist nur für den Inbox-Kanal.
+Ablauf:
+
+1. Sender erstellt den Klartext-Body (z.B. Attestation, Space-Invite)
+2. Sender signiert den Body mit seinem Ed25519-Master-Key → innerer JWS
+3. Sender verschlüsselt den JWS-String mit ECIES für den X25519-Key des Empfängers
+4. Ausgabe: `{ epk, nonce, ciphertext }` (siehe [Sync 005](005-verschluesselung.md#verschlüsseltes-nachrichtenformat))
+5. Transport als Body der DIDComm-Envelope-Nachricht (type = `inbox/1.0`, `space-invite/1.0`, etc.)
+
+Auf Empfängerseite entschlüsselt der Client zuerst, verifiziert dann die innere JWS-Signatur gegen die DID des Senders. Die Signatur beweist: diese Nachricht kommt wirklich von Alice.
+
+Siehe [Sync 005](005-verschluesselung.md#peer-to-peer-verschlüsselung-ecies) für Details.
+
+Log-Einträge werden NICHT mit ECIES verschlüsselt — sie sind bereits mit dem Space Key (AES-256-GCM) verschlüsselt. ECIES ist nur für den Inbox-Kanal.
 
 ### Nachrichtentypen
 
@@ -297,102 +483,145 @@ Log-Einträge werden NICHT mit Authcrypt verschlüsselt — sie sind bereits mit
 | `.../key-rotation/1.0` | Inbox | Neuer Space Key nach Member-Entfernung |
 | `.../member-update/1.0` | Inbox | Mitgliedschafts-Änderung (hinzugefügt/entfernt) |
 
-#### DIDComm-Standardprotokolle
-
-| Type-URI | Kanal | Beschreibung |
-|----------|-------|-------------|
-| `.../trust-ping/2.0/ping` | Beide | Liveness-Check zu einem Peer |
-| `.../trust-ping/2.0/ping-response` | Beide | Antwort auf einen Trust Ping |
-| `.../discover-features/2.0/queries` | Beide | Anfrage: "Welche Protokolle / Features unterstützt du?" |
-| `.../discover-features/2.0/disclose` | Beide | Antwort: Liste unterstützter Protokoll-URIs |
-
 #### HMC Extension ([H03 Gossip](../04-hmc-extensions/H03-gossip.md))
 
 | Type-URI | Kanal | Beschreibung |
 |----------|-------|-------------|
 | `.../trust-list-delta/1.0` | Inbox | Trust-List-Update (SD-JWT, selektiv offengelegt) |
 
-Alle Type-URIs verwenden den Präfix `https://wot.example/protocols/`. Dieser Präfix wird durch eine echte Domain ersetzt sobald das WoT Vocabulary registriert ist. Die Trust-Ping- und Discover-Features-URIs folgen den DIDComm v2 Conventions — der Pfad (`trust-ping/2.0/ping`, etc.) ist mit DIDComm-Bibliotheken interoperabel.
+Alle Type-URIs verwenden den Präfix `https://web-of-trust.de/protocols/`.
 
-### Trust Ping
+### Wire-Formate der Sync-Nachrichten
 
-Trust Ping ist ein leichtgewichtiges Liveness-Protokoll — zum Prüfen ob ein Peer erreichbar ist und antwortet, und zum Messen der Round-Trip-Zeit.
+#### `log-entry/1.0` — Neuer verschlüsselter Log-Eintrag
 
-**Request (`trust-ping/2.0/ping`):**
+Ein Peer publiziert einen neuen Log-Eintrag an andere Peers. Der Log-Eintrag selbst ist ein **JWS Compact String** (siehe [Sync 006](006-sync-protokoll.md#signatur-des-log-eintrags)). Er wird als opaker String im Body transportiert:
 
 ```json
 {
-  "id": "a1b2c3d4-...",
-  "type": "https://wot.example/protocols/trust-ping/2.0/ping",
-  "from": "did:key:z6Mk...alice",
-  "to": ["did:key:z6Mk...bob"],
-  "created_time": "2026-04-19T10:00:00Z",
-  "thid": "a1b2c3d4-...",
+  "entry": "<JWS Compact String des Log-Eintrags>"
+}
+```
+
+Der JWS-Payload des Eintrags enthält die Felder `seq`, `deviceId`, `docId`, `authorDid`, `keyGeneration`, `data`, `timestamp` — JCS-kanonisiert, Ed25519-signiert. Vollständiges Schema in [Sync 006 Log-Eintrag](006-sync-protokoll.md#log-eintrag).
+
+**Broker-Indexing:** Der Broker extrahiert `docId`, `deviceId`, `seq` aus dem JWS-Payload (Base64URL-dekodieren des mittleren Segments, JCS-kanonisiertes JSON parsen). Diese drei Felder braucht er für Indexing, Sync-Anfragen und Kollisionserkennung. Der Broker MUSS die JWS-Signatur NICHT verifizieren — Signatur-Verifikation ist Aufgabe der Peers, die die Einträge letztendlich konsumieren. Der Broker darf sie aber als zusätzliche Integritätsprüfung durchführen.
+
+Kein ACK nötig — der Empfang wird implizit durch den nächsten `sync-request` bestätigt (fehlende seq-Werte werden nachgefordert).
+
+**Broker-seitige Kollisionsabwehr (MUSS):**
+
+Der Broker MUSS für jeden akzeptierten Log-Eintrag den **Content-Hash** (SHA-256 über den kanonisierten Payload) speichern, indiziert nach `(docId, deviceId, seq)`. Beim Empfang eines neuen Eintrags prüft der Broker:
+
+1. Existiert bereits ein Eintrag mit derselben `(docId, deviceId, seq)`?
+2. Falls ja: Stimmt der Content-Hash überein?
+   - **Hash gleich:** Idempotente Retransmission — OK, der Broker ignoriert die Duplizierung still
+   - **Hash unterschiedlich:** **Kollision** — der Broker MUSS den neuen Eintrag ablehnen und mit `SEQ_COLLISION_DETECTED` antworten
+3. Falls nicht: Eintrag akzeptieren, Hash speichern
+
+Diese Prüfung ist die letzte Verteidigungslinie gegen AES-GCM-Nonce-Reuse und MUSS auch dann erzwungen werden, wenn der Client seq-Konsistenz-Regeln aus [Sync 006](006-sync-protokoll.md#seq-konsistenz-muss) einhält (Defense in Depth).
+
+**Reaktion des Clients bei `SEQ_COLLISION_DETECTED`:**
+
+Der Client MUSS diese Response als Indikator für ein Restore/Clone-Szenario behandeln und die Restore-Detection-Regel aus [Sync 006](006-sync-protokoll.md#seq-konsistenz-muss) anwenden: neue `deviceId` generieren, alte deaktivieren, neu beginnen.
+
+#### `sync-request/1.0` — Anfrage: "Was hast du seit X?"
+
+Ein Peer fragt einen anderen nach fehlenden Log-Einträgen. Body:
+
+```json
+{
+  "docId": "7f3a2b10-...",
+  "heads": {
+    "a1b2c3d4-...": 42,
+    "e5f6g7h8-...": 17
+  },
+  "limit": 100
+}
+```
+
+| Feld | Typ | Pflicht | Beschreibung |
+|------|-----|---------|-------------|
+| `docId` | UUID | Ja | Für welches Dokument |
+| `heads` | Object | Ja | Pro bekanntem `deviceId` die höchste seq, die ich bereits habe |
+| `limit` | Integer | Nein | Maximale Anzahl Einträge in der Antwort (Default: 100) |
+
+**Heads-Semantik:** Ein leerer oder fehlender Eintrag für eine `deviceId` bedeutet "ich habe nichts von diesem Device" — der Antwortende sendet dann alle verfügbaren Einträge ab `seq=0`. Ein bekannter Eintrag bedeutet "ich habe bis inklusive seq N" — gesendet werden Einträge ab `seq=N+1`.
+
+#### `sync-response/1.0` — Antwort mit fehlenden Einträgen
+
+Antwort auf `sync-request`. Body:
+
+```json
+{
+  "docId": "7f3a2b10-...",
+  "entries": [
+    "<JWS Compact String #1>",
+    "<JWS Compact String #2>"
+  ],
+  "heads": {
+    "a1b2c3d4-...": 52,
+    "e5f6g7h8-...": 17,
+    "i9j0k1l2-...": 8
+  },
+  "truncated": false
+}
+```
+
+| Feld | Typ | Pflicht | Beschreibung |
+|------|-----|---------|-------------|
+| `docId` | UUID | Ja | Für welches Dokument |
+| `entries` | Array of JWS-Strings | Ja | Die fehlenden Log-Einträge als JWS Compact Strings, sortiert nach `(deviceId, seq)`. Format gemäß [Sync 006 Log-Eintrag](006-sync-protokoll.md#log-eintrag). |
+| `heads` | Object | Ja | Die aktuell höchsten bekannten seq pro deviceId beim Antwortenden |
+| `truncated` | Boolean | Ja | `true` wenn durch `limit` abgeschnitten — der Fragende MUSS einen weiteren `sync-request` mit aktualisierten Heads senden |
+
+**Threading:** Der `sync-response` MUSS denselben `thid` wie der zugehörige `sync-request` tragen.
+
+**Heads-Diskrepanz-Detection:** Der Fragende kann die erhaltenen `heads` mit denen anderer Broker/Peers vergleichen, um Censorship oder Split-Brain zu erkennen (siehe [Sync 006](006-sync-protokoll.md#censorship--und-split-brain-detection)).
+
+#### `ack/1.0` — Empfangsbestätigung
+
+Wird nur für **Inbox-Nachrichten** verwendet (nicht für sync-request/response — dort ist die Bestätigung implizit). Body:
+
+```json
+{
+  "messageId": "uuid-der-empfangenen-nachricht"
+}
+```
+
+Der Empfänger schickt `ack` nach erfolgreichem Verarbeiten (Entschlüsseln, Signatur-Verifizieren) einer Inbox-Nachricht. Der Broker kann die Nachricht dann aus der Device-Inbox entfernen.
+
+#### Fehler-Responses
+
+Wenn eine Sync-Anfrage nicht erfüllt werden kann, antwortet der Broker mit einer Error-Nachricht:
+
+```json
+{
+  "type": "https://web-of-trust.de/protocols/error/1.0",
+  "thid": "<thid der Original-Anfrage>",
   "body": {
-    "response_requested": true
+    "code": "DOC_NOT_FOUND",
+    "message": "Unbekannte docId"
   }
 }
 ```
 
-**Response (`trust-ping/2.0/ping-response`):**
+Normative Error-Codes:
 
-```json
-{
-  "id": "e5f6g7h8-...",
-  "type": "https://wot.example/protocols/trust-ping/2.0/ping-response",
-  "from": "did:key:z6Mk...bob",
-  "to": ["did:key:z6Mk...alice"],
-  "created_time": "2026-04-19T10:00:01Z",
-  "thid": "a1b2c3d4-...",
-  "body": {}
-}
-```
+| Code | Wann |
+|------|------|
+| `DOC_NOT_FOUND` | Dokument existiert beim Broker nicht |
+| `CAPABILITY_INVALID` | Capability-Signatur ungültig |
+| `CAPABILITY_EXPIRED` | Capability abgelaufen |
+| `CAPABILITY_GENERATION_STALE` | Capability für alte Space-Keypair-Generation (nach Rotation) |
+| `DEVICE_NOT_REGISTERED` | Client-Device ist beim Broker nicht registriert |
+| `DEVICE_REVOKED` | Device-ID ist als revoked markiert |
+| `DEVICE_ID_CONFLICT` | Device-ID bereits für eine andere DID registriert |
+| `SEQ_COLLISION_DETECTED` | Log-Eintrag mit `(docId, deviceId, seq)` existiert bereits mit anderem Content-Hash — Client MUSS neue `deviceId` generieren (Restore/Clone-Szenario) |
+| `RATE_LIMITED` | Rate-Limit überschritten |
+| `INTERNAL_ERROR` | Server-Fehler |
 
-Wenn `response_requested` `false` ist, wird keine Antwort erwartet. Implementierungen MÜSSEN Trust Ping unterstützen — es ist das Mindestprotokoll für Erreichbarkeitsprüfungen.
-
-### Discover Features
-
-Mit Discover Features kann ein Peer nachfragen welche Protokolle / Nachrichtentypen der Gegenüber unterstützt. Das erlaubt einer Implementierung, optionale Extensions nur anzubieten wenn der Peer sie versteht.
-
-**Query (`discover-features/2.0/queries`):**
-
-```json
-{
-  "id": "q1q2q3q4-...",
-  "type": "https://wot.example/protocols/discover-features/2.0/queries",
-  "from": "did:key:z6Mk...alice",
-  "to": ["did:key:z6Mk...bob"],
-  "created_time": "2026-04-19T10:00:00Z",
-  "thid": "q1q2q3q4-...",
-  "body": {
-    "queries": [
-      { "feature-type": "protocol", "match": "https://wot.example/protocols/*" }
-    ]
-  }
-}
-```
-
-**Disclose (`discover-features/2.0/disclose`):**
-
-```json
-{
-  "id": "d1d2d3d4-...",
-  "type": "https://wot.example/protocols/discover-features/2.0/disclose",
-  "from": "did:key:z6Mk...bob",
-  "to": ["did:key:z6Mk...alice"],
-  "created_time": "2026-04-19T10:00:01Z",
-  "thid": "q1q2q3q4-...",
-  "body": {
-    "disclosures": [
-      { "feature-type": "protocol", "id": "https://wot.example/protocols/log-entry/1.0" },
-      { "feature-type": "protocol", "id": "https://wot.example/protocols/trust-ping/2.0" },
-      { "feature-type": "protocol", "id": "https://wot.example/protocols/space-invite/1.0" }
-    ]
-  }
-}
-```
-
-`match` unterstützt einfache Wildcards (`*`). Eine leere Query (`match: "*"`) fordert alle unterstützten Features an. Ein Peer DARF Features verschweigen (z.B. aus Datenschutz-Gründen) — Discover Features ist informativ, nicht autoritativ.
+Clients SOLLEN bei `CAPABILITY_EXPIRED` eine neue Capability anfordern (via Peer-Kontakt, da der Broker die Signatur nicht erzeugen kann).
 
 ### Erweiterbarkeit
 
@@ -499,6 +728,113 @@ Das Sync-Protokoll funktioniert über verschiedene Transportwege:
 
 Das Envelope-Format und das Sync-Protokoll (007) sind transportunabhängig. Nur der Verbindungsaufbau unterscheidet sich.
 
+## Direkter P2P-Sync
+
+Wenn zwei Peers direkt kommunizieren (Bluetooth, WiFi Direct, LAN ohne Broker), fällt die Broker-Schicht weg. Authentisierung, Autorisierung und Message-Routing laufen direkt zwischen den Peers.
+
+### Anwendungsszenarien
+
+- Zwei Smartphones auf einem Festival ohne Internet
+- Zwei Devices desselben Users im lokalen WLAN (schneller als via Broker)
+- Cross-Device-Sync ohne Broker-Abhängigkeit
+
+### Mutual Challenge-Response
+
+Im P2P-Modus gibt es keinen "Server" — beide Peers müssen sich gegenseitig authentifizieren:
+
+```
+1. Alice und Bob haben eine bidirektionale Verbindung (Bluetooth, WebSocket-LAN, etc.)
+
+2. Alice sendet: { type: "p2p-hello", did_A, deviceId_A, nonce_A }
+3. Bob sendet:   { type: "p2p-hello", did_B, deviceId_B, nonce_B }
+
+4. Beide Seiten erstellen denselben kanonischen Transcript-String:
+     transcript = JCS-Kanonisierung von {
+       "protocol": "wot/p2p-auth/v1",
+       "initiatorDid": did_A,
+       "initiatorDeviceId": deviceId_A,
+       "initiatorNonce": nonce_A,
+       "responderDid": did_B,
+       "responderDeviceId": deviceId_B,
+       "responderNonce": nonce_B
+     }
+
+5. Alice signiert (transcript || "role:initiator") mit ihrem Master-Key:
+   → { type: "p2p-auth", did: did_A, role: "initiator", signature: Sig_Alice }
+6. Bob signiert (transcript || "role:responder") mit seinem Master-Key:
+   → { type: "p2p-auth", did: did_B, role: "responder", signature: Sig_Bob }
+
+7. Alice rekonstruiert denselben Transcript und verifiziert Sig_Bob gegen Bobs Public Key
+8. Bob rekonstruiert denselben Transcript und verifiziert Sig_Alice gegen Alices Public Key
+
+9. Beide authentifiziert → Sync kann beginnen
+```
+
+**Wichtige Eigenschaften:**
+
+- **Initiator/Responder-Rolle** wird am Anfang der Verbindung eindeutig festgelegt (z.B. wer zuerst `p2p-hello` sendet ist Initiator). Die Rolle wird in die Signatur mit einbezogen, damit ein Angreifer die Signatur des einen nicht als die des anderen ausgeben kann.
+- **Alle Handshake-Parameter** (DIDs, Device-IDs, beide Nonces) sind Teil des signierten Transcripts. Ein Angreifer, der nur Nonces spiegelt oder DIDs manipuliert, kann keine gültige Signatur produzieren, ohne den tatsächlichen Master-Key zu besitzen.
+- **Reflection-Schutz:** Weil die Signatur rollen-spezifisch ist (`"role:initiator"` vs `"role:responder"`) und die DIDs explizit im Transcript stehen, kann ein Angreifer nicht seine eigene Signatur aus einer anderen Session als die einer anderen Partei ausgeben.
+
+Nach dem Handshake kennt jeder Peer die **DID + deviceId** des anderen (authentisch verifiziert) und kann damit den normalen Sync-Protokoll-Flow (`sync-request`, `sync-response`) anstoßen.
+
+### Nonce-Anforderungen
+
+- Nonces MÜSSEN mindestens 32 Bytes aus einer kryptographisch sicheren Zufallsquelle sein
+- Jede Seite MUSS eine Nonce-History (wie [Core 004](../01-wot-core/004-verifikation.md#nonce-history-muss)) führen um Replay-Angriffe zu verhindern
+- Nonces MÜSSEN nach Verwendung verworfen werden
+- Der Transcript MUSS mit JCS (RFC 8785) kanonisiert werden, damit beide Seiten bitgenau denselben Input signieren/verifizieren
+
+### Autorisierung ohne Capabilities
+
+Im P2P-Modus gibt es keinen Broker, der Capabilities prüft. Stattdessen prüft jeder Peer lokal:
+
+**Für Space-Dokumente:**
+
+1. Kennt der Peer das fragliche Dokument? (Space-ID in seiner Liste?)
+2. Ist die DID des Gegenübers in der lokalen Mitgliederliste dieses Space?
+3. Kann der Gegenüber den Besitz des Space Private Keys beweisen (durch erfolgreiches Entschlüsseln eines Test-Challenges oder durch eine vorzeigbare Capability)?
+
+**Für persönliche Dokumente:**
+
+Nur erlaubt zwischen Devices desselben Users (gleiche DID im Handshake).
+
+### Verbindung mit Member-Entfernung
+
+Nach einer Space-Key-Rotation haben entfernte Member den alten Space Private Key noch. Sie können theoretisch in einem P2P-Kontakt einem noch-Member begegnen und sich als Member ausgeben. **Verteidigung:**
+
+- Der `sync-request` enthält Log-Einträge mit `keyGeneration`
+- Verbleibende Members schreiben ausschließlich Einträge mit der aktuellen (höchsten) `keyGeneration`
+- Ein entfernter Member könnte nur Einträge mit alter `keyGeneration` produzieren — die werden von anderen verbleibenden Members als "historisch" erkannt und der Peer als potentiell veraltet eingestuft
+- Bei Unsicherheit SOLLEN Members Metadaten zum aktuellen Space-State aus einer vertrauenswürdigen Quelle (anderer Member oder Broker) nachsynchronisieren
+
+### Sync-Ablauf nach Handshake
+
+Nach erfolgreicher gegenseitiger Authentisierung läuft das normale Sync-Protokoll:
+
+```
+1. Alice: { type: "sync-request", docId, heads }
+2. Bob:   { type: "sync-response", docId, entries, heads }
+3. Alice verifiziert jeden empfangenen Log-Eintrag (JWS-Signatur, Space-Key-Entschlüsselung)
+4. Alice: weitere sync-requests für andere gemeinsame Dokumente
+```
+
+### Transport-Framing
+
+Verschiedene Transports haben unterschiedliche Paket-Semantiken:
+
+| Transport | Framing |
+|---|---|
+| WebSocket (LAN) | WebSocket-Messages sind bereits framed |
+| Bluetooth L2CAP | Length-prefixed (4-Byte Big-Endian + Payload) |
+| Sneakernet (QR, USB) | Einzelne JSON-Dokumente pro "Übertragungseinheit" |
+
+Der normative Payload ist jeweils derselbe: eine DIDComm-kompatible Message mit `type`, `body`, etc. Nur die Transport-spezifische Einrahmung unterscheidet sich.
+
+### Inbox im P2P-Modus
+
+P2P-Verbindungen sind typischerweise kurz. Eine "Inbox" im Sinne von Store-and-Forward existiert nicht — Nachrichten werden direkt zugestellt oder gehen verloren. Für garantierte Zustellung SOLLEN Clients den Broker-Pfad nutzen, nicht P2P.
+
 ## App-Start-Reihenfolge
 
 Beim Starten der App:
@@ -524,4 +860,4 @@ Die App ist nach Phase 1 benutzbar. Phase 2 und 3 laufen im Hintergrund.
 
 ## Architektur-Grundlage
 
-Siehe [Sync-Architektur](../research/sync-architektur.md) und [Forschungsdokument](../research/sync-and-transport.md) für die vollständige Analyse.
+Siehe [Sync-Architektur](../research/sync-architektur.md) und [Sync-Alternativen](../research/sync-alternativen.md) für die vollständige Analyse.

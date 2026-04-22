@@ -98,15 +98,28 @@ Der `seq`-Wert ist mehr als nur eine Reihenfolge-Nummer — er ist ein **Sicherh
    - Resultat: gleicher Nonce mit gleichem Key für zwei verschiedene Klartexte → katastrophal
    - **Lösung:** Client MUSS lokale Persistenz VOR Übermittlung an den Broker durchführen
 
-2. **Device-Restore aus altem Backup**
-   - Problem: Backup enthält `seq=1000`, zwischenzeitlich wurde `seq=1050` geschrieben
-   - Nach Restore: Client würde von `seq=1001` weiter zählen
-   - Resultat: Nonce-Reuse mit bereits existierenden Einträgen
-   - **Lösung:** Nach Restore MUSS der Client zuerst einen Full-Sync mit dem Broker durchführen um den aktuellen Stand zu kennen, bevor neue Einträge geschrieben werden
+2. **Device-Restore / Clone / Multi-Tab (Restore-Detection-Regel — MUSS)**
+   - Problem: Backup enthält `seq=1000`, zwischenzeitlich wurde `seq=1050` geschrieben; oder zwei parallele Instanzen der App mit gleicher `deviceId`
+   - Naive "Full-Sync vor Schreiben" reicht nicht — zwischen Sync und Schreiben kann eine parallele Instanz dieselbe `(deviceId, seq)` nutzen
+   - **Regel:** Beim App-Start / Reconnect MUSS der Client für jede aktive `(deviceId, docId)`-Kombination prüfen:
+     1. Broker-`seq` für diese `(deviceId, docId)` abfragen
+     2. Lokaler persistierter `seq` laden
+     3. Falls `broker_seq > local_seq` (egal wie klein die Diskrepanz): **Restore/Clone erkannt**
+   - Bei Restore/Clone-Erkennung MUSS der Client:
+     1. Eine **neue zufällige `deviceId`** generieren
+     2. Die alte `deviceId` beim Broker per signierter `device-revoke`-Nachricht deaktivieren (siehe [Sync 007](007-transport-und-broker.md#device-deaktivierung))
+     3. Extensions über den `deviceId`-Wechsel informieren, damit device-spezifische Felder in Personal-Doc-Items aktualisiert werden können (siehe [Sync 010](010-personal-doc.md))
+     4. Alle neuen Einträge unter der neuen `deviceId` schreiben (beginnend bei `seq=0`)
+   - Damit gibt es keinen `(deviceId, seq)`-Konflikt mehr — die neue `deviceId` hat einen frischen `seq`-Raum
 
 3. **Multi-Device mit gleichem Seed aber verschiedenen Devices**
    - Kein Problem: jedes Device hat eigene `deviceId`, eigenen `seq`-Raum
    - Die Nonces kollidieren nicht zwischen Devices
+
+4. **Atomares Schreiben innerhalb eines Clients**
+   - Bei gleichzeitigen Schreibvorgängen (z.B. zwei Browser-Tabs, parallele Async-Operationen) MUSS der Client `seq`-Allocation atomar mit dem Schreibvorgang durchführen
+   - Konkret: Lock über `(deviceId, docId, keyGeneration)` — der Lesevorgang von `current_seq`, die Berechnung `next_seq = current_seq + 1`, das Persistieren des Eintrags und das Aktualisieren von `current_seq` MÜSSEN ununterbrechbar sein
+   - Browser-Implementierungen SOLLEN `BroadcastChannel` oder `WebLocks API` für Cross-Tab-Koordination nutzen
 
 ### Signatur des Log-Eintrags
 
@@ -127,7 +140,7 @@ Ein Log-Eintrag wird als `body` einer DIDComm-Nachricht transportiert:
 ```json
 {
   "id": "uuid",
-  "type": "https://wot.example/protocols/log-entry/1.0",
+  "type": "https://web-of-trust.de/protocols/log-entry/1.0",
   "from": "did:key:z6Mk...alice",
   "to": ["did:key:z6Mk...broker"],
   "created_time": "2026-04-17T10:00:00Z",
@@ -137,7 +150,7 @@ Ein Log-Eintrag wird als `body` einer DIDComm-Nachricht transportiert:
 }
 ```
 
-Der Log-Eintrag ist bereits mit dem Space Key verschlüsselt (AES-256-GCM) und JWS-signiert. Die DIDComm-Nachricht transportiert ihn nur — keine zusätzliche Authcrypt-Verschlüsselung nötig.
+Der Log-Eintrag ist bereits mit dem Space Key verschlüsselt (AES-256-GCM) und JWS-signiert. Die DIDComm-Nachricht transportiert ihn nur — keine zusätzliche ECIES-Verschlüsselung nötig.
 
 ### Verschlüsselter Payload (`data`)
 
@@ -230,17 +243,45 @@ Broker empfängt neuen Eintrag
   → Peer wacht auf, verbindet sich, holt fehlende Einträge
 ```
 
+## Censorship- und Split-Brain-Detection
+
+Das Sync-Protokoll konvergiert korrekt solange Peers tatsächlich dieselben Log-Einträge sehen. Ein Zwischenakteur (Broker oder Admin mit Sonderrolle) kann jedoch Einträge selektiv unterdrücken oder gegenüber verschiedenen Peers unterschiedliche Antworten geben — ohne dass die Peers es von sich aus merken.
+
+### Detection durch Multi-Source-Sync
+
+Clients SOLLEN regelmäßig gegen mehrere verfügbare Quellen syncen — mehrere Broker desselben Space (siehe [Sync 007 Multi-Broker](007-transport-und-broker.md#multi-broker)) oder direkte P2P-Peers wenn ein alternativer Transport verfügbar ist (LAN, Bluetooth, QR-Code).
+
+Das existierende `sync-request` gibt Heads pro `deviceId` zurück — der Vergleich ist ein einfacher Abgleich der Heads-Vektoren zweier Quellen:
+
+- Identische Heads → konsistente Sicht, kein Handlungsbedarf
+- Unterschiedliche Heads trotz erfolgter Sync-Runde → Indikator für Divergenz (Sync-Lag oder Censorship)
+
+### Umgang mit Divergenz
+
+Clients SOLLEN persistente Divergenz für den User sichtbar machen — als Status-Indikator im betroffenen Space, nicht als disruptiver Alarm. Der User SOLL Handlungsoptionen bekommen:
+
+- Sync gegen alternativen Broker erzwingen
+- Direkt-P2P-Sync mit einem anderen Mitglied versuchen
+- Den Hinweis ignorieren (z.B. bei bekannter Sync-Latenz)
+
+Konkrete UX-Formulierung liegt bei der Implementation. Die Spec fordert nur, dass Divergenz nicht still bleibt.
+
+### Grenzen
+
+Dieses Verfahren erkennt Censorship nur wenn der Client tatsächlich alternative Quellen hat. Communities mit einem einzigen Broker und ohne P2P-Kapazität sind strukturell ungeschützt — unabhängig von der Protokoll-Ausgestaltung. Details zur Bedrohungsmodellierung siehe [Security Analysis S3/S5](../research/security-analysis.md#s3-split-brain-durch-broker-manipulation).
+
 ## Was gesynced wird
 
-Verschiedene Daten syncen in verschiedenen Dokumenten:
+Es gibt zwei Arten von Dokumenten, die sich in **Key-Management und Zielgruppe** unterscheiden, aber dasselbe Sync-Protokoll verwenden:
 
-| Dokument | Synced zwischen | Inhalt |
-|----------|----------------|--------|
-| Identity-Dokument | Eigene Geräte | Profil, Kontakte |
-| Key-Dokument | Eigene Geräte | Group Keys |
-| Space-Dokument (pro Space) | Alle Space-Members | CRDT-Daten des Spaces |
+| Dokument | Synced zwischen | Inhalt | Key-Herkunft | Spezifiziert in |
+|---|---|---|---|---|
+| **Personal Doc** | Eigene Geräte des Users | Profil, Devices, Kontakte, Verifikationen, empfangene Attestations, Space-Mitgliedschaften, Space Keys | Deterministisch aus dem Seed abgeleitet | [Sync 010](010-personal-doc.md) |
+| **Space-Dokument (pro Space)** | Alle Members des Space | CRDT-Daten des Spaces, Mitgliederliste | Zufällig generiert, per ECIES verteilt | [Sync 009](009-gruppen.md) |
 
-Jedes Dokument hat seinen eigenen Log. Kein Cross-Triggering — Identity-Sync und Space-Sync sind unabhängig.
+Jedes Dokument hat seinen eigenen Log mit eigener `docId`. Kein Cross-Triggering — Personal-Doc-Sync und Space-Sync sind unabhängig.
+
+**Konsolidierung statt mehrerer persönlicher Dokumente:** Frühere Entwürfe trennten ein "Identity-Dokument" (Profil, Kontakte) von einem "Key-Dokument" (Group Keys). Diese Trennung wurde aufgegeben — alles was zu einer Identität gehört liegt im Personal Doc. Das vereinfacht Cross-Device-Sync (ein Sync-Pfad statt mehrerer) und spiegelt die aktuelle Implementierung wider. Siehe [Sync 010](010-personal-doc.md) für die Struktur des Personal Doc.
 
 ## Direkte Nachrichten (Inbox)
 

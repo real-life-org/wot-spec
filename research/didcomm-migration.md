@@ -12,50 +12,96 @@ Kernprinzipien:
 - **Message-Level Security** — Verschlüsselung ist in der Nachricht, nicht im Transport (anders als TLS)
 - **Offline-fähig** — Nachrichten werden gespeichert und zugestellt wenn der Peer online kommt
 
-## Warum DIDComm für unser WoT?
+## Warum DIDComm für unser WoT? — ehrliche Einordnung
 
-### Architektonische Übereinstimmung
+### Was DIDComm wirklich bringt
 
-DIDComm teilt unsere Werte: P2P, offline-fähig, dezentral, keine zentrale Autorität. Es ist das Gegenstück zu OpenID4VC (EU-Wallet, Client-Server, staatlich).
+**Design-Disziplin und konzeptionelle Klarheit:**
+DIDComm ist ein durchdachter Stack mit klarer Layer-Trennung (Envelope / Protokoll / Anwendung), formaler Security-Analyse (ACM CCS 2024) und einem durchdachten Threading-Modell. Wer DIDComm-konform spezifiziert, vermeidet viele typische Fehler.
 
-### Interoperabilität
+**Library-Kompatibilität für die SSI-Nische:**
+`didcomm-rust` (SICPA) und `didcomm-js` existieren und werden gepflegt. Wer DIDComm-Envelope spricht, kann direkt mit diesen Bibliotheken arbeiten und ist mit dem Aries/Hyperledger SSI-Ökosystem (Indicio, Procivis, Lissi, esatus) interoperabel.
 
-Ohne DIDComm ist jedes dezentrale Projekt eine Insel. Mit DIDComm können verschiedene Apps denselben Vertrauensgraphen teilen:
+**Architektonische Übereinstimmung:**
+DIDComm teilt unsere Werte: P2P, offline-fähig, dezentral, keine zentrale Autorität. Das macht DIDComm zu einem natürlichen Envelope-Standard für uns.
 
-- Eine Community-Währung (Circles) könnte WoT-Attestations als Sybil-Resistenz nutzen
-- Ein dezentraler Messenger (Briar) könnte WoT-Verifikation für Kontakte nutzen
-- Ein Nostr-Client könnte WoT-Trust-Scores als Spam-Filter nutzen
+### Was DIDComm NICHT bringt — Mythen und Realität
 
-Alle über dasselbe Messaging-Protokoll, ohne bilaterale Integrationen.
+**🚫 Kein EU-Wallet-Interop:**
+Die eIDAS 2.0 Architecture Reference Framework hat sich gegen DIDComm entschieden. Die gewählten Protokolle sind **OpenID4VCI** (Ausstellung) und **OpenID4VP** (Präsentation) — beide OAuth-2.0-basiert, nicht DIDComm-basiert. Als Credential-Format ist **SD-JWT VC** (oder ISO mDL) vorgesehen.
 
-### Zukunftssicherheit
+Heißt: DIDComm-Compliance ist kein Ticket in den EU-Wallet-Stack. SD-JWT-VC-Compliance ist es.
 
-DIDComm ist ein aktiv gepflegter Standard (v2.1, v2.2 in Arbeit) mit formaler Sicherheitsanalyse (ACM CCS 2024). Wenn das dezentrale Ökosystem wächst — besonders als Reaktion auf eIDAS — ist DIDComm der Standard der bereit steht.
+**🚫 Kein Mainstream-Messaging-Interop:**
+Matrix, Nostr, Signal, WhatsApp, ActivityPub nutzen alle eigene Protokolle. DIDComm hat dort keine Traktion.
+
+**🚫 Kein Crypto/Web3-Interop:**
+Ethereum-Ökosystem nutzt EIP-191/712, WalletConnect, custom Flows. DIDComm ist dort kein Thema.
+
+**🚫 Kein Banking/Finance-Interop:**
+ISO 20022 und Swift sind dort Standard. DIDComm taucht nicht auf.
+
+### Wo Interop wirklich entsteht — auf Format-Ebene
+
+Die echte Interop-Schicht sind **Datenformate und Identitäts-Primitive**, nicht Exchange-Protokolle:
+
+| Baustein | Akzeptanz |
+|---|---|
+| DID:key + Ed25519 | SSI-Wallets, EU-Wallet, W3C-VC-Ökosystem, viele Crypto-Apps |
+| W3C VC Data Model 2.0 | SSI-Wallets, EU-Wallet, OpenID4VC, Aries |
+| SD-JWT VC | EU-Wallet (Pflicht), OpenID4VC, einige SSI-Wallets |
+| JWS Compact | JOSE-Ökosystem, OpenID4VC, Aries |
+
+Wenn wir auf diesen Ebenen die richtigen Wahlen treffen, sind wir auch dann interoperabel, wenn unser Exchange-Protokoll DIDComm ist und das Gegenüber OpenID4VC spricht. Die Daten lassen sich über Gateways/Bridges transformieren — die Identitäts- und Credential-Formate bleiben identisch.
+
+### Was wir daraus konkret ableiten
+
+- **Envelope-Ebene: DIDComm-kompatibel bleiben** — billig, gibt uns Aries-Nischen-Interop und Design-Disziplin
+- **Format-Ebene: SD-JWT VC adoptieren** — für Trust-Lists (H01) und als Option für Attestations. Das ist der strategisch wichtige Interop-Baustein.
+- **NICHT verfolgen: Forward Routing, Mediator Coordination, Pickup Protocol** — das sind Aries-spezifische Protokolle für Enterprise-Mediator-Szenarien, die uns Komplexität einbringen ohne klaren Gewinn für unser P2P-Modell.
+- **NICHT verfolgen als Haupt-Pfad: Issue Credential 3.0, Present Proof 3.0 über DIDComm** — hier läuft der Mainstream über OpenID4VC. Wenn wir breitere Exchange-Interop wollen, wäre OpenID4VCI/VP strategisch wichtiger.
+
+### Zukunftssicherheit — vorsichtiger formuliert
+
+DIDComm ist aktiv gepflegt (v2.1 Work in Progress), hat formale Sicherheitsanalyse und eine etablierte Nische im SSI-Sektor. Wenn das dezentrale Ökosystem außerhalb des staatlich geprägten eIDAS-Pfads wächst, **könnte** DIDComm weiter an Bedeutung gewinnen. Das ist keine Gewissheit, aber eine plausible Wette.
+
+Gleichzeitig: selbst wenn DIDComm nicht zum breiten Standard wird, verlieren wir wenig — unser Envelope-Overhead (~300 Bytes bei Authcrypt, JWE JSON Serialization statt Compact) ist gering, und unsere echte Interop hängt an den Format-Standards, nicht am Envelope.
 
 ## Aktueller Stand unserer Kompatibilität
 
-### Was spezifiziert ist (~85%)
+Wir verfolgen **selektive DIDComm-Compliance** auf Envelope- und Utility-Ebene, nicht volle Compliance. Die folgenden Tabellen zeigen, was spezifiziert ist und was bewusst nicht verfolgt wird.
+
+### Was spezifiziert ist
 
 | Schicht | Status | Details |
 |---|---|---|
 | Plaintext Message Format | Kompatibel | `id`, `type` (URI), `from`, `to`, `body` ([Sync 007](../02-wot-sync/007-transport-und-broker.md#message-envelope-didcomm-kompatibel)) |
 | JWS Signaturen | Kompatibel | Identisch mit DIDComm Signed Messages ([Core 002](../01-wot-core/002-signaturen-und-verifikation.md)) |
 | Krypto-Primitive | Kompatibel | X25519, AES-256-GCM, Ed25519 |
-| Authcrypt-Verfahren | Spezifiziert | ECDH-1PU, Web Crypto API ([Sync 005](../02-wot-sync/005-verschluesselung.md)) |
-| JWE-Verpackung | **Spezifiziert (2026-04-19)** | JSON Serialization mit Protected Header, Multi-Recipient ([Sync 005](../02-wot-sync/005-verschluesselung.md)) |
-| Type-URIs | Kompatibel | `https://wot.example/protocols/.../1.0` |
+| Verschlüsselung | Eigenes Profil (ECIES) | ECIES statt DIDComm Authcrypt (ECDH-1PU). Begründung: siehe [Sync 005](../02-wot-sync/005-verschluesselung.md#warum-ecies-statt-didcomm-authcrypt) |
+| Type-URIs | Kompatibel | `https://web-of-trust.de/protocols/.../1.0` |
 | Message Threading | **Spezifiziert (2026-04-19)** | `thid` und `pthid` optional im Envelope ([Sync 007](../02-wot-sync/007-transport-und-broker.md#threading)) |
-| Trust Ping 2.0 | **Spezifiziert (2026-04-19)** | Request/Response mit `response_requested` ([Sync 007](../02-wot-sync/007-transport-und-broker.md#trust-ping)) |
-| Discover Features 2.0 | **Spezifiziert (2026-04-19)** | Queries / Disclosures mit Wildcard-Match ([Sync 007](../02-wot-sync/007-transport-und-broker.md#discover-features)) |
+| Trust Ping | Entfernt (2026-04-22) | Presence-Abfrage über Broker, nicht per Peer-Ping |
+| Discover Features | Entfernt (2026-04-22) | Feature-Discovery über `protocols`-Feld im Profil ([Sync 008](../02-wot-sync/008-discovery.md)) |
 
-### Was noch fehlt (~15%)
+### Was wir bewusst NICHT verfolgen
 
-| Schicht | Aufwand | Beschreibung |
-|---|---|---|
-| DID-Dokumente | Mittel | Service-Endpoints für Mediator-Routing |
-| Forward/Routing | Hoch | Doppelte Verschlüsselungsschicht für Mediator-Privacy |
-| Mediator Coordination | Mittel | Formales Registrierungsprotokoll |
-| Interop-Test gegen SICPA | Mittel | Praktische Verifikation unserer Eigenimplementierung |
+| Baustein | Warum nicht |
+|---|---|
+| Forward/Routing (Onion) | Aries-Enterprise-Pattern für Mediator-Anonymität. Unsere Broker-Architektur ist P2P-orientiert, Forward-Routing würde Komplexität bringen ohne klaren Gewinn. |
+| Mediator Coordination 2.0 | Formales Registrierungsprotokoll für Aries-Mediator-Setups. Unser Challenge-Response-Flow deckt das einfacher ab. |
+| Pickup Protocol 2.0 | Inbox-Retrieval im Aries-Stil. Wir haben äquivalente Funktionalität mit anderer Semantik. |
+| Issue Credential 3.0 | DIDComm-Flow für Credential-Ausstellung. Für breite VC-Interop wäre OpenID4VCI strategisch wichtiger. |
+| Present Proof 3.0 | DIDComm-Flow für VP-Präsentation. Für breite VC-Interop wäre OpenID4VP strategisch wichtiger. |
+
+### Offene Bausteine (optional, nicht blockierend)
+
+| Baustein | Status |
+|---|---|
+| DID-Dokumente mit Service-Endpoints | Offen — relevant wenn wir externe DIDComm-Agenten erreichen wollen |
+| Interop-Test gegen SICPA `didcomm-rust` | Offen — praktische Verifikation |
+| Problem Report 2.0 | Offen — strukturierte Fehler, würde unsere Ad-hoc-Errors ersetzen |
+| Out-of-Band 2.0 | Offen — standardisiertes QR-Code-Invitation-Format (potentiell relevant für Core 004) |
 
 ## Was jeder fehlende Teil konkret bedeutet
 
@@ -68,7 +114,7 @@ Unsere Authcrypt-Berechnung (ECDH-1PU) ist spezifiziert. Was fehlt ist das Stand
   "protected": "<Base64URL: { alg: 'ECDH-1PU+A256KW', enc: 'A256GCM', skid, apu, apv, epk }>",
   "recipients": [
     {
-      "header": { "kid": "did:key:z6Mk...#key-x25519-1" },
+      "header": { "kid": "did:key:z6Mk..." },
       "encrypted_key": "<Base64URL: Wrapped Content Encryption Key>"
     }
   ],
@@ -93,7 +139,7 @@ DIDComm braucht ein DID-Dokument das sagt wo der Mediator (Broker) erreichbar is
     { "id": "#key-1", "type": "Ed25519VerificationKey2020", "publicKeyMultibase": "z6Mk..." }
   ],
   "keyAgreement": [
-    { "id": "#key-x25519-1", "type": "X25519KeyAgreementKey2020", "publicKeyMultibase": "z6LS..." }
+    { "id": "#enc-1", "type": "X25519KeyAgreementKey2020", "publicKeyMultibase": "z6LS..." }
   ],
   "service": [{
     "id": "#didcomm-1",
@@ -141,8 +187,8 @@ Verifiziert dass die Verschlüsselung funktioniert und der Peer erreichbar ist. 
 ```
 Alice → Bob: { "type": ".../discover-features/2.0", "body": { "queries": [{"feature-type": "protocol"}] } }
 Bob → Alice: { "type": ".../discover-features/2.0", "body": { "disclosures": [
-  {"feature-type": "protocol", "id": "https://wot.example/protocols/space-invite/1.0"},
-  {"feature-type": "protocol", "id": "https://wot.example/protocols/trust-list-delta/1.0"}
+  {"feature-type": "protocol", "id": "https://web-of-trust.de/protocols/space-invite/1.0"},
+  {"feature-type": "protocol", "id": "https://web-of-trust.de/protocols/trust-list-delta/1.0"}
 ] } }
 ```
 
@@ -211,24 +257,31 @@ Für uns relevant: die Schwächen betreffen hauptsächlich den Forward/Routing-F
 
 ### Roadmap
 
-**Phase 1 (abgeschlossen): Spec-Kompatibilität**
+**Phase 1 (abgeschlossen): Envelope-Kompatibilität**
 - Plaintext Message Format ✅
 - Type-URIs ✅
 - JWS Signaturen ✅
 - Authcrypt (ECDH-1PU) ✅
 
-**Phase 2 (Spec abgeschlossen 2026-04-19 — Implementation offen):**
+**Phase 2 (abgeschlossen 2026-04-19): Envelope-Vollständigkeit**
 - JWE-Verpackung spezifizieren ✅
 - Threading-Felder (`thid`, `pthid`) ✅
 - Trust Ping 2.0 ✅
 - Discover Features 2.0 ✅
-- DID-Dokumente mit Service-Endpoints ⏳
-- Interop-Test gegen SICPA-Library ⏳
 
-**Phase 3 (Zukunft): Erweiterte Features**
+**Phase 3 (optional, nicht blockierend):**
+- Out-of-Band 2.0 als QR-Code-Format in Core 004 (Interop-Baustein, klein)
+- Problem Report 2.0 (strukturierte Fehler)
+- Interop-Test gegen SICPA `didcomm-rust`
+- DID-Dokumente mit Service-Endpoints (falls externe DIDComm-Agenten adressiert werden sollen)
+
+**Bewusst nicht auf der Roadmap:**
 - Forward/Routing (Mediator-Privacy)
 - Mediator Coordination Protocol
-- Out-of-Band Protocol (DIDComm-konformer QR-Code)
+- Pickup Protocol 2.0
+- Issue Credential 3.0 / Present Proof 3.0 (für VC-Interop ist OpenID4VC der strategische Pfad)
+
+Siehe "Was wir bewusst NICHT verfolgen" oben für Begründung.
 
 ## Nicht betroffen von DIDComm
 

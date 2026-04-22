@@ -16,12 +16,13 @@ WoT definiert keine neuen Standards — es kombiniert bestehende zu einem intero
 |----------|-----------|
 | [DID](https://www.w3.org/TR/did-core/) (W3C) | Dezentrale Identität (`did:key`) |
 | [Verifiable Credentials](https://www.w3.org/TR/vc-data-model-2.0/) (W3C) | Signierte Aussagen (Attestations) |
-| [DIDComm v2](https://identity.foundation/didcomm-messaging/spec/v2.0/) (DIF) | Nachrichtenformat und Verschlüsselung |
+| [DIDComm v2.1](https://identity.foundation/didcomm-messaging/spec/v2.1/) (DIF) | Message-Envelope-Struktur (selektive Kompatibilität, siehe [didcomm-migration](research/didcomm-migration.md)) |
 | [Ed25519](https://datatracker.ietf.org/doc/html/rfc8032) (RFC 8032) | Signaturen |
-| [JWS](https://datatracker.ietf.org/doc/html/rfc7515) / [JWE](https://datatracker.ietf.org/doc/html/rfc7516) (RFC 7515/7516) | Signatur- und Verschlüsselungsformat |
+| [JWS](https://datatracker.ietf.org/doc/html/rfc7515) (RFC 7515) | Signaturformat |
 | [JCS](https://datatracker.ietf.org/doc/html/rfc8785) (RFC 8785) | Kanonisierung |
 | [BIP39](https://github.com/bitcoin/bips/blob/master/bip-0039.mediawiki) | Mnemonic-Seed für Schlüsselableitung |
-| [X25519](https://datatracker.ietf.org/doc/html/rfc7748) (RFC 7748) | Key Agreement (Authcrypt / ECDH-1PU) |
+| [HKDF](https://datatracker.ietf.org/doc/html/rfc5869) (RFC 5869) | Schlüsselableitung |
+| [X25519](https://datatracker.ietf.org/doc/html/rfc7748) (RFC 7748) | ECDH Key Agreement (ECIES) |
 | [AES-256-GCM](https://csrc.nist.gov/publications/detail/sp/800-38d/final) (NIST) | Symmetrische Verschlüsselung |
 
 ## Architektur
@@ -79,9 +80,12 @@ Nicht WoT-spezifisch — jede Local-First-App könnte das nutzen.
 
 | Dokument | Beschreibung |
 |----------|-------------|
-| [Sync & Transport](research/sync-and-transport.md) | Design-Space Exploration (10 Projekte, 4 Papers, 9 Talks) |
+| [Sync-Alternativen](research/sync-alternativen.md) | Landschafts-Recherche: 13+ Sync-Protokolle und Systeme als Inspirationsquellen |
 | [Sync-Architektur](research/sync-architektur.md) | Drei-Schichten-Modell |
 | [Identity Migration](research/identity-migration.md) | Schlüsselrotation bei DID-Wechsel |
+| [Identitäts-Alternativen](research/identitaet-alternativen.md) | Exploration: NextGraph, CryptPad, Argent, Jazz, Passkeys, Hybrid-Vorschlag mit Guardian-Recovery |
+| [Migrations-Roadmap](research/migration-roadmap.md) | Phasenplan für die Überführung der Implementierungen in die Spec |
+| [Positionierung](research/positionierung.md) | Wo wir in der Landschaft stehen — für interne Klarheit und Outreach |
 | [Test-Vektoren](research/test-vektoren.md) | Kanonische Krypto-Werte für Interoperabilitäts-Tests |
 | [Briefing Sebastian](research/briefing-sebastian.md) | Zusammenfassung und offene Fragen für Sebastian |
 | [Interop und Zielgruppe](research/interop-und-zielgruppe.md) | Standards (DIDComm, OpenID4VC), Zielgruppen, eIDAS-Kontext |

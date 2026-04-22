@@ -18,6 +18,8 @@ Aus Transparenzgründen bleibt dieses Dokument vollständig — auch bereits beh
 | [S4](#s4-capability-replay-innerhalb-der-gleichen-generation) | Capability-Replay ohne Ablauf | 🟠 Schwer | 2026-04-18 | `validUntil` als Pflichtfeld — [Sync 007](../02-wot-sync/007-transport-und-broker.md#capability-format) |
 | [M1](#m1-timing-angriffe-bei-decryption) | Timing-Angriffe bei Decryption | 🟡 Mittel | 2026-04-19 | Constant-Time-Anforderung (MUSS) — [Sync 005](../02-wot-sync/005-verschluesselung.md#konstante-laufzeit-constant-time--muss) |
 | [M5](#m5-jcs-canonicalization-edge-cases) | JCS-Canonicalization Edge Cases | 🟡 Mittel | 2026-04-18 | Test-Vektoren (Unicode, Zahlen) — [Core 002](../01-wot-core/002-signaturen-und-verifikation.md) |
+| [S3](#s3-split-brain-durch-broker-manipulation) | Split-Brain durch Broker (80-90%) | 🟠 Schwer | 2026-04-19 | Multi-Source-Sync + Heads-Vergleich — [Sync 006](../02-wot-sync/006-sync-protokoll.md#censorship--und-split-brain-detection) |
+| [S5](#s5-silent-log-censorship-durch-admin) | Silent Log-Censorship (80-90%) | 🟠 Schwer | 2026-04-19 | Identisch mit S3-Fix (Multi-Source-Sync) — [Sync 006](../02-wot-sync/006-sync-protokoll.md#censorship--und-split-brain-detection) |
 
 ### ⏳ Noch offen
 
@@ -26,8 +28,6 @@ Aus Transparenzgründen bleibt dieses Dokument vollständig — auch bereits beh
 | [K1](#k1-admin-key-kompromittierung--totale-gruppen-übernahme) | Admin-Key-Kompromittierung | 🔴 Kritisch | v1.2 | [security-fixes.md](security-fixes.md#fix-k1-multi-admin--threshold-signatures) |
 | [K3](#k3-fehlende-feld-level-permissions-im-crdt) | Fehlende Feld-Level-Permissions | 🔴 Kritisch | v1.2 | [security-fixes.md](security-fixes.md#fix-k3-admin-only-felder-für-space-metadata) |
 | [S1](#s1-keine-forward-secrecy-bei-inbox-nachrichten) | Keine Forward Secrecy | 🟠 Schwer | v2.0 | [security-fixes.md](security-fixes.md#fix-s1-forward-secrecy-via-double-ratchet) |
-| [S3](#s3-split-brain-durch-broker-manipulation) | Split-Brain durch Broker | 🟠 Schwer | v1.1 | [security-fixes.md](security-fixes.md#fix-s3-split-brain-detection) |
-| [S5](#s5-silent-log-censorship-durch-admin) | Silent Log-Censorship | 🟠 Schwer | v1.1 | impliziert durch S3-Fix |
 | [M2](#m2-metadata-leak-durch-broker) | Metadata-Leak | 🟡 Mittel | v2.0 | Forward/Routing (DIDComm) |
 | [M3](#m3-sybil-resistance-umgehung) | Sybil-Resistance-Umgehung | 🟡 Mittel | Forschung | Community-Governance, Liability-ADR |
 | [M4](#m4-unbegrenzte-attestation-spam) | Attestation-Spam | 🟡 Mittel | v1.1 | [security-fixes.md](security-fixes.md#fix-m4-attestation-rate-limiting) |
@@ -41,7 +41,7 @@ Aus Transparenzgründen bleibt dieses Dokument vollständig — auch bereits beh
 
 **Status:** ⏳ Offen — geplant für v1.2
 
-**Problem:** Ein einziger Schlüssel kontrolliert alles. Wenn der Private Key des Admins (members[0]) kompromittiert wird, kann der Angreifer:
+**Problem:** Ein einziger Schlüssel kontrolliert alles. Wenn der Admin Key eines Space-Admins kompromittiert wird, kann der Angreifer:
 
 - Alle Mitglieder entfernen
 - Sich selbst als neue Mitglieder "hinzufügen"
@@ -198,7 +198,7 @@ Angreifer der Challenge 1 aufgezeichnet hat:
 
 ### S3. Split-Brain durch Broker-Manipulation
 
-**Status:** ⏳ Offen — geplant für v1.1
+**Status:** ✅ Zu 80-90% behoben 2026-04-19 — Multi-Source-Sync + Heads-Vergleich in [Sync 006](../02-wot-sync/006-sync-protokoll.md#censorship--und-split-brain-detection). Strukturelle Grenzen (Single-Broker-Communities ohne P2P-Option) bleiben unvermeidbar bestehen.
 
 **Problem:** Der Broker kann Nachrichten selektiv zustellen. Wenn er eine **Mitglieder-Entfernung** nur an einige Clients zustellt, entstehen inkonsistente Sichten.
 
@@ -217,9 +217,11 @@ Resultat:
 - CRDT-State divergiert still
 ```
 
-**Spec-Lücke:** Keine Detection von fehlenden Nachrichten. Keine End-to-End-Bestätigung dass alle Mitglieder den State sehen.
+**Spec-Lücke (vor Fix):** Keine Detection von fehlenden Nachrichten. Keine End-to-End-Bestätigung dass alle Mitglieder den State sehen.
 
-**Mitigation:** Regelmäßige State-Digests die Mitglieder untereinander austauschen. Wenn Hashes divergieren → Alarm.
+**Fix:** Sync 006 empfiehlt Multi-Source-Sync — Clients SOLLEN regelmäßig gegen mehrere Broker oder direkte P2P-Peers syncen und die zurückgegebenen Heads vergleichen. Divergenz wird dem User als Status-Indikator sichtbar gemacht, mit Handlungsoptionen (alternativer Broker, P2P-Sync, ignorieren).
+
+**Strukturelle Grenze:** Communities mit einem einzigen Broker und ohne P2P-Kapazität haben keinen unabhängigen Vergleichspunkt — auch ein formales Digest-Protokoll könnte das nicht lösen. Das ist ein Architektur- und Betriebsthema, nicht ein Protokoll-Defizit.
 
 ---
 
@@ -248,13 +250,15 @@ Bob hat die Capability noch, kann weiter auf doc X zugreifen.
 
 ### S5. Silent Log-Censorship durch Admin
 
-**Status:** ⏳ Offen — geplant für v1.1 (impliziert durch S3-Fix)
+**Status:** ✅ Zu 80-90% behoben 2026-04-19 — derselbe Multi-Source-Sync-Mechanismus wie bei S3 deckt diesen Angriff ab. Siehe [Sync 006](../02-wot-sync/006-sync-protokoll.md#censorship--und-split-brain-detection).
 
 **Problem:** Ein böswilliger Admin könnte den Log **editieren bevor andere Member ihn verteilt bekommen**. Er sieht einen Log-Eintrag den er nicht mag, verwirft ihn lokal und liefert ihn nicht weiter.
 
-**Spec-Lücke:** Keine Censorship-Detection im Log. Keine End-to-End-Log-Verifikation zwischen nicht-Admin-Peers.
+**Spec-Lücke (vor Fix):** Keine Censorship-Detection im Log. Keine End-to-End-Log-Verifikation zwischen nicht-Admin-Peers.
 
-**Mitigation:** Peers sollten direkt syncen können, nicht nur über den Admin/Broker. Bei Divergenz → Alarm. Der State-Digest-Mechanismus aus S3-Fix adressiert auch diesen Angriff.
+**Fix:** Wenn Mitglieder außerhalb des Admin-Kanals syncen können (zweiter Broker, P2P), zeigt der Heads-Vergleich die unterdrückten Einträge. Sub-Spezialfall von S3 — dieselbe Lösung.
+
+**Strukturelle Grenze:** Wenn alle Sync-Pfade durch den malicious Admin laufen, gibt es keinen unabhängigen Vergleichspunkt. Das ist nicht protokollarisch lösbar.
 
 ---
 
@@ -499,13 +503,13 @@ Aber: beide signieren als Alice. Beide sind gültig. Beide werden in den Log gem
 4. ✅ **Deterministische Nonces** aus `(deviceId, seq)` (K2)
 5. ✅ **JCS-Test-Vektoren** für Unicode-Edge-Cases (M5)
 6. ✅ **Constant-Time Crypto** normativ verlangen (M1)
+7. ✅ **Multi-Source-Sync** für Censorship-Detection (S3, S5 — 80-90%-Lösung)
 
 ### Mittelfristig — v1.1 / v1.2
 
-7. ⏳ **Multi-Admin-Modell** für große Gruppen (K1)
-8. ⏳ **Admin-only Space-Metadata** (K3)
-9. ⏳ **Device-Revokation** und Device-TTL (M6)
-10. ⏳ **State-Digests** zwischen Mitgliedern zur Split-Brain-Detection (S3, S5)
+8. ⏳ **Multi-Admin-Modell** für große Gruppen (K1)
+9. ⏳ **Admin-only Space-Metadata** (K3)
+10. ⏳ **Device-Revokation** und Device-TTL (M6)
 11. ⏳ **Rate-Limiting** für Attestations (M4)
 
 ### Langfristig — v2.0+

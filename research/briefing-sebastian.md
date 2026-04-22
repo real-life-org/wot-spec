@@ -29,7 +29,7 @@ Die Spec liegt auf Codeberg: `codeberg.org/web-of-trust/spec`
 
 | # | Thema |
 |---|-------|
-| 005 | Verschlüsselung (AES-256-GCM, Authcrypt/ECDH-1PU) |
+| 005 | Verschlüsselung (AES-256-GCM, ECIES) |
 | 006 | Sync-Protokoll (Append-only Logs) |
 | 007 | Transport und Broker (DIDComm, Capabilities, Inbox pro Device) |
 | 008 | Discovery (Broker-Discovery, Profil-Service) |
@@ -53,22 +53,27 @@ Alle signierten Daten im Protokoll nutzen JWS Compact Serialization (RFC 7515). 
 
 **Was das für dich heißt:** Dein SD-JWT-Format ist kompatibel. Du müsstest SHA3-256 → SHA-256 und Base58 → Base64URL umstellen.
 
-### DIDComm v2 als Nachrichtenformat
+### DIDComm v2 als Envelope-Format
 
-Unser Nachrichtenformat folgt dem DIDComm v2 Plaintext Message Format (DIF) — mit allen für v1.0 relevanten Bausteinen:
+Unser Nachrichtenformat folgt dem DIDComm v2 Plaintext Message Format (DIF) — auf Envelope-Ebene:
 
 - **Plaintext Envelope** mit `id`, `type`, `from`, `to`, `created_time`, `body`
 - **Threading** via `thid` / `pthid` für Request/Response und verschachtelte Konversationen
-- **Authcrypt** (ECDH-1PU) für 1:1-Nachrichten — der DIDComm-Standard
-- **JWE JSON Serialization** als explizites Envelope-Format (Protected Header, Multi-Recipient)
-- **Trust Ping 2.0** als Liveness-Protokoll
-- **Discover Features 2.0** für Protokoll-Kompatibilitäts-Abfragen
+- **ECIES** (X25519 + HKDF + AES-256-GCM) für 1:1-Verschlüsselung, Sender-Auth über innere JWS-Signatur
+- **Feature-Discovery** über `protocols`-Feld im Profil (kein Laufzeit-Protokoll)
 
-Damit sind wir DIDComm-v2-konform auf ~85%. Fehlen noch DID-Dokumente mit Service-Endpoints, Forward/Routing (Mediator-Privacy) und Mediator-Coordination — das ist Phase 3 und nicht blockierend.
+**Warum DIDComm — ehrliche Einordnung:** Das DIDComm-Ökosystem ist kleiner als oft angenommen. Die EU Digital Identity Wallet und eIDAS 2.0 haben sich für **OpenID4VC** (nicht DIDComm) als Exchange-Protokoll entschieden. Mainstream-Messaging (Matrix, Nostr, Signal) nutzt eigene Protokolle. DIDComm-Heimat ist das Aries/Hyperledger SSI-Ökosystem — real, aber eine Nische.
 
-**Warum:** Interoperabilität mit dem dezentralen Ökosystem (Circles, Nostr, Briar und andere Projekte die dezentrale Identität brauchen). DIDComm teilt unsere Werte: P2P, offline-fähig, zensurresistent.
+Was DIDComm uns konkret bringt:
 
-**Was das für dich heißt:** Dein Gossip-Protokoll (H03) nutzt unsere Inbox als Transport — die jetzt vollständig DIDComm-kompatibel ist. Deine Trust-List-Deltas sind DIDComm-Nachrichten mit SD-JWT im Body. Details siehe [didcomm-migration.md](didcomm-migration.md).
+- **Design-Disziplin** — klare Layer-Trennung, durchdachte Patterns
+- **Library-Kompatibilität** — didcomm-rust (SICPA), didcomm-js für Aries-Ökosystem-Interop
+- **Formale Security-Analysen** verfügbar (ACM CCS 2024)
+- **Envelope-Standard-Konformität** — billig zu bekommen, gibt uns Option-Value
+
+Was DIDComm uns NICHT bringt: breite Interop zum EU-Wallet oder Mainstream-Messaging. Die breite Interop läuft über **Format-Standards**: DID:key, W3C VC 2.0, SD-JWT VC — nicht über das Exchange-Protokoll.
+
+**Was das für dich heißt:** Dein Gossip-Protokoll (H03) nutzt unsere Inbox als Transport mit DIDComm-kompatiblem Envelope. Deine Trust-Lists werden in H01 als **SD-JWT VC** spezifiziert — das ist der strategisch wichtige Interop-Baustein, weil SD-JWT VC im EU-Wallet-Ökosystem Pflichtformat wird. Details zur ehrlichen Einordnung siehe [didcomm-migration.md](didcomm-migration.md).
 
 ### X25519 via separatem HKDF (nicht birationale Abbildung)
 

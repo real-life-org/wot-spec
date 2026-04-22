@@ -11,11 +11,9 @@ Dieses Dokument spezifiziert wie Daten im Sync Layer verschlüsselt werden — f
 ## Referenzierte Standards
 
 - **X25519** (RFC 7748) — Diffie-Hellman Key Exchange auf Curve25519
-- **ECDH-1PU** (IETF Draft) — Authentifiziertes Key Agreement (Authcrypt)
-- **JWE** (RFC 7516) — JSON Web Encryption
+- **ECIES** — Elliptic Curve Integrated Encryption Scheme (X25519 + HKDF + AES-256-GCM)
 - **HKDF** (RFC 5869) — Schlüsselableitung aus Shared Secrets
 - **AES-256-GCM** (NIST SP 800-38D) — Authentifizierte symmetrische Verschlüsselung
-- **DIDComm v2** (DIF) — Messaging-Standard für Verschlüsselung zwischen DIDs
 
 ## Implementierungsanforderungen
 
@@ -27,7 +25,7 @@ Konkret:
 
 - **AES-GCM Tag-Verifikation:** MUSS per bitweiser Gleichheits-Prüfung geschehen. Abbruch bei ungültigem Tag OHNE klartext-abhängige Zeitdifferenz.
 - **X25519 Scalar Multiplication:** MUSS über eine konstant-zeit Implementierung laufen (Montgomery Ladder, keine secret-abhängigen Branches oder Table-Lookups).
-- **HKDF / HMAC-Vergleich:** Byte-Vergleiche von MAC- oder Key-Material MÜSSEN über konstant-zeit Operationen erfolgen (`crypto.subtle.timingSafeEqual` oder äquivalent), NIEMALS über `===` auf Strings oder `==` auf Buffers.
+- **HKDF / HMAC-Vergleich:** Byte-Vergleiche von MAC- oder Key-Material MÜSSEN über konstant-zeit Operationen erfolgen, NIEMALS über `===` auf Strings oder `==` auf Buffers. In Node.js: `crypto.timingSafeEqual(a, b)` (nicht `crypto.subtle`). Im Browser gibt es keine native Primitive — hier muss eine auditierte Bibliothek verwendet werden (z.B. `@noble/hashes/utils` `equalBytes`). Die Web Crypto API (`crypto.subtle.verify`) führt MAC-Vergleiche intern in konstanter Zeit durch — eigene HMAC-Vergleiche außerhalb davon sind zu vermeiden.
 
 **Normative Implikation:** Implementierungen MÜSSEN die Web Crypto API (`crypto.subtle`) oder eine äquivalent auditierte native Bibliothek (z.B. `@noble/ed25519`, `@noble/hashes`) verwenden. Eigenbau von AES, X25519, HKDF oder HMAC in JavaScript/TypeScript ist NICHT erlaubt — JavaScript-Runtimes bieten keine Garantien für konstante Laufzeit bei bitweisen Operationen auf großen Integern.
 
@@ -46,6 +44,18 @@ Master Seed
 Der Verschlüsselungs-Schlüssel wird auf einem separaten HKDF-Pfad vom Identitäts-Schlüssel abgeleitet. Beide sind deterministisch aus demselben Seed. Beide sind auf allen Geräten des Users verfügbar.
 
 Die birationale Abbildung (Ed25519 → Curve25519 → X25519) ist NICHT erlaubt — Browser-Implementierungen (Web Crypto API) erzeugen Ed25519-Keys als `non-extractable` und können den rohen Private Key nicht für die Umrechnung auslesen. Der separate HKDF-Pfad ist die einzige normative Methode. Siehe [Core 001](../01-wot-core/001-identitaet-und-schluesselableitung.md#weitere-schlüssel).
+
+## Encryption Key Discovery
+
+Der X25519 Encryption Public Key ist **nicht** aus der `did:key` ableitbar — die DID kodiert nur den Ed25519 Signing Key. Der Encryption Key wird über einen separaten HKDF-Pfad abgeleitet und muss explizit transportiert werden.
+
+Zwei Transportwege:
+
+1. **QR-Code (In-Person-Verifikation):** Das `enc`-Feld im QR-Code enthält den Base64URL-kodierten X25519 Public Key. Nach dem Scan ist der Key sofort lokal verfügbar — auch offline. Siehe [Core 004](../01-wot-core/004-verifikation.md).
+
+2. **Profil-Service (Online-Discovery):** Der Key wird im Nutzerprofil unter `encryptionPublicKey` veröffentlicht. Clients die keinen QR-Code-Austausch hatten (z.B. bei Space-Einladungen über Dritte) rufen den Key über den Profil-Service ab. Siehe [Sync 008](008-discovery.md).
+
+Clients MÜSSEN den Encryption Key nach dem ersten Empfang lokal cachen. In JWE-Headern (`kid`, `skid`) wird die DID ohne Fragment verwendet — die Auflösung zum X25519-Key geschieht protokollintern über den lokalen Cache, nicht über did:key-Fragment-Auflösung.
 
 ## Symmetrische Verschlüsselung
 
@@ -85,98 +95,88 @@ Voraussetzung: der Client MUSS vor jedem Schreibvorgang den aktuellen `seq`-Stan
 
 **Warum deterministisch statt zufällig:** Zufällige 96-Bit-Nonces kollidieren nach 2^48 Nachrichten mit 50% Wahrscheinlichkeit (Birthday-Paradox). Bei schwacher RNG sind Kollisionen früher möglich. Deterministische Konstruktion eliminiert das Problem komplett.
 
-**Für P2P-Verschlüsselung (Authcrypt): zufällig**
+**Für P2P-Verschlüsselung (ECIES): zufällig**
 
-Bei Authcrypt wird für jede Nachricht ein **ephemerer X25519-Key** generiert. Der Content Encryption Key (CEK) ist damit pro Nachricht neu — Nonce-Reuse über mehrere Nachrichten ist per Design unmöglich. Die Nonce kann zufällig gewählt werden (12 Bytes).
+Bei ECIES wird für jede Nachricht ein **ephemerer X25519-Key** generiert. Der AES-Schlüssel ist damit pro Nachricht neu — Nonce-Reuse über mehrere Nachrichten ist per Design unmöglich. Die Nonce kann zufällig gewählt werden (12 Bytes).
 
-## Peer-to-Peer-Verschlüsselung (Authcrypt)
+## Peer-to-Peer-Verschlüsselung (ECIES)
 
-Für direkte Nachrichten zwischen zwei Parteien (Attestations, Einladungen, Key-Austausch). Das Verfahren folgt dem **DIDComm Authcrypt** Standard (ECDH-1PU, [RFC Draft](https://datatracker.ietf.org/doc/html/draft-madden-jose-ecdh-1pu)) und verwendet ausschließlich Web Crypto API Operationen.
+Für direkte Nachrichten zwischen zwei Parteien (Attestations, Einladungen, Key-Austausch). Das Verfahren ist **ECIES** (Elliptic Curve Integrated Encryption Scheme) mit X25519, HKDF und AES-256-GCM. Alle Operationen verwenden ausschließlich die Web Crypto API.
 
 ### Verschlüsselung (Sender → Empfänger)
 
 1. Ephemeres X25519-Schlüsselpaar generieren
-2. Zwei ECDH-Operationen durchführen:
-   - `shared_secret_static = sender_static_private × recipient_public`
-   - `shared_secret_ephemeral = ephemeral_private × recipient_public`
-3. Beide Secrets kombinieren und symmetrischen Schlüssel via HKDF-SHA256 ableiten:
-   - Input: `shared_secret_ephemeral || shared_secret_static`
-   - Salt: leer
-   - Info: `"wot/authcrypt/v1"`
+2. ECDH: `shared_secret = ephemeral_private × recipient_public`
+3. HKDF-SHA256:
+   - Input: `shared_secret`
+   - Salt: leer (32 Null-Bytes)
+   - Info: `"wot/ecies/v1"`
    - Ausgabe: 256-Bit AES-Schlüssel
-4. Klartext mit AES-256-GCM verschlüsseln
-5. Verpacken als JWE (JSON Web Encryption, RFC 7516)
+4. Klartext mit AES-256-GCM verschlüsseln (zufällige 12-Byte Nonce)
+5. Ausgabe: `{ ciphertext, nonce, ephemeralPublicKey }`
 
 ### Entschlüsselung (Empfänger)
 
-1. Ephemeral Public Key und Sender-DID aus dem JWE-Header lesen
-2. Zwei ECDH-Operationen durchführen:
-   - `shared_secret_static = recipient_private × sender_static_public`
-   - `shared_secret_ephemeral = recipient_private × ephemeral_public`
-3. Beide Secrets kombinieren, denselben AES-Schlüssel via HKDF ableiten
+1. Ephemeral Public Key aus der Nachricht lesen
+2. ECDH: `shared_secret = recipient_private × ephemeral_public`
+3. Denselben AES-Schlüssel via HKDF ableiten
 4. Ciphertext entschlüsseln
 
-### JWE-Verpackung (JSON Serialization)
+### Sender-Authentifizierung
 
-Die Authcrypt-Ausgabe wird als **JWE JSON Serialization** (RFC 7516) verpackt — kompatibel mit DIDComm v2 und JOSE-Standards.
+ECIES allein beweist nicht, von wem die Nachricht kommt — der Empfänger weiß nur, dass sie für ihn bestimmt war. Die Sender-Identität wird über eine **separate JWS-Signatur** sichergestellt: Jede 1:1-Nachricht wird vor der Verschlüsselung mit dem Ed25519-Key des Senders signiert (siehe [Core 002](../01-wot-core/002-signaturen-und-verifikation.md)). Der Empfänger entschlüsselt zuerst, dann verifiziert er die Signatur.
 
-Struktur:
+### Forward Secrecy — bewusste Limitation
+
+Unser ECIES-Verfahren verwendet einen **ephemeren Sender-Key** aber einen **statischen Empfänger-Key** (der HKDF-abgeleitete X25519-Key des Empfängers, siehe [Core 001](../01-wot-core/001-identitaet-und-schluesselableitung.md)). Das bedeutet:
+
+- Wenn der Empfänger-Private-Key zu einem späteren Zeitpunkt kompromittiert wird, kann ein Angreifer alle aufgezeichneten verschlüsselten Nachrichten rückwirkend entschlüsseln.
+- Das Protokoll bietet **kein Perfect Forward Secrecy (PFS)** auf der Inbox-Ebene.
+
+Gründe für diese Wahl:
+
+- **Offline-Fähigkeit:** PFS-Protokolle (Signal, Double Ratchet) brauchen eine initiale Schlüsselaustausch-Phase zwischen zwei Parteien, die beide online sein müssen. WoT muss auch offline funktionieren (Festival, Krise).
+- **Asynchrone Zustellung:** Nachrichten werden in die Inbox gelegt, auch wenn der Empfänger wochenlang offline ist. Ein Ratchet-Protokoll würde bei langer Offline-Zeit divergieren.
+- **Key-Management-Komplexität:** PFS erfordert fortlaufende Key-Synchronisation zwischen allen Devices eines Users. Unsere Multi-Device-Architektur basiert auf einem gemeinsamen Seed.
+
+**Mitigations:**
+
+- Der Master-Seed MUSS auf dem Gerät stark geschützt werden (siehe [Core 001](../01-wot-core/001-identitaet-und-schluesselableitung.md#seed-schutz-auf-dem-gerät))
+- Hochsensitive Nachrichten SOLLTEN eine kurze Lebensdauer in der Inbox haben (nach Zustellung löschen)
+- Für zukünftige Hoch-Sensitivitäts-Kanäle kann ein ratcheted Modus als Extension spezifiziert werden
+
+### Verschlüsseltes Nachrichtenformat
 
 ```json
 {
-  "protected": "<Base64URL-kodierter JWE Protected Header>",
-  "recipients": [
-    {
-      "header": {
-        "kid": "did:key:z6Mk...bob#key-x25519-1"
-      },
-      "encrypted_key": "<Base64URL-kodierter Content Encryption Key>"
-    }
-  ],
-  "iv": "<Base64URL-kodierte 12-Byte Nonce>",
-  "ciphertext": "<Base64URL-kodierter Ciphertext>",
-  "tag": "<Base64URL-kodierter 16-Byte Auth Tag>"
+  "epk": "<Base64URL-kodierter ephemerer X25519 Public Key, 32 Bytes>",
+  "nonce": "<Base64URL-kodierte 12-Byte Nonce>",
+  "ciphertext": "<Base64URL-kodierter Ciphertext + Auth Tag>"
 }
 ```
 
-**Protected Header** (vor Base64URL-Kodierung):
+| Feld | Typ | Beschreibung |
+|------|-----|-------------|
+| `epk` | String | Ephemerer X25519 Public Key (Base64URL, 32 Bytes) |
+| `nonce` | String | AES-256-GCM Nonce (Base64URL, 12 Bytes) |
+| `ciphertext` | String | Verschlüsselter Inhalt + AES-GCM Auth Tag (Base64URL) |
 
-```json
-{
-  "alg": "ECDH-1PU+A256KW",
-  "enc": "A256GCM",
-  "skid": "did:key:z6Mk...alice#key-x25519-1",
-  "apu": "<Base64URL-kodierte Sender-DID>",
-  "apv": "<Base64URL-kodierte Empfänger-DID>",
-  "epk": {
-    "kty": "OKP",
-    "crv": "X25519",
-    "x": "<Base64URL-kodierter Ephemeraler Public Key>"
-  }
-}
-```
+### Warum ECIES statt DIDComm Authcrypt
 
-Pflichtfelder im Protected Header:
+DIDComm v2 spezifiziert ECDH-1PU+A256KW (Authcrypt) — ein Verfahren das die Sender-Identität kryptographisch in die Verschlüsselung einbindet und Multi-Empfänger über CEK + Key Wrapping unterstützt. Wir verwenden stattdessen ECIES + JWS, weil:
 
-| Feld | Wert | Bedeutung |
-|------|-----|-----------|
-| `alg` | `"ECDH-1PU+A256KW"` | Key Agreement + Key Wrap |
-| `enc` | `"A256GCM"` | Content Encryption |
-| `skid` | DID + Key-ID | Sender Key Identifier (static) |
-| `apu` | Base64URL(DID) | Agreement PartyUInfo (Sender) |
-| `apv` | Base64URL(DID) | Agreement PartyVInfo (Empfänger) |
-| `epk` | JWK X25519 | Ephemeraler Public Key |
+- **Kein Multi-Empfänger nötig:** Unsere 1:1-Nachrichten sind tatsächlich 1:1. Wo mehrere Empfänger beteiligt sind (Spaces), nutzen wir symmetrische Gruppen-Keys.
+- **Sender-Auth über JWS:** Wir signieren ohnehin jede Nachricht. Eine zweite kryptographische Sender-Bindung in der Verschlüsselungsschicht ist redundant.
+- **Einfachheit:** ECIES braucht einen ECDH-Call, Authcrypt zwei. Kein CEK, kein Key Wrapping (AES-KW), weniger Code, weniger Angriffsfläche.
+- **Web Crypto API nativ:** Alle ECIES-Operationen sind nativ verfügbar. AES-KW (für A256KW) erfordert zusätzlichen Code.
 
-**Multi-Empfänger:** Das `recipients`-Array kann mehrere Einträge enthalten — der Content Encryption Key wird für jeden Empfänger separat verschlüsselt (Key Wrapping mit AES-256), der Ciphertext ist nur einmal vorhanden.
-
-### Warum Authcrypt statt ECIES
-
-Authcrypt bindet die Sender-Identität kryptographisch in die Verschlüsselung ein — der Empfänger weiß nicht nur dass die Nachricht für ihn ist, sondern auch **von wem** sie kommt, ohne auf eine separate Signatur angewiesen zu sein. Zusätzlich ist Authcrypt das DIDComm-Standardverfahren, was Interoperabilität mit dem DIDComm-Ökosystem sicherstellt.
+Interoperabilität mit DIDComm-Clients wird über die Envelope-Ebene hergestellt (siehe [Sync 007](007-transport-und-broker.md)), nicht über die Verschlüsselungsschicht.
 
 ### Web Crypto API
 
 Alle Operationen sind nativ in der Web Crypto API verfügbar:
-- `crypto.subtle.deriveBits("X25519", ...)` — beide ECDH-Operationen
+- `crypto.subtle.generateKey("X25519", ...)` — Ephemeres Keypair
+- `crypto.subtle.deriveBits("X25519", ...)` — ECDH
 - `crypto.subtle.deriveBits("HKDF", ...)` — Schlüsselableitung
 - `crypto.subtle.encrypt("AES-GCM", ...)` — Verschlüsselung
 
@@ -184,24 +184,75 @@ Keine externe Krypto-Bibliothek nötig.
 
 ## Gruppen-Verschlüsselung (Spaces)
 
-Für persistente Gruppen mit geteilten verschlüsselten Daten (CRDT-Dokumente):
+Für persistente Gruppen mit geteilten verschlüsselten Daten (CRDT-Dokumente) hat jeder Space drei Arten von Schlüsseln (siehe [Sync 009](009-gruppen.md)):
 
-### Space-Schlüssel
+| Schlüssel | Typ | Zweck | Kurzname in Protokoll-Feldern |
+|---|---|---|---|
+| **Space Content Key** | Symmetrisch (AES-256) | Verschlüsselung von Space-Daten und Log-Einträgen | `spaceContentKey` |
+| **Space Capability Key Pair** | Asymmetrisch (Ed25519) | Signiert und verifiziert Capabilities für Broker-Zugriff | Private: `spaceCapabilitySigningKey`, Public: `spaceCapabilityVerificationKey` |
+| **Admin Key(s)** | Asymmetrisch (Ed25519, aus BIP39-Seed abgeleitet) | Autorisiert Space-Management am Broker (Rotation, Admin-Wechsel) | `adminKey` / `adminDid` |
 
-- Jeder Space hat einen symmetrischen Schlüssel (32 Bytes, zufällig generiert)
-- Schlüssel sind versioniert nach **Generation** (monoton aufsteigender Integer, beginnend bei 0)
+**Wichtige Abgrenzung:** Der `spaceCapabilitySigningKey` ist **keine Autorenidentität**. Alle Members teilen ihn und können Capabilities damit signieren — eine Signatur mit diesem Key identifiziert also **keinen** bestimmten Member, sondern nur "irgendjemand aus dieser Gruppe". Autorenschaft von Log-Einträgen oder Inbox-Nachrichten wird ausschließlich über die persönliche Ed25519-Identität (DID) nachgewiesen.
+
+### Space Content Key (symmetrisch)
+
+- 32 Bytes, zufällig generiert bei Space-Erstellung
+- Versioniert nach **Generation** (monoton aufsteigender Integer, beginnend bei 0)
 - Alte Schlüssel werden aufbewahrt um historische Daten entschlüsseln zu können
-- Neue Schlüssel werden bei Einladung via ECIES an den neuen Member verteilt
+- Neue Schlüssel werden bei Einladung via ECIES an Members verteilt
+- In älteren Entwurfs-Texten auch als "Space Key" referenziert — der offizielle normative Name ist `spaceContentKey`
+
+### Space Capability Key Pair (asymmetrisch)
+
+- Ed25519 Keypair, zufällig generiert bei Space-Erstellung
+- Der **Verification Key** (Public) wird beim Broker registriert (für Capability-Verifikation)
+- Der **Signing Key** (Private) wird an alle Members verteilt (per ECIES, gemeinsam mit dem Content Key)
+- Members signieren damit Capabilities für neue Members — **keine Admin-Signatur nötig**
+- Wird bei Member-Entfernung zusammen mit dem Content Key rotiert
+
+**MUSS-Regel:** Der `spaceCapabilitySigningKey` DARF **ausschließlich** zum Signieren von Broker-Capabilities verwendet werden. Er DARF **nicht** für Sender-Authentifizierung, Autoren-Identifikation oder allgemeine Nachrichten-Signaturen eingesetzt werden. Andernfalls würde die Member-Anonymität der Gruppe die Autoren-Identifikation kompromittieren.
+
+### Admin Key (abgeleitet)
+
+Admin Keys werden space-spezifisch aus dem BIP39-Seed des Users abgeleitet. Die Ableitung ist vollständig deterministisch — jeder Admin eines Spaces kann seinen Admin-Key jederzeit aus seinem Seed rekonstruieren.
+
+**Normative Ableitung (MUSS):**
+
+```
+IKM  = 64-Byte BIP39-Seed (siehe Core 001 — volle 64 Bytes, nicht der HKDF-abgeleitete Ed25519-Identity-Seed)
+salt = leer (32 Null-Bytes)
+info = ASCII("wot/space-admin/") || canonical-lowercase-uuid(space-id) || ASCII("/v1")
+OKM  = HKDF-SHA256(IKM, salt, info, 32 Bytes)
+admin_key_pair = Ed25519 Keypair aus OKM (OKM als Ed25519-Seed)
+admin_did = did:key-Enkodierung des admin_key_pair.public_key
+```
+
+**Präzisierungen:**
+
+- `IKM` ist exakt der 64-Byte BIP39-Seed aus PBKDF2-HMAC-SHA512 (siehe [Core 001](../01-wot-core/001-identitaet-und-schluesselableitung.md#seed)). **Nicht** der HKDF-abgeleitete 32-Byte Ed25519-Identity-Seed. Damit sind Admin-Keys unabhängig von Identitäts-Schlüsseln — eine Kompromittierung des Ed25519-Identity-Seeds gefährdet nicht automatisch alle Admin-Rollen.
+- `space-id` wird in **kanonischer Form** in den info-String kodiert: UUID v4 als 36-Zeichen ASCII-String, hex-Ziffern in lowercase, Bindestriche an Positionen 8-4-4-4-12 (wie RFC 9562). Beispiel: `"7f3a2b10-4c5d-4e6f-8a7b-9c0d1e2f3a4b"`.
+- Der info-String ist die UTF-8/ASCII-Byte-Folge — keine JSON-Serialisierung, kein Trailing-Null.
+- Ausgabe-Länge ist exakt 32 Bytes; diese Bytes werden direkt als Ed25519 Private Key Seed verwendet.
+
+Eigenschaften:
+
+- **Space-spezifisch:** Jeder Space hat einen eigenen Admin Key pro Admin
+- **Nicht verknüpfbar:** Der abgeleitete Admin Key hat keine direkte Verbindung zur Haupt-DID des Admins — der Broker kann Admin-Rollen nicht cross-Space korrelieren
+- **Reproduzierbar:** Der Admin kann seinen Admin Key jederzeit aus dem Identity-Seed + Space-ID neu ableiten (kein separates Key-Backup nötig)
+
+Der Admin-Public-Key wird beim Broker registriert. Broker-Management-Nachrichten (Rotation, Admin-Wechsel) werden mit dem Admin-Private-Key signiert.
 
 ### Schlüsselrotation
 
-Bei Entfernung eines Mitglieds:
+Bei Entfernung eines Mitglieds werden **Space Key und Space Keypair gemeinsam rotiert**:
 
-1. Neuen Space-Schlüssel generieren (Generation + 1)
-2. Neuen Schlüssel an alle verbleibenden Mitglieder via ECIES verteilen
-3. Neue Daten werden mit dem neuen Schlüssel verschlüsselt
-4. Alte Daten bleiben mit dem alten Schlüssel lesbar (für Mitglieder die damals Zugriff hatten)
-5. Das entfernte Mitglied hat den neuen Schlüssel nicht und kann zukünftige Daten nicht lesen
+1. Neuer Space Key generieren (Generation + 1)
+2. Neues Space Keypair generieren
+3. Admin sendet `space-rotate`-Nachricht an Broker (signiert mit Admin Key) — neuer Space Public Key wird aktiv, alte Capabilities ungültig
+4. Admin verteilt neuen Space Key + neuen Space Private Key + neue Capability an alle verbleibenden Mitglieder via ECIES
+5. Neue Daten werden mit dem neuen Space Key verschlüsselt
+6. Alte Daten bleiben mit dem alten Space Key lesbar (für Mitglieder die damals Zugriff hatten)
+7. Das entfernte Mitglied hat weder neuen Space Key noch gültige Capability
 
 ### Encrypt-then-Sync
 
@@ -221,10 +272,10 @@ Wie Seed und andere sensible Daten auf dem Gerät geschützt werden ist Sache de
 
 | | WoT Core | Human Money Core | Spec |
 |---|---|---|---|
-| **P2P-Verschlüsselung** | ECIES (X25519 + HKDF + AES-256-GCM) | SecureContainer (X25519 + HKDF + ChaCha20) | ✅ **Authcrypt** (ECDH-1PU + AES-256-GCM) |
+| **P2P-Verschlüsselung** | ECIES (X25519 + HKDF + AES-256-GCM) | SecureContainer (X25519 + HKDF + ChaCha20) | ✅ **ECIES** (X25519 + HKDF + AES-256-GCM) |
 | **Gruppen-Verschlüsselung** | Space Keys (zufällig, generationsbasiert) | Nicht eingebaut | ✅ Space Keys |
 | **Symmetrischer Algorithmus** | AES-256-GCM (Web Crypto) | ChaCha20-Poly1305 | ✅ AES-256-GCM |
-| **HKDF Info (P2P)** | `"wot-ecies-v1"` | `"secure-container-kek"` | **`"wot/authcrypt/v1"`** |
+| **HKDF Info (P2P)** | `"wot-ecies-v1"` | `"secure-container-kek"` | **`"wot/ecies/v1"`** |
 | **X25519-Ableitung** | Separater HKDF-Pfad | Birationale Abbildung | ✅ **Separater HKDF-Pfad** (normativ) |
 | **Nonce** | 12 Bytes zufällig | 12 Bytes zufällig | ✅ 12 Bytes zufällig |
-| **DIDComm-kompatibel** | Nein (ECIES) | Nein (SecureContainer) | ✅ Ja (Authcrypt + JWE) |
+| **DIDComm-kompatibel** | Nein (ECIES) | Nein (SecureContainer) | Envelope-Ebene (siehe Sync 007) |

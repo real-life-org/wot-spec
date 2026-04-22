@@ -10,7 +10,7 @@ Spezifiziert wie Trust Lists über die bestehende WoT Sync Infrastruktur (Inbox,
 
 ## Grundprinzip
 
-Die Gossip-Propagation nutzt den **Inbox-Kanal** (siehe [Sync 007](../02-wot-sync/007-transport-und-broker.md)), verschlüsselt mit DIDComm Authcrypt, als Transportweg. Der Broker braucht keine Änderungen — er sieht nur verschlüsselte Inbox-Nachrichten wie immer.
+Die Gossip-Propagation nutzt den **Inbox-Kanal** (siehe [Sync 007](../02-wot-sync/007-transport-und-broker.md)), verschlüsselt mit ECIES (siehe [Sync 005](../02-wot-sync/005-verschluesselung.md)), als Transportweg. Der Broker braucht keine Änderungen — er sieht nur verschlüsselte Inbox-Nachrichten wie immer.
 
 ```
 Alice aktualisiert ihre Trust List
@@ -30,22 +30,22 @@ Broker sieht: verschlüsselte Inbox-Nachrichten
 
 ## Nachrichtentyp: `trust-list-delta`
 
-Im Message Envelope (siehe [Sync 007](../02-wot-sync/007-transport-und-broker.md#message-envelope-didcomm-kompatibel)) wird ein neuer Typ definiert, verschlüsselt mit Authcrypt:
+Im Message Envelope (siehe [Sync 007](../02-wot-sync/007-transport-und-broker.md#message-envelope-didcomm-kompatibel)) wird ein neuer Typ definiert, verschlüsselt mit ECIES:
 
 ```json
 {
   "id": "uuid",
-  "type": "https://wot.example/protocols/trust-list-delta/1.0",
+  "type": "https://web-of-trust.de/protocols/trust-list-delta/1.0",
   "from": "did:key:z6Mk...alice",
   "to": ["did:key:z6Mk...bob"],
   "created_time": "2026-04-17T10:00:00Z",
   "body": {
-    "delta": "<SD-JWT mit selektiv offengelegten Einträgen>"
+    "delta": "<SD-JWT-VC-Compact-String mit selektiv offengelegten Einträgen>"
   }
 }
 ```
 
-Die `body.delta` enthält die Trust List (oder ein Delta) als SD-JWT — selektiv offengelegt für den jeweiligen Empfänger. Der Empfänger sieht nur die Einträge die der Sender für ihn freigegeben hat.
+Die `body.delta` enthält die Trust List (oder ein Delta) als **SD-JWT VC** ([IETF Draft](https://datatracker.ietf.org/doc/draft-ietf-oauth-sd-jwt-vc/), normativ in [H01](H01-trust-scores.md)) — selektiv offengelegt für den jeweiligen Empfänger. Der Empfänger sieht nur die Einträge, deren Disclosures der Sender im konkatenierten SD-JWT-Compact-String mitsendet. Die Signatur im JWT-Header bleibt über alle Verteilungs-Hops gültig, weil die Disclosures nur die ohnehin im Payload enthaltenen Hashes ergänzen.
 
 ## Client-Logik
 
@@ -55,7 +55,7 @@ Wenn Alice ihre Trust List aktualisiert:
 
 1. **Delta berechnen** — was hat sich seit dem letzten Versand geändert?
 2. **Empfänger bestimmen** — alle Kontakte mit Hop-Limit ≥ 1
-3. **Selective Disclosure** — pro Empfänger: nur relevante Einträge offenlegen (SD-JWT)
+3. **Selective Disclosure** — pro Empfänger: nur relevante Disclosures in den SD-JWT-VC-Compact-String aufnehmen
 4. **Priorisierung** — nahe Kontakte (Hop-Limit = 1) zuerst
 5. **Sent-Log aktualisieren** — merken was wann an wen gesendet wurde
 

@@ -23,9 +23,9 @@ Erweitert WoT Attestations um visuelle Darstellung (Badges) und Event-/Ortsbezü
 ```json
 {
   "@context": [
-    "https://www.w3.org/2018/credentials/v1",
-    "https://wot.example/vocab/v1",
-    "https://reallife.example/vocab/v1"
+    "https://www.w3.org/ns/credentials/v2",
+    "https://web-of-trust.de/vocab/v1",
+    "https://web-of-trust.de/vocab/rls/v1"
   ]
 }
 ```

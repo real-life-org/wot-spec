@@ -3,7 +3,7 @@
 - **Status:** Entwurf
 - **Autoren:** Anton Tranelis
 - **Datum:** 2026-04-12
-- **Grundlage:** Forschungsdokument 005-sync-and-transport.md
+- **Grundlage:** Forschungsdokument [sync-alternativen.md](sync-alternativen.md)
 
 ## Zusammenfassung
 
@@ -25,17 +25,36 @@ Daraus folgt:
 
 ---
 
-## 2. Device-Keys
+## 2. Device-Identifikation
 
-### Warum Device-Keys?
+### Aktueller Stand: Device-UUIDs (Phase 1)
 
-Jedes Gerät braucht eine eigene kryptografische Identität. Zwei Gründe:
+Für die aktuelle Spec-Version (gemeinsam mit `did:key`) werden Geräte über **zufällige UUIDs** identifiziert, nicht über eigene Schlüsselpaare. Grund: `did:key` kann per Design nur einen einzigen Schlüssel ausdrücken — ein Trust-Anchor-Dokument mit mehreren Device-Keys setzt eine andere DID-Methode voraus (siehe [identitaet-alternativen.md](identitaet-alternativen.md)).
 
-1. **Sync:** Log-Einträge müssen eindeutig einem Gerät zugeordnet werden. Sonst können zwei Geräte desselben Users Sequenznummern-Konflikte erzeugen.
+**Das UUID-Modell:**
 
-2. **Double-Spend-Prevention:** In Sebastians Human Money Core müssen Gutscheine auf genau einem Gerät leben. Ein Gutschein gehört nicht "Alice", sondern "Alice-auf-ihrem-Handy". Transfer nur durch explizite Übergabe zwischen Device-Keys.
+- Jedes Gerät generiert beim ersten Start eine zufällige UUID v4
+- Die UUID wird im lokalen Sync-Log als `deviceId` verwendet (eindeutiger Autor pro Log-Eintrag)
+- Die UUID wird im Personal Doc unter `devices` eingetragen (für UI-Anzeige, Device-Deaktivierung als Konvention)
+- Alle Signaturen laufen mit dem **Master Key** (aus dem Seed abgeleitet)
 
-### Hierarchie
+**Was damit funktioniert:**
+
+- **Sync-Log-Eindeutigkeit:** UUIDs verhindern Sequenznummern-Konflikte zwischen Geräten desselben Users
+- **Double-Spend-Prevention (HMC):** Ein Gutschein "lebt auf Device X123". Der Transfer wird vom Master Key signiert, die UUID lokalisiert den Gutschein. Double-Spend wird verhindert, weil ein Gutschein eine deterministische Owner-UUID hat und jede App-Instanz prüfen kann: "Ist dieser Gutschein jemandem mit UUID X123 zugeordnet? Dann bin ich es nicht, also gehört er mir nicht."
+- **Multi-Device-Sync:** Alle Geräte haben den Seed, können lesen und schreiben. Device-UUIDs ordnen Log-Einträge zu.
+
+**Was damit NICHT funktioniert:**
+
+- **Kryptographische Device-Revocation:** Wer den Seed hat, kann jede beliebige UUID generieren und sich als neues Device registrieren. Device-Deaktivierung ist eine Konvention, die nur gegen "ehrliche" Geräte wirkt.
+- **Seed-Isolation:** Jedes Gerät hat den vollen Seed. Ein kompromittiertes Gerät bedeutet Kompromittierung der gesamten Identität.
+- **Delegierbare Gerätebefugnisse:** Es gibt keine kryptographische Unterscheidung zwischen "primärem Gerät" und "delegiertem Gerät".
+
+### Zukunftsmodell: Echte Device-Keys (Phase 2, gemeinsam mit DID-Migration)
+
+Sobald wir von `did:key` auf eine DID-Methode mit DID-Dokumenten wechseln ([did:peer:4](https://identity.foundation/peer-did-method-spec/) oder [did:webvh](https://identity.foundation/didwebvh/)), werden echte Per-Device-Keys möglich und sinnvoll.
+
+**Hierarchie (zukünftig):**
 
 ```
 BIP39 Seed (12 Wörter)
@@ -45,106 +64,76 @@ BIP39 Seed (12 Wörter)
   → Zufällig generiert               → Device Key B (Laptop)
 ```
 
-**Jedes Gerät hat beides:**
-- **Master Key** (aus Seed, identisch auf allen Geräten) — für Identity-Level-Aktionen
-- **Device Key** (zufällig, einzigartig pro Gerät) — für Sync-Level-Aktionen
+Das DID-Dokument enthält alle autorisierten Device-Keys:
 
-### Wer signiert was?
+```json
+{
+  "id": "did:peer:4z...",
+  "verificationMethod": [
+    { "id": "#master", "publicKeyMultibase": "z6Mk...master" },
+    { "id": "#device-phone", "publicKeyMultibase": "z6Mk...phone" },
+    { "id": "#device-laptop", "publicKeyMultibase": "z6Mk...laptop" }
+  ],
+  "authentication": ["#device-phone", "#device-laptop"],
+  "capabilityInvocation": ["#master"]
+}
+```
+
+**Vorteile des Zukunftsmodells:**
+
+| Aspekt | UUID (jetzt) | Device-Key (Zukunft) |
+|---|---|---|
+| Device-Identifikation | Konvention (UUID) | Kryptographisch (Public Key) |
+| Device-Revocation | Nicht wirksam gegen Seed-Besitzer | Kryptographisch bedeutungsvoll (Key aus DID-Dokument entfernen) |
+| Seed-Verbreitung | Auf jedem Gerät | Nur auf dem primären Gerät |
+| Gerätekompromittierung | Kompromittiert alle Geräte | Begrenzbar auf das eine Gerät |
+| Onboarding eines zweiten Geräts | Seed eingeben | QR-Code-Austausch, Master signiert neuen Device Key |
+| Forward Secrecy pro Gerät | Nicht möglich | Teilweise möglich |
+
+**Wer würde dann was signieren?**
 
 | Aktion | Signiert mit | Warum |
 |--------|-------------|-------|
-| Attestation ("Ich bestätige Bob") | Master Key | Identity-Level — "Ich, Alice" sagt das, nicht "Alices Handy" |
-| Verification ("Ich habe Bob getroffen") | Master Key | Identity-Level — persönliche Aussage |
+| Attestation | Master Key | Identity-Level — "Ich, Alice" |
+| Verification | Master Key | Identity-Level — persönliche Aussage |
 | Log-Eintrag (CRDT-Update) | Device Key | Sync-Level — welches Gerät hat das geschrieben? |
-| Delegation ("Mein Laptop ist autorisiert") | Master Key | Autorisierung eines neuen Geräts |
-| Transaktion (Gutschein ausgeben) | Device Key | Double-Spend-Prevention — welches Gerät hat ausgegeben? |
+| Delegation (neuer Device-Key) | Master Key | Autorisierung eines neuen Geräts |
+| Transaktion (Gutschein ausgeben) | Device Key | Double-Spend-Prevention + Gerätebindung |
 
-### Wer entschlüsselt?
+**Login-Flows im Zukunftsmodell:**
 
-Nachrichten werden an den **Master Encryption Key** verschlüsselt (X25519, aus Seed ableitbar). Jedes Gerät kann entschlüsseln weil jedes Gerät den Seed hat (oder den davon abgeleiteten Key).
-
-### Device-Key-Erzeugung
-
-Device-Keys sind **zufällig** — nicht aus dem Seed ableitbar. Das garantiert Einzigartigkeit und verhindert versehentlichen Double Spend.
-
-### Login-Flows
-
-**Erstes Gerät (Onboarding):**
+Erstes Gerät (Onboarding):
 
 ```
-1. Seed eingeben (oder generieren)
+1. Seed eingeben oder generieren
 2. Master Key ableiten
 3. Zufälligen Device Key generieren
 4. Master Key signiert Delegation an Device Key
-5. Fertig — Gerät ist autorisiert
+5. DID-Dokument erstellen, mit Master + Device Key
 ```
 
-**Neues Gerät hinzufügen (bestehendes Gerät verfügbar):**
+Neues Gerät hinzufügen (mit Master-Gerät verfügbar):
 
 ```
 1. Neues Gerät: App öffnen → "QR-Code scannen"
 2. Neues Gerät: Generiert zufälligen Device Key, zeigt QR-Code
-3. Bestehendes Gerät: Scannt QR → "Laptop möchte Zugang" → bestätigen
-4. Bestehendes Gerät: Signiert Delegation mit Master Key
-5. Bestehendes Gerät: Sendet Delegation + Daten an neues Gerät
-6. Neues Gerät: Hat Device Key + Delegation + Daten
+3. Master-Gerät: Scannt QR → "Laptop möchte Zugang" → bestätigen
+4. Master-Gerät: Signiert Delegation mit Master Key
+5. Master-Gerät: Aktualisiert DID-Dokument, sendet Delegation + Daten
+6. Neues Gerät: Hat Device Key + Delegation + Daten, ohne den Seed zu kennen
 ```
 
-Vorteil: Der Seed wird nicht auf dem neuen Gerät eingegeben. Sicherer.
+Vorteil: Der Seed verlässt das Master-Gerät nicht.
 
-**Neues Gerät hinzufügen (bestehendes Gerät NICHT verfügbar):**
+### Zusammenfassung der Entscheidung
 
-```
-1. Neues Gerät: Seed eingeben
-2. Master Key ableiten → neuen zufälligen Device Key generieren
-3. Master Key signiert Delegation
-4. Verbindung zum Broker → Daten holen
-5. Fertig — funktioniert auch wenn das alte Gerät aus ist
-```
+Die aktuelle Spec-Version verwendet **UUIDs**, weil:
 
-Weniger sicher (Seed muss eingegeben werden), aber funktioniert immer.
+1. Es ausreichend ist für Sync-Log-Eindeutigkeit und HMC-Double-Spend-Prevention
+2. `did:key` keine Möglichkeit bietet, mehrere Keys in einer DID auszudrücken
+3. Die zusätzliche Komplexität (DID-Dokumente, Delegations-Protokoll, Multi-Key-Management) ohne die DID-Methoden-Migration nicht lohnt
 
-**Recovery (alle Geräte verloren):**
-
-```
-1. Neues Gerät: Seed eingeben
-2. Master Key ableiten → Recovery Device Key generieren
-   (deterministisch: HKDF(seed, "wot/device/recovery/v1"))
-3. Master Key signiert Delegation an Recovery Key
-4. Broker liefert verschlüsselte Daten aus
-5. Sofort: Zufälligen Device Key generieren für Normalbetrieb
-6. Recovery Key wird nicht weiterbenutzt
-```
-
-### Delegation
-
-Eine Delegation ist ein signiertes Dokument:
-
-```
-{
-  type:       "device-delegation"
-  masterDid:  "did:key:z6Mk..."        (die Identität)
-  deviceKey:  "z6Mk..."                (Public Key des Geräts)
-  capability: "full"                    (was das Gerät darf)
-  issuedAt:   "2026-04-12T..."
-  sig:        Ed25519-Signatur des Master Key
-}
-```
-
-Jeder kann verifizieren: DID → Public Key extrahieren → Signatur prüfen → ja, dieses Gerät ist autorisiert.
-
-### Für WoT und Human Money Core
-
-Dasselbe Device-Key-Modell, unterschiedliche Nutzung:
-
-| | WoT (Sync) | Human Money Core (Payment) |
-|--|-----------|---------------------------|
-| **Device Key signiert** | Log-Einträge | Transaktionen |
-| **Daten-Replikation** | Alle Geräte haben alles | Gutschein lebt auf einem Gerät |
-| **Double Spend** | Kein Problem (CRDT merged) | Muss verhindert werden |
-| **Transfer** | Automatisch (Sync) | Explizit (Device A → Device B) |
-
-Das gemeinsame Fundament: **Kryptografisch verifizierbare Geräte-Identität, delegiert von der Master-Identität.**
+Der Wechsel zu Device-Keys erfolgt **gemeinsam mit der DID-Migration** als Phase 2. Siehe [identity-migration.md](identity-migration.md) und [identitaet-alternativen.md](identitaet-alternativen.md) für den geplanten Pfad.
 
 ---
 

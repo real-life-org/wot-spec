@@ -25,7 +25,7 @@ Beide nutzen dieselbe Log-Struktur, dasselbe Sync-Protokoll, dieselbe Verschlüs
 | | Space-Dokument | Personal Doc |
 |---|---|---|
 | **Key-Erzeugung** | Zufällig vom Admin generiert | Deterministisch aus Seed abgeleitet |
-| **Key-Verteilung** | Per Authcrypt an Members (ECIES-ähnlich) | Kein Transport nötig — jedes Device leitet selbst ab |
+| **Key-Verteilung** | Per ECIES an Members | Kein Transport nötig — jedes Device leitet selbst ab |
 | **Member-Liste** | Explizit als Feld (`members[]`) | Implizit: alle Devices mit gleichem Seed |
 | **Key-Rotation** | Bei Member-Entfernung | Nur bei Seed-Kompromittierung → Identity-Migration |
 | **Authorisierung** | Admin stellt Capabilities aus | User ist sein eigener Admin |
@@ -227,12 +227,49 @@ Der User kann in der App ein Device als deaktiviert markieren. Das setzt `revoke
 
 Nach Deaktivierung:
 
-- Andere Mitglieder und Broker wissen dass dieses Device nicht mehr vertrauenswürdig ist
+- Andere Mitglieder und Broker wissen dass diese `deviceId` nicht mehr vertrauenswürdig ist
 - Neue Log-Einträge mit dieser `deviceId` werden von anderen Devices abgelehnt
 - Der Broker lehnt Authentisierung mit dieser `deviceId` ab
 - Der User sollte alle Space Keys rotieren (siehe unten)
 
-**Wichtig:** Deaktivierung über das Personal Doc allein reicht nicht bei Seed-Kompromittierung. Wenn jemand den Seed hat, kann er ein neues Device registrieren. Für echten Schutz muss die Identität rotiert werden.
+### Limitationen der Device-Deaktivierung (MUSS dokumentiert)
+
+Im aktuellen **Shared-Seed-Modell** (siehe [Core 001](../01-wot-core/001-identitaet-und-schluesselableitung.md#multi-device--shared-seed-modell)) ist Device-Deaktivierung **keine kryptographische Maßnahme**, sondern eine **UUID-basierte Konvention**:
+
+- Die `deviceId` ist eine zufällige UUID, kein Schlüssel
+- Wer den Seed extrahiert, kann **eine neue Device-UUID generieren** und sich als neues Device registrieren
+- Die Deaktivierung wirkt nur gegen "ehrliche" Geräte, die sich an die Konvention halten
+
+**Bei Seed-Kompromittierung schützt Device-Deaktivierung nicht.** Der einzige wirksame Schutz ist:
+
+1. Sofortige Key-Rotation aller Spaces (wird neue Space Keys und neue Capabilities erzeugen)
+2. Bei hochsensitiven Daten: Identitäts-Rotation (neue DID, siehe [Identity Migration](../research/identity-migration.md))
+
+**Zukünftiger Upgrade:** Mit Per-Device Keys (gemeinsam mit DID-Methoden-Migration, siehe [Core 001](../01-wot-core/001-identitaet-und-schluesselableitung.md#zukünftiger-upgrade-pfad-per-device-keys)) wird Device-Deaktivierung kryptographisch bedeutungsvoll — der widerrufene Device-Key kann nicht einfach regeneriert werden.
+
+### Restore/Clone-Detection: erzwungener deviceId-Wechsel
+
+Bei einem Device-Restore aus Backup oder einem Storage-Clone kann die Situation entstehen, dass zwei physische Geräte dieselbe `deviceId` beanspruchen. Das würde zu katastrophalem AES-GCM-Nonce-Reuse führen (siehe [Sync 005](005-verschluesselung.md#nonce-konstruktion), [Sync 006](006-sync-protokoll.md#seq-konsistenz-muss)).
+
+**Harte Regel:** Sobald ein Client beim Reconnect feststellt, dass der Broker für seine `(deviceId, docId)` einen höheren `seq` hat als er selbst, MUSS er dieses als Restore/Clone-Ereignis behandeln:
+
+1. **Neue `deviceId` generieren** (zufällige UUID v4)
+2. **Alte `deviceId` deaktivieren** via signierter `device-revoke`-Nachricht an den Broker
+3. **Personal Doc aktualisieren:** Neue `deviceId` in `devices` eintragen, alte als `revokedAt` markieren
+4. **Extensions benachrichtigen** über den `deviceId`-Wechsel (siehe [Extension-Hinweis](#extension-hinweis-device-spezifische-felder))
+5. **Neu beginnen** unter der neuen `deviceId` ab `seq=0`
+
+Die Broker-seitige Erkennung eines Konflikts (`SEQ_COLLISION_DETECTED`, siehe [Sync 007](007-transport-und-broker.md#wire-formate-der-sync-nachrichten)) ist die letzte Verteidigungslinie — der Client SOLL das Szenario bereits lokal erkennen und verhindern, bevor es zur Kollision kommt.
+
+### Extension-Hinweis: Device-spezifische Felder
+
+Extensions des WoT-Protokolls (z.B. HMC, RLS) dürfen eigene Datenstrukturen im Personal Doc verwenden. Falls eine Extension in einzelnen Items ein device-spezifisches Feld führt (z.B. HMC-Vouchers mit einer `custodyDeviceId` zur Lokalisierung der aktiven Verwahrung), gilt:
+
+- Bei einem **deviceId-Wechsel** (siehe Restore/Clone-Detection oben) MUSS die Extension ihre device-spezifischen Felder konsistent aktualisieren — z.B. durch Master-Key-signierte CRDT-Operationen, die die alte `deviceId` durch die neue ersetzen
+- Extensions, die solche Felder verwenden, MÜSSEN dokumentieren, wie sie auf deviceId-Wechsel reagieren
+- Der Core stellt nur die CRDT-Infrastruktur und das Device-Rotation-Event bereit — die Semantik der device-spezifischen Felder liegt bei der Extension
+
+Details zu HMC-spezifischen Feldern siehe [H02 Transactions](../04-hmc-extensions/H02-transactions.md) (in Arbeit mit Sebastian Galek).
 
 ### Device-Verlust
 

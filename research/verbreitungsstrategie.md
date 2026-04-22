@@ -19,7 +19,7 @@ Unser Web of Trust ist die dezentrale Alternative: Identität und Vertrauen basi
 ### Was wir tun
 
 - Spec finalisieren (mit Sebastian) — zwei Implementierungen die nachweislich interoperieren
-- DIDComm Phase 2 implementieren (JWE, DID-Dokumente) — bereit für Interop
+- Sync-Stack nach aktueller Spec implementieren (JWE JSON Serialization, Threading, Trust Ping 2.0, Discover Features 2.0 — alle in Sync 007 spezifiziert) — DIDComm v2.1-konform
 - Erste Communities nutzen WoT aktiv (Real Life Stack, Human Money)
 - Material vorbereiten: "Was ist die Alternative zu eIDAS?" — technisch fundiert, verständlich erklärt, für Menschen die sich verweigern wollen
 
@@ -120,27 +120,46 @@ In einer Welt voller AI-generierter Identitäten ist der Beweis "ich habe diesen
 
 Man kann keine Infrastruktur bauen wenn die Krise da ist. Signal existierte bevor Snowden kam. Tor existierte bevor Wikileaks es brauchte. Unser WoT muss funktionieren, skalieren und interoperabel sein **bevor** der große Moment kommt. Deshalb bauen wir jetzt.
 
-## DIDComm-Ökosystem stärken
+## DIDComm als bewusste Gegenwette
 
-DIDComm braucht keine bessere Spec — die ist gut. DIDComm braucht **eine Geschichte und echte User.** Wir haben beides.
+Der europäische SSI-Diskurs teilt sich 2026 in zwei Lager:
 
-### Was DIDComm fehlt
+- **OpenID4VC** — als Teil von eIDAS 2.0 normativ gesetzt. OAuth-2.0-basiert, Issuer-Holder-Verifier mit bekannten Rollen, staatlich sanktionierte Trust-Anchors. Aktiv weiterentwickelt.
+- **DIDComm v2.1** — DIF-ratifiziert, stabil, P2P-orientiert. Seit Mai 2024 eingefroren (keine inhaltlichen Commits mehr), aber nicht verwaist: Protokoll-Registry auf didcomm.org ist aktiv, das Aries-Ökosystem (Indicio, Procivis, Lissi) läuft weiter.
 
-- **Laufende Implementierungen mit echten Usern** — DIF sucht aktiv danach. Wir wären eine der ersten Apps mit DIDComm v2 in Produktion.
-- **Use Cases jenseits von Enterprise SSI** — Mitarbeiterausweise und Supply Chain sind langweilig. Vertrauensnetzwerke aus echten Begegnungen bewegen Menschen.
-- **Eine Gegenerzählung zu OpenID4VC/eIDAS** — aktuell dominiert die EU-Perspektive die Diskussion. DIDComm hat keine vergleichbare Geschichte.
+**Unsere Wette:** Wir positionieren uns bewusst auf der DIDComm-Seite. Nicht weil das Ökosystem größer wäre, sondern weil es der **einzige ernsthafte dezentrale Gegenpol** zum OpenID4VC-Monopol der EU-Wallet ist. Wenn die Debatte kommt, ob digitale Identität zentral oder dezentral sein soll, ist DIDComm die publizierte, durchdachte, spezifizierte Antwort.
 
-### Was wir tun können
+### Warum eingefrorene Spec für uns eine Stärke ist
+
+Das klingt paradox, aber: eine stabile, ratifizierte Spec ohne Moving-Target-Risiko ist **besser** für unsere Positionierung als ein aktiv entwickelter Standard, dessen Details sich ändern.
+
+- Wir bauen gegen ein feststehendes Ziel — keine Breaking Changes aus v2.2, die uns zum Nachziehen zwingen
+- Unsere Interop-Aussage ist überprüfbar und dauerhaft (Spec v2.1 liegt publiziert vor)
+- Der Stabilitäts-Zustand signalisiert Reife — keine Beta-Disclaimer
+
+Die Tatsache, dass die DIDComm-Libraries (`didcomm-rust` dormant, `didcomm-js` entfernt, `didcomm-rs` tot) nicht mehr aktiv gepflegt werden, ist für unseren Weg kein Problem: wir implementieren ohnehin eigenständig via Web Crypto API. Die Spec selbst — das Dokument — bleibt als Referenz belastbar.
+
+### Was wir für das Ökosystem beitragen können
+
+**Das, was DIDComm fehlt, sind nicht Spec-Details, sondern:**
+
+- **Laufende Implementierungen mit echten Usern** — wir wären eine der ersten DIDComm-v2-Apps mit einer realen Community-Nutzer-Basis
+- **Use Cases jenseits von Enterprise SSI** — Mitarbeiterausweise und Supply Chain bewegen niemanden; Vertrauensnetzwerke aus echten Begegnungen schon
+- **Eine Gegenerzählung zu OpenID4VC/eIDAS** — momentan dominiert die EU-Perspektive die Diskussion. DIDComm hat keine vergleichbare narrative Position
+
+### Konkrete Schritte
 
 **Kurzfristig:**
-- DIF beitreten (kostenlos unter 500 Personen)
-- WoT-Protokolle als DIDComm-Protokolle einreichen (Challenge-Response, Attestation-Austausch, Trust-Propagation)
-- Interop-Tests publizieren (Web Crypto API + SICPA-Library)
+
+- DIF beitreten (kostenlos unter 500 Personen) — weniger für "Einfluss auf die Spec" (die ist fertig), mehr als Teil der stabilen Community
+- Interop-Tests publizieren — wir zeigen, dass unsere eigenständige Implementation die Spec erfüllt
+- Aktive Beiträge im didcomm.org-Protokoll-Register (das lebt), wenn wir ein Protokoll haben das dort Sinn ergibt
 
 **Mittelfristig:**
+
 - Unseren Broker als DIDComm-Mediator veröffentlichen (Open Source)
-- Talks auf DIF-Meetings, IIW, CCC, FOSDEM — nicht über Technik sondern über den Use Case
-- Vergleichsdokument: eIDAS vs. WoT — sachlich, Feature für Feature
+- Talks auf DIF-Meetings, IIW, CCC, FOSDEM — über den Use Case, nicht über Technik
+- Vergleichsdokument: eIDAS/OpenID4VC vs. DIDComm/WoT — sachlich, Feature für Feature
 
 ### Die eIDAS-Diskussion nutzen
 
@@ -182,9 +201,9 @@ Emotional aufgeladen:
 
 Architektur-Kritik. Client-Server vs. Peer-to-Peer.
 
-> "EU-Wallet ist eIDAS 2.0 — Client-Server, zentralisiert, OpenID4VP-basiert, mit staatlichen Trust-Anchors. Wir bauen das Gegenteil: DIDComm, P2P, dezentral, Community-Trust-Anchors. Beide nutzen W3C Verifiable Credentials und Ed25519 — aber mit fundamental unterschiedlicher Architektur. Die Wahl ist nicht 'haben oder nicht haben', sondern 'zentralisierte oder dezentrale Infrastruktur'."
+> "EU-Wallet ist eIDAS 2.0 — Client-Server, zentralisiert, **OpenID4VCI/OpenID4VP**-basiert, mit staatlichen Trust-Anchors. Wir bauen das Gegenteil: **DIDComm v2.1**, P2P, dezentral, Community-Trust-Anchors. Beide nutzen W3C Verifiable Credentials und Ed25519 — aber zwei fundamental unterschiedliche Exchange-Standards. Die Wahl ist nicht 'haben oder nicht haben', sondern welchem der beiden ratifizierten Standards man folgt."
 
-Ankerpunkte: Mozilla's #SecurityRiskAhead, Artikel 45 Kritik, AI-Deepfake-Problem, DIDComm als technisch ernsthafte Alternative.
+Ankerpunkte: Mozilla's #SecurityRiskAhead, Artikel 45 Kritik, AI-Deepfake-Problem, DIDComm v2.1 als technisch ebenbürtige, dezentral orientierte Standards-Alternative zu OpenID4VC.
 
 **Frame 2: Progressiv-kommunitaristisch (Commons, Kooperativen, Transition Towns)**
 
@@ -261,6 +280,12 @@ Botschaft: "Ihr habt gefragt: gibt es eine Alternative? Hier ist sie. Schon seit
 
 **"Ist das nicht illegal nach eIDAS?"**
 > "Nein. eIDAS regelt was als offizielle EU-Wallet akzeptiert werden muss. Alternative Systeme für Community-Nutzung sind nicht reguliert. Wir sind nicht die EU-Wallet — wir sind etwas anderes."
+
+**"Warum DIDComm statt OpenID4VC?"**
+> "OpenID4VC ist Client-Server — es setzt bekannte Issuer, Holder und Verifier voraus, die über Web-Endpoints kommunizieren. Das passt zur EU-Wallet-Topologie (Bürger, Bundesdruckerei, Verwaltung), aber nicht zu P2P-Communities. DIDComm v2.1 ist für den Peer-to-Peer-Fall gebaut — zwei Menschen tauschen Nachrichten aus, ohne dass einer vorher den anderen 'kennt' oder eine dritte Instanz involviert ist. Beide Standards nutzen W3C VCs und JWS — sie sind also auf Daten-Ebene interoperabel über Gateways. Wir haben uns für DIDComm entschieden, weil es zum Community-Modell passt."
+
+**"Ist DIDComm nicht ein totes Projekt?"**
+> "Die Spec ist seit v2.1 stabil — keine inhaltlichen Commits seit Mai 2024. Aber 'stabil' ist nicht 'tot': TLS 1.3 hatte auch lange keine Updates, und das Protokoll wird überall genutzt. Die aktive Arbeit passiert auf der Protokoll-Ebene (didcomm.org), nicht an der Envelope-Spec. Für uns ist eine eingefrorene Spec eine Stärke: wir bauen gegen ein feststehendes Ziel, ohne Moving-Target-Risiko."
 
 ### Zu produzierende Materialien
 

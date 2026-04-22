@@ -1,8 +1,8 @@
-# WoT Spec 006: Sync and Transport — Research Document
+# Sync-Protokoll-Alternativen — Landschafts-Recherche
 
-- **Status:** Research
+- **Status:** Research / Exploration
 - **Authors:** Anton Tranelis
-- **Date:** 2026-04-11
+- **Datum:** 2026-04-11 (erstellt), 2026-04-20 (umbenannt)
 
 ## Abstract
 
@@ -226,6 +226,36 @@ The protocol must be versioned. Clients with different protocol versions must be
 
 - Spec: [identity.foundation/didcomm-messaging/spec/](https://identity.foundation/didcomm-messaging/spec/)
 - Repo: [github.com/decentralized-identity/didcomm-messaging](https://github.com/decentralized-identity/didcomm-messaging)
+
+#### KERI / ACDC
+
+- Spec: [trustoverip.github.io/tswg-keri-specification/](https://trustoverip.github.io/tswg-keri-specification/)
+- IETF-Draft: [datatracker.ietf.org/doc/draft-ssmith-keri/](https://datatracker.ietf.org/doc/draft-ssmith-keri/)
+- KERI Foundation: [keri.foundation](https://keri.foundation/)
+- Hauptautor: Sam Smith
+
+**Relevanz für Sync-Design**: KERI ist primär ein Identity-Protokoll, aber seine Architektur ist fundamental sync-basiert — jede Identität ist ein **Key Event Log (KEL)**, ein append-only signierter Log aus Key-Events. Die Sync-Semantik ist explizit spezifiziert und lehrreich für unser Log-Modell.
+
+**Sync-relevante Kern-Konzepte:**
+
+- **Key Event Log (KEL)**: Append-only, signierter Log pro Identität. Jeder Eintrag ist ein Key-Event — Inception (Erstellung), Rotation (Schlüsselwechsel), Interaction (Nutzung). Kette ist kryptographisch verkettet über Hash-Referenzen.
+- **Witnesses**: Ausgewählte Dritte, die Events empfangen, lokal speichern und **Receipts** (Empfangsbestätigungen) ausstellen. Nicht vertrauenswürdig nötig — sie verhindern Equivocation (dass der Identity-Owner zwei widersprüchliche Events in verschiedene Richtungen schickt). Konzeptionell verwandt zu unserem "Broker-als-Peer"-Modell, aber strenger formalisiert.
+- **Pre-Rotation**: Jedes Key-Event commitment schon jetzt den Hash des **nächsten** Keys. Wer den aktuellen Key kompromittiert, kann nicht rotieren, weil der Nachfolger-Hash bereits feststeht und er das Pre-Image nicht kennt. Übertragbar auf Device-Rotation oder Guardian-Recovery-Szenarien.
+- **CESR** (Composable Event Streaming Representation): Binäres Streaming-Format für signierte Events. Effizienter als JSON, aber eigenes Ökosystem.
+- **ACDC** (Authentic Chained Data Containers): KERI-natives Credential-Format als Alternative zu W3C VCs. Stark verkettet und provenance-orientiert.
+
+**Was wir konzeptionell adaptieren könnten:**
+
+- **Witness-Receipts-Pattern** als Variante unserer Multi-Source-Sync-Detection: Broker können nicht nur Nachrichten weiterreichen, sondern signierte Receipts ausstellen. Wenn zwei Broker Receipts für unvereinbare Events ausstellen, ist Equivocation kryptographisch belegbar.
+- **Pre-Rotation** als Sicherheits-Upgrade für Guardian-Vouching: User committet zum Setup-Zeitpunkt einen zukünftigen Recovery-Key-Hash. Selbst bei vollständiger Kompromittierung des aktuellen Keys kann der Angreifer nicht in den Recovery-Slot schlüpfen.
+- **Append-only Event-Log-Semantik** als Begründungsrahmen für unser eigenes Log-Design — KERI formalisiert das, was wir intuitiv bauen.
+
+**Was wir NICHT übernehmen:**
+
+- Kompletter paralleler Stack (eigenes Credential-Format, eigenes Binary-Format, eigenes Witness-Protokoll) — zu schwer zu adoptieren, eigene Ökosystem-Insel.
+- Witnesses als verpflichtende Dritte im Normalfall — passt nicht zu unserem "Broker optional, P2P jederzeit möglich"-Modell.
+
+**Philosophische Verwandtschaft**: KERI ist unser nächster ideologischer Verbündeter im "autonome Identität ohne Ledger/Webserver/staatliche Trust-Anchors"-Lager. Sam Smith als Kontakt sinnvoll für Positionierungs-Fragen, nicht für technische Interop.
 
 #### Subduction (Ink & Switch)
 

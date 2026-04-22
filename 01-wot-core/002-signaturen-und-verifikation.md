@@ -37,11 +37,23 @@ Das Core-Protokoll verwendet JWS (JSON Web Signature) als Signaturformat. JWS is
 BASE64URL(header) . BASE64URL(payload) . BASE64URL(signature)
 ```
 
-**Header (fest):**
+**Header:**
 
 ```json
-{ "alg": "EdDSA", "typ": "JWT" }
+{ "alg": "EdDSA", "typ": "<kontextspezifisch>" }
 ```
+
+Das `typ`-Feld identifiziert den Inhalt des JWS. Es ist **nicht** auf `"JWT"` festgelegt — `JWT` wäre irreführend, weil unsere signierten Objekte keine JWT Claims Sets sind, sondern beliebige JSON-Dokumente. Stattdessen verwenden wir kontextspezifische Werte:
+
+| JWS-Verwendung | `typ` |
+|---|---|
+| Attestation (VC 2.0) | `"vc+jws"` |
+| SD-JWT VC (Trust-Lists) | `"vc+sd-jwt"` |
+| Capability | `"wot-capability+jws"` |
+| DIDComm-Envelope | `"application/didcomm-signed+json"` |
+| Log-Eintrag, interne Nachricht | `typ` kann weggelassen werden |
+
+Empfänger prüfen das `typ`-Feld optional für Plausibilität. Die Sicherheit hängt nicht vom `typ` ab — die Algorithmus-Whitelist (siehe unten) ist die normative Verteidigung.
 
 **Signing Input:**
 
@@ -105,10 +117,14 @@ Für die Verifikation werden benötigt:
 
 **Ablauf:**
 
-1. JWS-Header dekodieren und `alg`-Feld prüfen — siehe Algorithmus-Validierung unten
-2. Ed25519 Public Key aus der DID extrahieren: `did:key:z...` → Multibase dekodieren → Multicodec-Präfix `0xed01` entfernen → 32 Bytes Public Key
-3. Signing Input rekonstruieren: JWS Header + `.` + JWS Payload (kanonisiert mit JCS)
-4. Ed25519-Signatur gegen Signing Input und Public Key verifizieren
+1. JWS in drei Segmente splitten: `headerB64.payloadB64.signatureB64`
+2. Header dekodieren und `alg`-Feld prüfen — siehe Algorithmus-Validierung unten
+3. Ed25519 Public Key aus der DID extrahieren: `did:key:z...` → Multibase dekodieren → Multicodec-Präfix `0xed01` entfernen → 32 Bytes Public Key
+4. Signing Input: **exakt die empfangenen Bytes** `headerB64 + "." + payloadB64` — keine Re-Serialisierung, keine Re-Kanonisierung
+5. Signatur aus Base64URL dekodieren
+6. Ed25519-Signatur gegen Signing Input und Public Key verifizieren
+
+**Wichtig:** Der Verifier darf den Payload NICHT neu kanonisieren oder neu serialisieren. Kanonisierung (JCS) findet ausschließlich auf Sender-Seite statt, **bevor** Base64URL-Kodierung. Auf Empfängerseite werden die empfangenen Bytes 1:1 verifiziert. Re-Kanonisierung bei der Verifikation würde abweichende Bytes erzeugen und gültige Signaturen fälschlich ablehnen.
 
 Kein externer Key-Server oder Zertifikatskette nötig — die DID selbst enthält den Public Key.
 

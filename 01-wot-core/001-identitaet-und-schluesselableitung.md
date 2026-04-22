@@ -72,14 +72,37 @@ Aus demselben Seed werden weitere Schlüssel abgeleitet. Jeder Schlüssel verwen
 | Signatur (Master) | `"wot/identity/ed25519/v1"` | Identität, Attestations | Dieses Dokument |
 | Verschlüsselung | `"wot/encryption/x25519/v1"` | Asymmetrische Verschlüsselung (X25519) | [Spec 005](../02-wot-sync/005-verschluesselung.md) |
 | Personal Doc | `"wot/personal-doc/v1"` | Symmetrische Verschlüsselung des Personal Doc (AES-256) | [Spec 010](../02-wot-sync/010-personal-doc.md) |
+| Space Admin (pro Space) | `"wot/space-admin/<canonical-lowercase-uuid>/v1"` | Space-spezifischer Admin Key (Ed25519). Nur für Admins eines Spaces. IKM ist der 64-Byte BIP39-Seed (nicht der Ed25519-Identity-Seed). | [Spec 005](../02-wot-sync/005-verschluesselung.md#admin-key-abgeleitet) |
 
 Alle Schlüssel sind deterministisch aus demselben Seed ableitbar. Durch die verschiedenen Info-Strings sind sie kryptographisch unabhängig voneinander.
 
 **Warum separater HKDF-Pfad statt birationale Abbildung:** Einige Implementierungen (z.B. Web Crypto API in Browsern) erzeugen Ed25519-Keys als `non-extractable` — der Private Key kann nur zum Signieren verwendet werden, ist aber als Byte-Folge nicht lesbar. Die birationale Abbildung (Ed25519 → Curve25519 → X25519) erfordert Zugriff auf den rohen Private Key und ist deshalb in Browser-Umgebungen nicht möglich. Der separate HKDF-Pfad funktioniert überall — Browser, Desktop, Mobile, Rust, JavaScript — und ist deshalb die normative Methode.
 
-### Multi-Device
+### Multi-Device — Shared-Seed-Modell
 
-Geräte werden über Device-UUIDs unterschieden, nicht über eigene Schlüsselpaare. Jedes Gerät generiert beim ersten Start eine zufällige UUID und nutzt den Master-Schlüssel für Signaturen. Siehe [Spec 006: Sync-Protokoll](../02-wot-sync/006-sync-protokoll.md) für Details.
+In der aktuellen Spec-Version verwenden **alle Geräte eines Users denselben Seed**. Geräte werden über zufällige Device-UUIDs unterschieden, nicht über eigene Schlüsselpaare. Jedes Gerät generiert beim ersten Start eine UUID und nutzt den Master-Schlüssel für alle Signaturen.
+
+**Konsequenzen dieses Modells:**
+
+- **Einfaches Onboarding:** Mnemonic eingeben, Seed wiederherstellen, Gerät ist vollwertig
+- **Kein Master-Gerät nötig:** Alle Geräte sind kryptographisch gleichwertig
+- **Cross-Device-Sync direkt möglich:** Alle Geräte können alles entschlüsseln und signieren
+- **Device-Revocation ist kosmetisch:** Wer den Seed extrahiert, kann jede beliebige Device-UUID generieren — eine widerrufene UUID wird durch eine neue ersetzt
+- **Seed-Diebstahl ist katastrophal:** Ein kompromittiertes Gerät bedeutet Kompromittierung aller Geräte
+
+**Seed-Schutz ist die kritische Verteidigungslinie.** Das Modell funktioniert nur dann sicher, wenn der Seed auf jedem einzelnen Gerät stark geschützt ist (siehe unten).
+
+### Zukünftiger Upgrade-Pfad: Per-Device Keys
+
+Eine sauberere Architektur wären **Per-Device Keys** — jedes Gerät hat ein eigenes Schlüsselpaar, das vom Master-Key signiert wird. Damit würde:
+
+- Der Seed nur noch auf einem primären Gerät liegen
+- Device-Revocation kryptographisch bedeutungsvoll werden
+- Gerätekompromittierung auf ein Gerät begrenzbar sein
+
+**Warum wir das jetzt nicht einführen:** `did:key` kann per Design nur einen einzigen Schlüssel ausdrücken — die DID *ist* der Public Key. Ein Trust-Anchor-Dokument mit mehreren Device-Keys setzt eine andere DID-Methode voraus ([did:peer:4](https://identity.foundation/peer-did-method-spec/) oder [did:webvh](https://identity.foundation/didwebvh/)), die zu einem DID-Dokument mit mehreren `verificationMethod`-Einträgen aufgelöst wird.
+
+Der Wechsel zu Per-Device Keys wird **gemeinsam mit der DID-Methoden-Migration** erfolgen — beide Themen gehören architektonisch zusammen. Siehe [Identitäts-Alternativen](../research/identitaet-alternativen.md) und [Identity Migration](../research/identity-migration.md) für den geplanten Pfad.
 
 ### Seed-Schutz auf dem Gerät
 
