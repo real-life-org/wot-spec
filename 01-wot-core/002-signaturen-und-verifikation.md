@@ -43,15 +43,17 @@ BASE64URL(header) . BASE64URL(payload) . BASE64URL(signature)
 { "alg": "EdDSA", "typ": "<kontextspezifisch>" }
 ```
 
-Das `typ`-Feld identifiziert den Inhalt des JWS. Es ist **nicht** auf `"JWT"` festgelegt — `JWT` wäre irreführend, weil unsere signierten Objekte keine JWT Claims Sets sind, sondern beliebige JSON-Dokumente. Stattdessen verwenden wir kontextspezifische Werte:
+Das `typ`-Feld identifiziert den Inhalt des JWS. Kontextspezifische Werte:
 
-| JWS-Verwendung | `typ` |
-|---|---|
-| Attestation (VC 2.0) | `"vc+jws"` |
-| SD-JWT VC (Trust-Lists) | `"vc+sd-jwt"` |
-| Capability | `"wot-capability+jws"` |
-| DIDComm-Envelope | `"application/didcomm-signed+json"` |
-| Log-Eintrag, interne Nachricht | `typ` kann weggelassen werden |
+| JWS-Verwendung | `typ` | Begründung |
+|---|---|---|
+| Attestation (VC 2.0) | `"vc+jwt"` | W3C VC-JOSE-COSE Standard. Payload enthält JWT Claims (`iss`, `sub`, `nbf`) neben VC-Feldern. |
+| SD-JWT VC (Trust-Lists) | `"vc+sd-jwt"` | IETF SD-JWT VC Draft |
+| Capability | `"wot-capability+jwt"` | WoT-spezifisch |
+| DIDComm-Envelope | `"application/didcomm-signed+json"` | DIDComm v2.1 |
+| Log-Eintrag, interne Nachricht | `typ` kann weggelassen werden | Protokoll-intern |
+
+**Attestations verwenden `vc+jwt`** und enthalten sowohl W3C VC 2.0 Felder als auch JWT Registered Claims (siehe [Core 003](003-attestations.md)). Die JWT Claims sind redundant zu den VC-Feldern, stellen aber sicher dass Standard-JWT-Bibliotheken und externe VC-Verifier die Attestations korrekt parsen können.
 
 Empfänger prüfen das `typ`-Feld optional für Plausibilität. Die Sicherheit hängt nicht vom `typ` ab — die Algorithmus-Whitelist (siehe unten) ist die normative Verteidigung.
 
@@ -139,6 +141,8 @@ Verifier MÜSSEN das `alg`-Feld im JWS-Header prüfen **bevor** die Signatur ver
 - Beliebige andere Werte — ABLEHNEN
 
 **Warum diese Strenge:** Eine klassische JWS-Sicherheitslücke ist die Algorithmus-Konfusion. Wenn ein Verifier `alg=HS256` akzeptiert, könnte ein Angreifer den Public Key (der öffentlich aus der DID verfügbar ist) als HMAC-Secret nutzen und beliebige Nachrichten "signieren". Die Validierung gegen eine Whitelist ist die einzige Verteidigung.
+
+**Erweiterbarkeit:** Zukünftige Signaturtypen (z.B. BBS für Zero-Knowledge-Beweise) werden als Extension spezifiziert und erweitern die Algorithmus-Whitelist. Die Architektur ist darauf vorbereitet — das DID-Dokument ([Core 005](005-did-resolution.md)) kann mehrere `verificationMethod`-Einträge mit verschiedenen Key-Typen enthalten. Der Verifier prüft dann: ist der `alg` im JWS-Header in meiner Whitelist, und hat die aufgelöste DID einen passenden Key? Die Whitelist wird pro Implementierung konfiguriert — eine App die nur Ed25519 unterstützt, akzeptiert nur `"EdDSA"`. Eine App die BBS+ unterstützt, akzeptiert auch `"BBS"`.
 
 ```typescript
 function verifyJws(jws: string, did: string): boolean {

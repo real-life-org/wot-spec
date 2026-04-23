@@ -48,29 +48,44 @@ Eine WoT Attestation ist ein W3C Verifiable Credential 2.0, gesichert als JWS (V
     "id": "did:key:z6Mk...bob",
     "claim": "kann gut programmieren"
   },
-  "validFrom": "2026-04-21T10:00:00Z"
+  "validFrom": "2026-04-21T10:00:00Z",
+
+  "iss": "did:key:z6Mk...alice",
+  "sub": "did:key:z6Mk...bob",
+  "nbf": 1745222400,
+  "jti": "urn:uuid:attestation-id"
 }
 ```
 
-### Transport: JWS Compact Serialization
+Die letzten vier Felder sind **JWT Registered Claims** (RFC 7519) — redundant zu den VC-Feldern darüber, aber nötig für Kompatibilität mit Standard-JWT-Bibliotheken und externen VC-Verifiern:
 
-Die Attestation wird als JWS transportiert und gespeichert:
+| JWT Claim | VC-Feld | Wert |
+|---|---|---|
+| `iss` | `issuer` | DID des Issuers |
+| `sub` | `credentialSubject.id` | DID des Subjects |
+| `nbf` | `validFrom` | Unix-Timestamp (Sekunden seit Epoch) |
+| `jti` | `id` (optional) | Eindeutige ID der Attestation |
+| `exp` | `validUntil` (optional) | Unix-Timestamp (nur wenn zeitlich begrenzt) |
+
+### Transport: JWS Compact Serialization (VC-JOSE-COSE Profil)
+
+Die Attestation wird als JWS transportiert und gespeichert — konform mit dem **W3C VC-JOSE-COSE** Profil:
 
 ```
-eyJhbGciOiJFZERTQSIsInR5cCI6InZjK2p3cyJ9.eyJAY29udGV4dCI6WyJodHRwcz...fQ.signatur
+eyJhbGciOiJFZERTQSIsInR5cCI6InZjK2p3dCJ9.eyJAY29udGV4dCI6WyJodHRwcz...fQ.signatur
 ```
 
 **JWS Header:**
 
 ```json
-{ "alg": "EdDSA", "typ": "vc+jws", "kid": "did:key:z6Mk...alice" }
+{ "alg": "EdDSA", "typ": "vc+jwt", "kid": "did:key:z6Mk...alice#sig-0" }
 ```
 
 - `alg`: MUSS `"EdDSA"` sein (siehe [Spec 002](002-signaturen-und-verifikation.md), Algorithmus-Validierung)
-- `typ`: MUSS `"vc+jws"` sein — identifiziert den JWS als Verifiable Credential
-- `kid`: DID des Issuers — ermöglicht Key-Auflösung ohne den Payload zu parsen
+- `typ`: MUSS `"vc+jwt"` sein — W3C VC-JOSE-COSE Standard Media Type
+- `kid`: Verification Method ID aus dem DID-Dokument des Issuers (siehe [Core 005](005-did-resolution.md)). Ermöglicht Key-Auflösung ohne den Payload zu parsen.
 
-**JWS Payload:** Der VC-Payload (oben), kanonisiert mit JCS (RFC 8785), dann Base64URL-kodiert.
+**JWS Payload:** Der VC-Payload (oben, inkl. JWT Claims), kanonisiert mit JCS (RFC 8785), dann Base64URL-kodiert.
 
 **JWS Signature:** Ed25519-Signatur über `BASE64URL(header) + "." + BASE64URL(payload)`.
 
@@ -221,22 +236,31 @@ Juni:    Alice → Bob: "hat mich enttäuscht"
 
 Beide Aussagen existieren. Beide sind signiert und wahr — zum jeweiligen Zeitpunkt. Die Trust-Propagation (siehe [Human Money Extension: Trust-Scores](../04-hmc-extensions/H01-trust-scores.md)) berücksichtigt beides — neuere Aussagen wiegen schwerer.
 
-Für formale Widerrufe DARF eine Implementierung den W3C VC 2.0 `credentialStatus`-Mechanismus nutzen.
+### Widerruf (Credential Status)
+
+Im WoT-Core werden Attestations nicht formal widerrufen — stattdessen überschreibt eine neuere Attestation die ältere (siehe oben). Für Extensions die formalen Widerruf brauchen (z.B. HMC Trust-Scores, Transaktionen) DARF der W3C **StatusList2021** Mechanismus über das optionale `credentialStatus`-Feld genutzt werden. Details werden in den jeweiligen Extensions spezifiziert (siehe [H01](../04-hmc-extensions/H01-trust-scores.md), [H02](../04-hmc-extensions/H02-transactions.md)).
+
+### Zukünftige Erweiterung: Verifiable Presentations (VP)
+
+Innerhalb des WoT-Ökosystems werden Attestations direkt als JWS-Strings geteilt — über den Sync-Layer, die Inbox oder den Profil-Service. Der Holder kontrolliert durch bewusste Veröffentlichung, wer seine Attestations sieht.
+
+Für **externe Interop** (z.B. wenn ein externer Verifier WoT-Attestations prüfen will) definiert W3C VC 2.0 das Konzept der **Verifiable Presentation (VP)** — ein JWS-Wrapper signiert vom Holder, der beweist dass er die Credentials **gerade, bewusst und an einen bestimmten Empfänger** präsentiert (`typ: "vp+jwt"`, mit `aud` und `nonce`). VP-Support ist als Extension geplant wenn externer Interop-Bedarf entsteht. Das VC-JOSE-COSE-Format unserer Attestations ist dafür vorbereitet — eine VP ist nur ein weiterer JWS-Wrapper um bestehende VC-JWS-Strings.
 
 ## Verifikation
 
 Um eine Attestation zu verifizieren:
 
 1. JWS-Header dekodieren und `alg` prüfen — MUSS `"EdDSA"` sein (siehe [Spec 002](002-signaturen-und-verifikation.md))
-2. `kid` aus dem Header extrahieren → Ed25519 Public Key aus der DID ableiten
-3. JWS-Signatur verifizieren gegen `BASE64URL(header) + "." + BASE64URL(payload)`
+2. `kid` aus dem Header extrahieren → DID-Dokument via `resolve()` auflösen ([Core 005](005-did-resolution.md)) → Ed25519 Public Key aus `verificationMethod` / `assertionMethod`
+3. JWS-Signatur verifizieren gegen die exakt empfangenen Bytes `BASE64URL(header) + "." + BASE64URL(payload)` (keine Re-Kanonisierung)
 4. Payload dekodieren und parsen
 5. `@context` und `type` prüfen — enthält es `"WotAttestation"`?
-6. `issuer` im Payload MUSS mit `kid` im Header übereinstimmen
-7. `validFrom` prüfen — liegt in der Vergangenheit?
-8. Falls `validUntil` vorhanden — noch nicht abgelaufen?
+6. `iss` im Payload MUSS zur DID im `kid`-Header passen
+7. `nbf` prüfen — liegt in der Vergangenheit?
+8. Falls `exp` vorhanden — noch nicht abgelaufen?
+9. Falls `credentialStatus` vorhanden — StatusList prüfen (nicht widerrufen?)
 
-Kein externer Service nötig. Alles lokal verifizierbar.
+Kein externer Service nötig für die Signatur-Verifikation. Alles lokal verifizierbar (DID-Dokument aus Cache). Nur die StatusList-Prüfung (Schritt 9) kann einen optionalen Online-Abruf erfordern.
 
 ## Austausch-Szenarien
 
