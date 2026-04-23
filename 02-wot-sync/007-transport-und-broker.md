@@ -222,13 +222,13 @@ Das Protokoll garantiert damit, dass jedes Device alle für es relevanten Nachri
 
 ## Autorisierung (Capabilities)
 
-Der Broker ist E2EE — er kann die Mitgliederliste eines Space nicht lesen (verschlüsselt mit dem Space Key). Deshalb braucht er einen externen Beweis, dass ein Client auf ein Dokument zugreifen darf.
+Der Broker ist E2EE — er kann die Mitgliederliste eines Space nicht lesen (verschlüsselt mit dem Space Content Key). Deshalb braucht er einen externen Beweis, dass ein Client auf ein Dokument zugreifen darf.
 
 ### Zwei-Schlüssel-Modell für Spaces
 
 Der Broker kennt pro Space zwei Arten von Schlüsseln:
 
-- **Space Public Key (Ed25519)** — verifiziert **Capabilities** die an einzelne Members ausgestellt werden. Alle Members besitzen den Space Private Key und können Capabilities signieren. Bei Key-Rotation (Member-Entfernung) wird das Keypair erneuert — alte Capabilities werden damit ungültig.
+- **Space Capability Verification Key (Ed25519)** — verifiziert **Capabilities** die an einzelne Members ausgestellt werden. Alle Members besitzen den Space Capability Signing Key und können Capabilities signieren. Bei Key-Rotation (Member-Entfernung) wird das Keypair erneuert — alte Capabilities werden damit ungültig.
 - **Admin-DID(s)** — abgeleitete, space-spezifische Ed25519-Keys (siehe [Sync 009](009-gruppen.md#admin-key-ableitung)). Nur Admins können **Broker-Management-Nachrichten** signieren (Rotation des Space Keypairs, Admin hinzufügen/entfernen).
 
 Das löst das Delegations-Problem: jeder Member kann einladen (= Capabilities signieren), weil alle den Space Private Key haben. Nur Admins können rotieren.
@@ -272,9 +272,9 @@ Der JWS wird mit dem Space Private Key signiert. Der `kid` im JWS-Header ist die
 
 Capabilities werden zusammen mit dem Space Key verteilt:
 
-- **Bei Einladung:** Der Einladende signiert eine Capability mit dem Space Private Key für den Eingeladenen. Die `space-invite` Inbox-Nachricht enthält Space Key, Space Private Key und Capability ([Sync 009](009-gruppen.md)).
-- **Bei Key-Rotation (Member-Entfernung):** Der Admin generiert ein neues Space Keypair. Alle verbleibenden Members bekommen neuen Space Key + neuen Space Private Key + neue Capability (signiert mit dem neuen Key).
-- **Vor Ablauf:** Jedes Mitglied kann sich selbst (oder Peers) eine erneuerte Capability ausstellen, solange das aktuelle Space Keypair gültig ist.
+- **Bei Einladung:** Der Einladende signiert eine Capability mit dem `spaceCapabilitySigningKey` für den Eingeladenen. Die `space-invite` Inbox-Nachricht enthält Space Content Key, Capability Signing Key und Capability ([Sync 009](009-gruppen.md)).
+- **Bei Key-Rotation (Member-Entfernung):** Der Admin generiert einen neuen Space Content Key und ein neues Capability Key Pair. Alle verbleibenden Members bekommen neuen Content Key + neuen Capability Signing Key + neue Capability.
+- **Vor Ablauf:** Jedes Mitglied kann sich selbst (oder Peers) eine erneuerte Capability ausstellen, solange der aktuelle `spaceCapabilitySigningKey` gültig ist.
 
 ### Capability-Prüfung am Broker
 
@@ -282,10 +282,10 @@ Wenn ein Client ein Dokument syncen will:
 
 1. Client sendet seine Capability
 2. Broker prüft:
-   - JWS-Signatur gültig gegen den **aktuellen Space Public Key**? (inklusive `alg=EdDSA`, siehe [Core 002](../01-wot-core/002-signaturen-und-verifikation.md#algorithmus-validierung-muss))
+   - JWS-Signatur gültig gegen den aktuellen `spaceCapabilityVerificationKey`? (inklusive `alg=EdDSA`, siehe [Core 002](../01-wot-core/002-signaturen-und-verifikation.md#algorithmus-validierung-muss))
    - `audience` = authentifizierte DID?
    - `spaceId` = angefragter Space?
-   - `generation` = aktuelle Space-Keypair-Generation? (alte Capabilities werden damit implizit widerrufen)
+   - `generation` = aktuelle Capability-Key-Generation? (alte Capabilities werden damit implizit widerrufen)
    - `now < validUntil`? (nicht abgelaufen)
 3. OK → Sync erlaubt
 
@@ -297,7 +297,7 @@ Mit `validUntil` läuft die Berechtigung automatisch ab. Aktive Members bekommen
 
 ### Capability-Widerruf über Rotation
 
-Bei Member-Entfernung rotiert der Admin das **Space Keypair**. Der Broker akzeptiert ab dem Moment nur Capabilities die gegen den neuen Space Public Key verifizierbar sind — alle alten Capabilities werden automatisch ungültig.
+Bei Member-Entfernung rotiert der Admin das **Space Capability Key Pair**. Der Broker akzeptiert ab dem Moment nur Capabilities die gegen den neuen `spaceCapabilityVerificationKey` verifizierbar sind — alle alten Capabilities werden automatisch ungültig.
 
 Der Admin sendet dem Broker eine `space-rotate`-Nachricht:
 
@@ -368,7 +368,7 @@ Bob (Laptop) → Broker: "Empfangen" (ACK)
 Broker: Alle Geräte haben bestätigt → Nachricht löschen
 ```
 
-**Store-and-Forward pro Device:** Der Broker kennt die Device-IDs jedes Users (über die Authentisierung). Inbox-Nachrichten werden für **jedes registrierte Gerät** vorgehalten und erst gelöscht wenn **alle Geräte** ACK gesendet haben. Damit ist garantiert dass kein Gerät eine kritische Nachricht verpasst (Space Key, Capability, Key-Rotation).
+**Store-and-Forward pro Device:** Der Broker kennt die Device-IDs jedes Users (über die Authentisierung). Inbox-Nachrichten werden für **jedes registrierte Gerät** vorgehalten und erst gelöscht wenn **alle Geräte** ACK gesendet haben. Damit ist garantiert dass kein Gerät eine kritische Nachricht verpasst (Space Content Key, Capability, Key-Rotation).
 
 ## Message Envelope (DIDComm-kompatibel)
 
@@ -461,7 +461,7 @@ Auf Empfängerseite entschlüsselt der Client zuerst, verifiziert dann die inner
 
 Siehe [Sync 005](005-verschluesselung.md#peer-to-peer-verschlüsselung-ecies) für Details.
 
-Log-Einträge werden NICHT mit ECIES verschlüsselt — sie sind bereits mit dem Space Key (AES-256-GCM) verschlüsselt. ECIES ist nur für den Inbox-Kanal.
+Log-Einträge werden NICHT mit ECIES verschlüsselt — sie sind bereits mit dem Space Content Key (AES-256-GCM) verschlüsselt. ECIES ist nur für den Inbox-Kanal.
 
 ### Nachrichtentypen
 
@@ -479,8 +479,8 @@ Log-Einträge werden NICHT mit ECIES verschlüsselt — sie sind bereits mit dem
 
 | Type-URI | Kanal | Beschreibung |
 |----------|-------|-------------|
-| `.../space-invite/1.0` | Inbox | Einladung in einen Space (Space Key + Broker-URLs) |
-| `.../key-rotation/1.0` | Inbox | Neuer Space Key nach Member-Entfernung |
+| `.../space-invite/1.0` | Inbox | Einladung in einen Space (Content Key + Capability Signing Key + Capability) |
+| `.../key-rotation/1.0` | Inbox | Neuer Content Key + Capability Signing Key nach Member-Entfernung |
 | `.../member-update/1.0` | Inbox | Mitgliedschafts-Änderung (hinzugefügt/entfernt) |
 
 #### HMC Extension ([H03 Gossip](../04-hmc-extensions/H03-gossip.md))

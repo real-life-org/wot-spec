@@ -6,7 +6,7 @@
 
 ## Zusammenfassung
 
-Dieses Dokument spezifiziert wie Gruppen (Spaces) im Sync Layer funktionieren — Einladung, Mitgliedschaft, Rollen, Entfernung und die damit verbundenen kryptografischen Abläufe. Gruppen sind Teil der Sync-Infrastruktur, nicht anwendungsspezifisch — jede Local-First-App die verschlüsselte Zusammenarbeit braucht, kann diese Spezifikation nutzen.
+Dieses Dokument spezifiziert wie Gruppen (Spaces) im Sync Layer funktionieren — Einladung, Mitgliedschaft, Rollen, Entfernung und die damit verbundenen kryptografischen Abläufe. Gruppen sind Teil der Sync-Infrastruktur. Die Konzepte (symmetrische Content Keys, Capability-basierte Broker-Autorisierung, Key-Rotation bei Member-Entfernung) sind generisch — aber die konkrete Spezifikation setzt WoT-Identitäten (DID, Ed25519) und den WoT-Sync-Layer voraus.
 
 ## Referenzierte Dokumente
 
@@ -26,15 +26,17 @@ Die Mitgliederliste ist Teil der Sync-Daten und wird wie alle anderen Änderunge
 
 ## Space-Schlüssel
 
-Jeder Space hat drei Arten von Schlüsseln:
+Jeder Space hat drei Arten von Schlüsseln (normativ definiert in [Sync 005](005-verschluesselung.md#gruppen-verschlüsselung-spaces)):
 
-| Schlüssel | Typ | Zweck | Wer hat ihn |
-|---|---|---|---|
-| **Space Key** | Symmetrisch (AES-256) | Verschlüsselung von Space-Daten und Log-Einträgen | Alle Members |
-| **Space Keypair** | Asymmetrisch (Ed25519) | Signiert Capabilities für Broker-Zugriff | Private Key: alle Members. Public Key: Broker |
-| **Admin Key(s)** | Asymmetrisch (Ed25519, abgeleitet) | Autorisiert Rotation beim Broker | Private Key: Admin(s). Public Key: Broker |
+| Schlüssel | Kurzname | Typ | Zweck | Wer hat ihn |
+|---|---|---|---|---|
+| **Space Content Key** | `spaceContentKey` | Symmetrisch (AES-256) | Verschlüsselung von Space-Daten und Log-Einträgen | Alle Members |
+| **Space Capability Signing Key** | `spaceCapabilitySigningKey` | Asymmetrisch (Ed25519) | Signiert Capabilities für Broker-Zugriff | Alle Members |
+| **Admin Key(s)** | `adminKey` | Asymmetrisch (Ed25519, abgeleitet) | Autorisiert Rotation beim Broker | Admin(s) |
 
-Bei Key-Rotation (Member-Entfernung) werden **Space Key und Space Keypair gemeinsam rotiert**. Admin Keys bleiben stabil (nur bei Admin-Wechsel werden sie aktualisiert).
+Der Broker kennt nur die Public Keys: `spaceCapabilityVerificationKey` und `adminDid(s)`.
+
+Bei Key-Rotation (Member-Entfernung) werden **Space Content Key und Space Capability Key Pair gemeinsam rotiert**. Admin Keys bleiben stabil (nur bei Admin-Wechsel werden sie aktualisiert).
 
 ### Admin Key Ableitung
 
@@ -61,7 +63,7 @@ Members kennen die Haupt-DID des Admins aus der Mitgliederliste (im verschlüsse
 
 Zwei Rollen, bewusst einfach:
 
-- **Admin** — kann den Space Key rotieren und damit Members ausschließen. Beim Erstellen eines Space wird der Ersteller automatisch erster Admin. Mehrere Admins sind möglich.
+- **Admin** — kann den Space Content Key rotieren und damit Members ausschließen. Beim Erstellen eines Space wird der Ersteller automatisch erster Admin. Mehrere Admins sind möglich.
 - **Member** — kann Daten lesen, schreiben und neue Mitglieder einladen. Kann niemanden entfernen.
 
 **Jeder darf einladen, nur Admins dürfen rotieren/entfernen.** Das spiegelt eine Vertrauenskultur: wer eingeladen wurde, darf seinerseits einladen. Wer Missbrauch betreibt, wird von einem Admin entfernt.
@@ -84,8 +86,8 @@ Feinere Rollen (Moderator, Read-Only) erzeugen Komplexität bei der Synchronisat
 
 ```
 1. Alice erstellt einen Space:
-   → Generiert Space Key (symmetrisch, 32 Bytes zufällig)
-   → Generiert Space Keypair (Ed25519)
+   → Generiert Space Content Key (symmetrisch, 32 Bytes zufällig)
+   → Generiert Space Capability Key Pair (Ed25519)
    → Leitet ihren Admin Key ab (siehe [Sync 005](005-verschluesselung.md#admin-key-abgeleitet))
 
 2. Alice registriert den Space beim Broker:
@@ -95,7 +97,7 @@ Feinere Rollen (Moderator, Read-Only) erzeugen Komplexität bei der Synchronisat
    → Registrierung signiert mit Admin Key
 
 3. Alice hält lokal:
-   → Space Key, Space Private Key (für Signaturen und Zugang)
+   → Space Content Key, Space Capability Signing Key
    → Ihren Admin Key
    → Mitgliederliste im CRDT: [Alice's Haupt-DID]
 ```
@@ -131,7 +133,7 @@ Alice (Member oder Admin) lädt Bob ein:
 7. Bob synchronisiert die Daten (Catch-Up)
 ```
 
-Jeder Member kann Capabilities signieren, weil jeder den Space Private Key hat. **Kein Delegations-Problem** — keine Admin-Signatur nötig für Einladungen.
+Jeder Member kann Capabilities signieren, weil jeder den Space Capability Signing Key hat. **Kein Delegations-Problem** — keine Admin-Signatur nötig für Einladungen.
 
 ### Einladungs-Nachricht
 
@@ -148,15 +150,15 @@ Inbox-Nachrichtentyp `space-invite`, verschlüsselt mit ECIES:
     "spaceId": "uuid",
     "brokerUrls": ["wss://broker.example.com"],
     "currentKeyGeneration": 3,
-    "spaceKeys": [
+    "spaceContentKeys": [
       { "generation": 0, "key": "<base64url>" },
       { "generation": 1, "key": "<base64url>" },
       { "generation": 2, "key": "<base64url>" },
       { "generation": 3, "key": "<base64url>" }
     ],
-    "spacePrivateKey": "<base64url>",
+    "spaceCapabilitySigningKey": "<base64url>",
     "adminDids": ["did:key:z6Mk...admin-alice-derived"],
-    "capability": "<JWS — Capability signiert mit Space Private Key>"
+    "capability": "<JWS — Capability signiert mit spaceCapabilitySigningKey>"
   }
 }
 ```
@@ -164,7 +166,7 @@ Inbox-Nachrichtentyp `space-invite`, verschlüsselt mit ECIES:
 ### Annahme und Ablehnung
 
 Bob kann die Einladung annehmen oder ablehnen. Bei Annahme:
-- Bob speichert Space Key, Space Private Key und Capability lokal
+- Bob speichert Space Content Key, Space Capability Signing Key und Capability lokal
 - Bob verbindet sich mit dem Heim-Broker
 - Bob erscheint als neues Mitglied im CRDT-Log
 
@@ -225,23 +227,23 @@ Admin Alice entfernt Bob:
    (Bob's Eintrag wird aus der Mitgliederliste entfernt)
 
 2. Alice generiert:
-   - Neuen Space Key K_sym' (Generation N+1)
-   - Neues Space Keypair (K_priv', K_pub')
+   - Neuen Space Content Key (Generation N+1)
+   - Neues Space Capability Key Pair
 
 3. Alice sendet dem Broker eine Rotation-Nachricht:
-   → Neuer K_pub', neue Generation
+   → Neuer spaceCapabilityVerificationKey, neue Generation
    → Signiert mit ihrem Admin Key
    → Broker verifiziert: gehört Admin-DID zur registrierten Admin-Liste?
-   → Ja: neuer K_pub' wird aktiv, alte Capabilities ungültig
+   → Ja: neuer Verification Key wird aktiv, alte Capabilities ungültig
 
 4. Alice verteilt an alle verbleibenden Mitglieder via ECIES:
-   - Neuen Space Key K_sym'
-   - Neuen Space Private Key K_priv'
-   - Neue Capability (signiert mit K_priv')
+   - Neuen Space Content Key
+   - Neuen Space Capability Signing Key
+   - Neue Capability (signiert mit neuem Signing Key)
 
-5. Neue Daten werden mit K_sym' verschlüsselt
+5. Neue Daten werden mit dem neuen Space Content Key verschlüsselt
 
-6. Bob hat weder neuen Space Key noch gültige Capability
+6. Bob hat weder neuen Content Key noch gültige Capability
    → kann keine neuen Daten entschlüsseln
    → wird vom Broker abgelehnt
 ```
@@ -260,9 +262,9 @@ Inbox-Nachrichtentyp `key-rotation`, verschlüsselt mit ECIES:
   "body": {
     "spaceId": "uuid",
     "generation": 4,
-    "spaceKey": "<base64url>",
-    "spacePrivateKey": "<base64url>",
-    "capability": "<JWS — neue Capability signiert mit neuem K_priv>"
+    "spaceContentKey": "<base64url>",
+    "spaceCapabilitySigningKey": "<base64url>",
+    "capability": "<JWS — neue Capability signiert mit neuem spaceCapabilitySigningKey>"
   }
 }
 ```
@@ -271,7 +273,7 @@ Der Admin sendet eine `key-rotation` Nachricht an **jedes** verbleibende Mitglie
 
 ### Forward Secrecy
 
-Alte Daten bleiben mit dem alten Space Key lesbar (für Mitglieder die damals Zugriff hatten). Neue Daten sind für entfernte Mitglieder unlesbar. Das ist **kein perfekter Forward Secrecy** — Bob könnte alte Daten, die er bereits heruntergeladen hat, weiterhin lokal lesen. Aber er kann keine zukünftigen Daten entschlüsseln, und vom Broker werden ihm keine neuen Daten ausgeliefert.
+Alte Daten bleiben mit dem alten Space Content Key lesbar (für Mitglieder die damals Zugriff hatten). Neue Daten sind für entfernte Mitglieder unlesbar. Das ist **kein perfekter Forward Secrecy** — Bob könnte alte Daten, die er bereits heruntergeladen hat, weiterhin lokal lesen. Aber er kann keine zukünftigen Daten entschlüsseln, und vom Broker werden ihm keine neuen Daten ausgeliefert.
 
 ## Concurrent-Verhalten
 
@@ -297,8 +299,8 @@ In der Praxis sollten Admins sich informell absprechen bevor sie rotieren — da
 
 | Type | Kanal | Beschreibung |
 |------|-------|-------------|
-| `space-invite` | Inbox | Einladung in einen Space (Space Key + Space Private Key + Capability) |
-| `key-rotation` | Inbox | Neuer Space Key + Keypair nach Member-Entfernung |
+| `space-invite` | Inbox | Einladung in einen Space (Content Key + Capability Signing Key + Capability) |
+| `key-rotation` | Inbox | Neuer Content Key + Capability Signing Key nach Member-Entfernung |
 | `admin-add` | Broker | Neue Admin-DID beim Broker registrieren (signiert von bestehendem Admin) |
 | `admin-remove` | Broker | Admin-DID entfernen (signiert von anderem Admin) |
 | `space-rotate` | Broker | Rotation des Space Public Keys (signiert von einem Admin) |

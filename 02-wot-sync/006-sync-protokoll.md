@@ -75,7 +75,7 @@ Ein Log-Eintrag ist ein **JWS-signierter Datensatz**. Er wird über das DIDComm-
 | `deviceId` | UUID v4 | Ja | Welches Gerät hat den Eintrag erzeugt |
 | `docId` | UUID v4 | Ja | Zu welchem Dokument gehört der Eintrag |
 | `authorDid` | DID | Ja | DID des Autors (für Signatur-Verifikation) |
-| `keyGeneration` | Integer | Ja | Generation des Space Keys der zur Verschlüsselung verwendet wurde (siehe [Sync 005](005-verschluesselung.md)) |
+| `keyGeneration` | Integer | Ja | Generation des Space Content Keys der zur Verschlüsselung verwendet wurde (siehe [Sync 005](005-verschluesselung.md)) |
 | `data` | String | Ja | Base64URL-kodierter AES-256-GCM Ciphertext (Nonce + Ciphertext + Auth Tag, siehe [Sync 005](005-verschluesselung.md)) |
 | `timestamp` | ISO 8601 | Ja | Erstellungszeitpunkt (UTC) |
 
@@ -150,7 +150,7 @@ Ein Log-Eintrag wird als `body` einer DIDComm-Nachricht transportiert:
 }
 ```
 
-Der Log-Eintrag ist bereits mit dem Space Key verschlüsselt (AES-256-GCM) und JWS-signiert. Die DIDComm-Nachricht transportiert ihn nur — keine zusätzliche ECIES-Verschlüsselung nötig.
+Der Log-Eintrag ist bereits mit dem Space Content Key verschlüsselt (AES-256-GCM) und JWS-signiert. Die DIDComm-Nachricht transportiert ihn nur — keine zusätzliche ECIES-Verschlüsselung nötig.
 
 ### Verschlüsselter Payload (`data`)
 
@@ -158,7 +158,7 @@ Der `data`-Blob enthält ein mit AES-256-GCM verschlüsseltes CRDT-Update:
 
 ```
 Klartext (CRDT-Update, z.B. Yjs-Binary)
-  → AES-256-GCM verschlüsseln mit Space Key (Generation = keyGeneration)
+  → AES-256-GCM verschlüsseln mit Space Content Key (Generation = keyGeneration)
   → Nonce (12 Bytes) + Ciphertext + Auth Tag (16 Bytes)
   → Base64URL kodieren
   → in `data`-Feld schreiben
@@ -276,7 +276,7 @@ Es gibt zwei Arten von Dokumenten, die sich in **Key-Management und Zielgruppe**
 
 | Dokument | Synced zwischen | Inhalt | Key-Herkunft | Spezifiziert in |
 |---|---|---|---|---|
-| **Personal Doc** | Eigene Geräte des Users | Profil, Devices, Kontakte, Verifikationen, empfangene Attestations, Space-Mitgliedschaften, Space Keys | Deterministisch aus dem Seed abgeleitet | [Sync 010](010-personal-doc.md) |
+| **Personal Doc** | Eigene Geräte des Users | Profil, Devices, Kontakte, Verifikationen, empfangene Attestations, Space-Mitgliedschaften, Space Content Keys | Deterministisch aus dem Seed abgeleitet | [Sync 010](010-personal-doc.md) |
 | **Space-Dokument (pro Space)** | Alle Members des Space | CRDT-Daten des Spaces, Mitgliederliste | Zufällig generiert, per ECIES verteilt | [Sync 009](009-gruppen.md) |
 
 Jedes Dokument hat seinen eigenen Log mit eigener `docId`. Kein Cross-Triggering — Personal-Doc-Sync und Space-Sync sind unabhängig.
@@ -290,7 +290,7 @@ Nicht alles läuft über den Log. Einige Nachrichten werden direkt zugestellt:
 - **Attestations** — 1:1 verschlüsselt, an den Empfänger
 - **Space-Einladungen** — Snapshot + Group Key, an das neue Mitglied
 - **Verifications** — Challenge-Response bei Begegnung
-- **Key-Rotation** — Neuer Space Key nach Member-Entfernung
+- **Key-Rotation** — Neuer Space Content Key + Capability Key nach Member-Entfernung
 
 Diese Nachrichten gehen über die Inbox des Brokers (siehe [Sync 007](007-transport-und-broker.md)), nicht über den Log.
 

@@ -46,7 +46,7 @@ PersonalDoc
 ├── verifications    — Verifikations-Records (In-Person-Begegnungen)
 ├── attestations     — Empfangene/erstellte Attestations
 ├── spaces           — Mitgliedschaften in Spaces
-└── groupKeys        — Space Keys pro (spaceId, generation)
+└── groupKeys        — Space Content Keys pro (spaceId, generation)
 ```
 
 ### `profile`
@@ -154,7 +154,7 @@ Mitgliedschaften des Users in Spaces:
 
 ### `groupKeys`
 
-Die Space Keys aller Generationen die der User erhalten hat:
+Die Space Content Keys aller Generationen die der User erhalten hat:
 
 ```json
 {
@@ -230,7 +230,7 @@ Nach Deaktivierung:
 - Andere Mitglieder und Broker wissen dass diese `deviceId` nicht mehr vertrauenswürdig ist
 - Neue Log-Einträge mit dieser `deviceId` werden von anderen Devices abgelehnt
 - Der Broker lehnt Authentisierung mit dieser `deviceId` ab
-- Der User sollte alle Space Keys rotieren (siehe unten)
+- Der User sollte alle Space Content Keys rotieren (siehe unten)
 
 ### Limitationen der Device-Deaktivierung (MUSS dokumentiert)
 
@@ -242,7 +242,7 @@ Im aktuellen **Shared-Seed-Modell** (siehe [Core 001](../01-wot-core/001-identit
 
 **Bei Seed-Kompromittierung schützt Device-Deaktivierung nicht.** Der einzige wirksame Schutz ist:
 
-1. Sofortige Key-Rotation aller Spaces (wird neue Space Keys und neue Capabilities erzeugen)
+1. Sofortige Key-Rotation aller Spaces (wird neue Space Content Keys und neue Capabilities erzeugen)
 2. Bei hochsensitiven Daten: Identitäts-Rotation (neue DID, siehe [Identity Migration](../research/identity-migration.md))
 
 **Zukünftiger Upgrade:** Mit Per-Device Keys (gemeinsam mit DID-Methoden-Migration, siehe [Core 001](../01-wot-core/001-identitaet-und-schluesselableitung.md#zukünftiger-upgrade-pfad-per-device-keys)) wird Device-Deaktivierung kryptographisch bedeutungsvoll — der widerrufene Device-Key kann nicht einfach regeneriert werden.
@@ -290,7 +290,7 @@ Drei Szenarien:
 
 **3. Seed-Verlust (z.B. einziges Gerät weg, kein Backup)**
 
-- Kein Zugriff mehr auf Personal Doc, Space Keys, Attestations
+- Kein Zugriff mehr auf Personal Doc, Space Content Keys, Attestations
 - Recovery nur über Mnemonic-Backup (siehe [Core 001](../01-wot-core/001-identitaet-und-schluesselableitung.md))
 - Ohne Backup: vollständiger Identity-Verlust, neue Identität nötig
 
