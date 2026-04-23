@@ -76,18 +76,51 @@ Jede der drei Ressourcen ist ein JWS (siehe [Core 002](../01-wot-core/002-signat
 
 **Profil (`/p/{did}`):**
 
+Das Profil enthält zwei Bereiche: das **DID-Dokument** (kryptographische Identität) und die **Profil-Daten** (soziale Informationen). Beides wird in einem JWS signiert und atomar ausgeliefert — ein Call, ein Response, atomare Konsistenz. Siehe [Core 005](../01-wot-core/005-did-resolution.md#profil-service-als-did-dokument-quelle).
+
 ```json
 {
   "did": "did:key:z6Mk...",
-  "name": "Alice",
-  "bio": "Nachbarschaftsgarten",
-  "avatar": "data:image/png;base64,...",
-  "encryptionPublicKey": "<Base64URL X25519, 32 Bytes>",
-  "brokers": ["wss://broker.example.com"],
-  "protocols": ["https://web-of-trust.de/protocols/attestation/1.0"],
-  "updatedAt": "2026-04-22T10:00:00Z"
+  "version": 3,
+  "didDocument": {
+    "id": "did:key:z6Mk...",
+    "verificationMethod": [
+      {
+        "id": "#sig-0",
+        "type": "Ed25519VerificationKey2020",
+        "controller": "did:key:z6Mk...",
+        "publicKeyMultibase": "z6Mk..."
+      }
+    ],
+    "authentication": ["#sig-0"],
+    "assertionMethod": ["#sig-0"],
+    "keyAgreement": [
+      {
+        "id": "#enc-0",
+        "type": "X25519KeyAgreementKey2020",
+        "controller": "did:key:z6Mk...",
+        "publicKeyMultibase": "z6LS..."
+      }
+    ],
+    "service": [
+      {
+        "id": "#inbox",
+        "type": "WoTInbox",
+        "serviceEndpoint": "wss://broker.example.com"
+      }
+    ]
+  },
+  "profile": {
+    "name": "Alice",
+    "bio": "Nachbarschaftsgarten",
+    "avatar": "data:image/png;base64,...",
+    "protocols": ["https://web-of-trust.de/protocols/attestation/1.0"]
+  },
+  "updatedAt": "2026-04-23T10:00:00Z"
 }
 ```
+
+**Hinweis zur Rückwärtskompatibilität:** In Phase 1 (did:key) wird das `didDocument` vom Profil-Service **on-the-fly aus den bestehenden Feldern generiert**, falls es noch nicht explizit gespeichert ist. Der Client kann auch die flachen Felder (`encryptionPublicKey`, `brokers`) lesen, falls sie noch vorhanden sind — sie werden als Legacy-Felder behandelt und durch das `didDocument` ersetzt wenn beides vorhanden ist.
 
 **Verifikationen (`/p/{did}/v`):**
 
@@ -109,19 +142,37 @@ Jede der drei Ressourcen ist ein JWS (siehe [Core 002](../01-wot-core/002-signat
 }
 ```
 
-### Pflichtfelder im Profil
+### Pflichtfelder
+
+**Top-Level:**
 
 | Feld | Typ | Pflicht | Beschreibung |
 |------|-----|---------|-------------|
 | `did` | DID | Ja | Die DID des Users (MUSS mit dem URL-Pfad übereinstimmen) |
-| `version` | Integer | Ja | Monoton aufsteigende Versionsnummer (beginnt bei 0, steigt bei jedem Update um mindestens 1). Schützt gegen Rollback-Attacken. |
+| `version` | Integer | Ja | Monoton aufsteigende Versionsnummer. Schützt gegen Rollback-Attacken. |
+| `didDocument` | Object | Ja | DID-Dokument gemäß [Core 005](../01-wot-core/005-did-resolution.md). Enthält Keys und Service-Endpoints. |
+| `profile` | Object | Ja | Soziale Profil-Informationen (Name, Bio, Avatar, Protocols). |
+| `updatedAt` | ISO 8601 | Ja | Zeitstempel der letzten Änderung (informativ). |
+
+**Innerhalb `didDocument`:** Siehe [Core 005 DID-Dokument-Struktur](../01-wot-core/005-did-resolution.md#did-dokument-struktur) für die Pflichtfelder (`verificationMethod`, `authentication`, `assertionMethod`, `keyAgreement`).
+
+**Innerhalb `profile`:**
+
+| Feld | Typ | Pflicht | Beschreibung |
+|------|-----|---------|-------------|
 | `name` | String | Ja | Anzeigename |
 | `bio` | String | Nein | Kurzbeschreibung |
 | `avatar` | String | Nein | Avatar-Bild (Data-URL oder HTTPS-URL) |
-| `encryptionPublicKey` | String | Ja | X25519 Public Key (Base64URL, 32 Bytes). Siehe [Sync 005](005-verschluesselung.md#encryption-key-discovery). |
-| `brokers` | Array | Nein | Broker-URLs (`["wss://..."]`) |
 | `protocols` | Array | Nein | Unterstützte Protokoll-URIs. Ermöglicht Clients zu erkennen, welche Extensions der Peer unterstützt. |
-| `updatedAt` | ISO 8601 | Ja | Zeitstempel der letzten Änderung (nur informativ, kein Konfliktkriterium) |
+
+**Legacy-Felder (Phase-1-Übergang):**
+
+| Feld | Typ | Beschreibung |
+|------|-----|-------------|
+| `encryptionPublicKey` | String | X25519 Public Key — wird durch `didDocument.keyAgreement` ersetzt |
+| `brokers` | Array | Broker-URLs — wird durch `didDocument.service` ersetzt |
+
+Wenn sowohl Legacy-Felder als auch `didDocument` vorhanden sind, hat `didDocument` Vorrang.
 
 ### Signatur-Prüfung beim PUT
 

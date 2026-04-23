@@ -14,7 +14,7 @@ WoT definiert keine neuen Standards — es kombiniert bestehende zu einem intero
 
 | Standard | Verwendung |
 |----------|-----------|
-| [DID](https://www.w3.org/TR/did-core/) (W3C) | Dezentrale Identität (`did:key`) |
+| [DID](https://www.w3.org/TR/did-core/) (W3C) | Dezentrale Identität (DID-Methoden-agnostisch, Phase 1: `did:key`) |
 | [Verifiable Credentials](https://www.w3.org/TR/vc-data-model-2.0/) (W3C) | Signierte Aussagen (Attestations) |
 | [DIDComm v2.1](https://identity.foundation/didcomm-messaging/spec/v2.1/) (DIF) | Message-Envelope-Struktur (selektive Kompatibilität, siehe [didcomm-migration](research/didcomm-migration.md)) |
 | [Ed25519](https://datatracker.ietf.org/doc/html/rfc8032) (RFC 8032) | Signaturen |
@@ -49,10 +49,11 @@ Was jede Implementierung verstehen muss um Teil des Web of Trust zu sein.
 
 | # | Dokument | Beschreibung |
 |---|----------|-------------|
-| 001 | [Identität und Schlüsselableitung](01-wot-core/001-identitaet-und-schluesselableitung.md) | BIP39 → Ed25519 → did:key |
+| 001 | [Identität und Schlüsselableitung](01-wot-core/001-identitaet-und-schluesselableitung.md) | BIP39 → HKDF → Ed25519 + X25519 Schlüsselpaare |
 | 002 | [Signaturen und Verifikation](01-wot-core/002-signaturen-und-verifikation.md) | Ed25519, JWS, JCS, SHA-256 |
-| 003 | [Attestations](01-wot-core/003-attestations.md) | W3C Verifiable Credentials als signierte Aussagen |
-| 004 | [Verifikation](01-wot-core/004-verifikation.md) | QR-Code-Austausch, Challenge-Response, In-Person-Verifikation |
+| 003 | [Attestations](01-wot-core/003-attestations.md) | W3C Verifiable Credentials 2.0, VC-JOSE-COSE |
+| 004 | [Verifikation](01-wot-core/004-verifikation.md) | QR-Code-Austausch, Nonce-basierte Verifikation, Offline-Fallback |
+| 005 | [DID-Dokument und Resolution](01-wot-core/005-did-resolution.md) | DID-Methoden-agnostisch, resolve()-Interface, did:key + did:webvh |
 
 ### WoT Sync — Verschlüsselte Infrastruktur
 

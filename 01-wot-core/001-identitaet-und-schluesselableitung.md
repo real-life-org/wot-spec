@@ -2,32 +2,33 @@
 
 - **Status:** Entwurf
 - **Autoren:** Anton Tranelis, Sebastian Galek
-- **Datum:** 2026-04-13
+- **Datum:** 2026-04-23
 
 ## Zusammenfassung
 
-Dieses Dokument spezifiziert wie eine Web-of-Trust-Identität aus einem BIP39-Mnemonic abgeleitet wird. Das Ziel ist ein deterministischer Pfad vom Mnemonic zur DID — so dass verschiedene Implementierungen aus demselben Seed dieselbe Identität erzeugen.
+Dieses Dokument spezifiziert wie Schlüsselmaterial aus einem BIP39-Mnemonic abgeleitet wird. Das Ziel ist ein deterministischer Pfad vom Mnemonic zu einem Ed25519-Schlüsselpaar und weiteren abgeleiteten Schlüsseln — so dass verschiedene Implementierungen aus demselben Seed dieselben Schlüssel erzeugen.
+
+Wie aus dem Schlüsselmaterial eine auflösbare DID mit DID-Dokument wird, ist in [Core 005: DID-Dokument und Resolution](005-did-resolution.md) spezifiziert.
 
 ## Referenzierte Standards
 
 - **BIP39** — Mnemonic-Generierung und Seed-Ableitung
 - **HKDF** (RFC 5869) — Schlüsselableitung
 - **Ed25519** (RFC 8032) — Signaturalgorithmus
-- **DID Core** (W3C Recommendation) — `did:key` als DID-Methode
-- **Multicodec** — `0xed01` Präfix für Ed25519 Public Keys
-- **Multibase** — `z` Präfix für Base58btc-Kodierung
+- **X25519** (RFC 7748) — Key Agreement
+- **DID Core** (W3C Recommendation) — Decentralized Identifiers
 
 ## Ableitungspfad
 
 ```
-BIP39 Mnemonic (12+ Wörter, beliebige gültige Wortliste)
+BIP39 Mnemonic (12+ Wörter)
   → BIP39 Seed (PBKDF2-HMAC-SHA512, 2048 Runden, Passphrase="") → 64 Bytes
-  → HKDF-SHA256(seed, info="wot/identity/ed25519/v1") → 32 Bytes
-  → Ed25519 Schlüsselpaar
-  → did:key (Multicodec 0xed01 + Base58btc)
+  → HKDF-SHA256(seed, info="wot/identity/ed25519/v1") → 32 Bytes → Ed25519 Schlüsselpaar
+  → HKDF-SHA256(seed, info="wot/encryption/x25519/v1") → 32 Bytes → X25519 Schlüsselpaar
+  → resolve() → DID-Dokument (siehe Core 005)
 ```
 
-Selbes Mnemonic → selbe DID. Über alle Implementierungen, Sprachen und Anwendungen hinweg.
+Selbes Mnemonic → selbe Schlüssel → selbe Identität. Über alle Implementierungen, Sprachen und Anwendungen hinweg.
 
 ## Spezifikation
 
@@ -35,7 +36,7 @@ Selbes Mnemonic → selbe DID. Über alle Implementierungen, Sprachen und Anwend
 
 - **Standard:** BIP39
 - **Entropie:** Mindestens 128 Bit (12 Wörter)
-- **Wortliste:** Implementierungsdefiniert. Die Wortliste beeinflusst die abgeleitete Identität nicht, solange es eine gültige BIP39-Wortliste ist. Implementierungen SOLLTEN die englische BIP39-Wortliste für Interoperabilität unterstützen.
+- **Wortliste:** Die Wortliste bestimmt welche Wörter vergeben werden — und damit den PBKDF2-Input und den Seed. Eine Identität die mit der deutschen Wortliste erstellt wurde, kann nur auf Geräten wiederhergestellt werden die die deutsche Wortliste kennen. Implementierungen SOLLTEN die englische BIP39-Wortliste als Standard verwenden und DÜRFEN weitere Wortlisten unterstützen.
 
 ### Seed
 
@@ -55,13 +56,13 @@ HKDF-SHA256 mit:
 
 Ob zusätzliches Key-Stretching vor der HKDF-Ableitung angewendet wird, ist eine offene Frage (siehe Offene Frage 2).
 
-### Identität
+### Schlüsselpaar
 
 - **Signaturalgorithmus:** Ed25519
 - **Eingabe:** 32-Byte Seed aus HKDF
-- **DID-Methode:** `did:key` mit Multicodec-Präfix `0xed01` (Ed25519 Public Key), Base58-BTC kodiert
+- **Ausgabe:** Ed25519 Schlüsselpaar (Private Key + Public Key)
 
-Beispiel: `did:key:z6MkhaXgBZDvotDkL5257faiztiGiC2QtKLGpbnnEGta2doK`
+Wie aus dem Schlüsselpaar eine DID und ein DID-Dokument werden, ist in [Core 005](005-did-resolution.md) spezifiziert. Die DID-Methode ist austauschbar — das Protokoll arbeitet DID-Methoden-agnostisch über eine `resolve()`-Abstraktion.
 
 ### Weitere Schlüssel
 
