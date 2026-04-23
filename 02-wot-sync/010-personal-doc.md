@@ -196,6 +196,23 @@ Damit hat jedes Gerät des Users die gleiche Document-ID für das Personal Doc. 
 
 ## Device-Management
 
+### Device-Lifecycle-Übersicht
+
+Ein Device durchläuft folgende Zustände:
+
+```
+new → active → (restored/cloned) → revoked
+```
+
+| Zustand | Auslöser | Personal Doc | Broker | Sync 006 |
+|---|---|---|---|---|
+| **new** | Erster App-Start | Device-UUID generiert, in `devices` eingetragen | — | — |
+| **active** | Broker-Verbindung | — | Challenge-Response, Device registriert ([Sync 007](007-transport-und-broker.md#device-registrierung)) | Schreibt Log-Einträge unter eigener deviceId |
+| **restored/cloned** | `broker_seq > local_seq` erkannt | Neue deviceId generiert, alte als `revokedAt` markiert | Alte deviceId revoked, neue registriert | Neu beginnen bei seq=0 unter neuer deviceId ([Sync 006](006-sync-protokoll.md#seq-konsistenz-muss)) |
+| **revoked** | User deaktiviert oder Restore-Detection | `revokedAt` gesetzt | Authentisierung abgelehnt ([Sync 007](007-transport-und-broker.md#device-deaktivierung)) | Einträge mit dieser deviceId werden von Peers abgelehnt |
+
+Details zu jedem Zustand in den folgenden Abschnitten. Die Regeln sind über drei Spec-Dokumente verteilt — die normative Quelle für jeden Aspekt ist in der Tabelle verlinkt.
+
 ### Device-Registrierung
 
 Wenn ein Gerät mit einem bestehenden Seed initialisiert wird:

@@ -130,22 +130,7 @@ Das ist der vollständige WoT Core. Keine weiteren Pflichtfelder. Extensions fü
 
 ### WoT Core
 
-Jede Implementierung MUSS verstehen:
-
-```json
-{
-  "@context": ["https://www.w3.org/ns/credentials/v2", "https://web-of-trust.de/vocab/v1"],
-  "type": ["VerifiableCredential", "WotAttestation"],
-  "issuer": "did:key:z6Mk...alice",
-  "credentialSubject": {
-    "id": "did:key:z6Mk...bob",
-    "claim": "kann gut programmieren"
-  },
-  "validFrom": "2026-04-21T10:00:00Z"
-}
-```
-
-Das ist alles. Issuer, Subject, Claim, Signatur (JWS). Was man nicht kennt, ignoriert man.
+Jede Implementierung MUSS den VC-Payload aus dem Abschnitt [Format](#format) verstehen: `@context`, `type`, `issuer`, `credentialSubject.claim`, `validFrom` + die JWT Claims (`iss`, `sub`, `nbf`). Was man darüber hinaus nicht kennt, ignoriert man.
 
 ### Real Life Extension
 
