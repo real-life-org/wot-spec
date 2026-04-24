@@ -67,7 +67,7 @@ Release-Kriterien:
 
 - `keyAgreement`-Zustaende fuer `did:key` sauber formulieren: signaturfaehig vs. kommunikationsfaehig.
 - AES-GCM Nonce-Domain klaeren: `docId` aufnehmen oder formalen Beweis dokumentieren.
-- Verification-Attestation an QR-Challenge binden, z.B. via `challengeHash`.
+- Nonce-only Challenge-Binding in Core 004 beibehalten und explizit begruenden.
 - Inner-JWS-Pflichtfelder fuer Inbox-Nachrichten normativ machen.
 - `kid`, `authorKid`, `deviceKid` und Zweckbindung durch alle relevanten Dokumente konsistent halten.
 - Capability `kid`/Issuer/Audience-Semantik praezisieren.

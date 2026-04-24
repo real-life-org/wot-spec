@@ -22,6 +22,7 @@ Das Format folgt grob [Keep a Changelog](https://keepachangelog.com/en/1.1.0/). 
 
 - Testvektoren aus `research/` in den normativen Bereich verschoben.
 - README um Governance-, Versionierungs- und Konformitaetsverweise erweitert.
+- Core 004 begruendet explizit, warum Verification-Attestations die QR-Challenge nur ueber die Nonce binden und keinen `challengeHash` verwenden.
 
 ## v0.1.0-draft - geplant
 

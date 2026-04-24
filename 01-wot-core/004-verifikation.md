@@ -102,6 +102,14 @@ Die Nonce verbindet die digitale Attestation mit der physischen Begegnung. Alice
 
 Ohne die Nonce könnte ein Angreifer zu einem beliebigen Zeitpunkt eine Verification-Attestation an Alice senden — ohne physisch anwesend gewesen zu sein.
 
+### Warum kein Challenge-Hash?
+
+Die Verification-Attestation bindet die QR-Challenge **nur über die Nonce**. Ein zusätzlicher Hash über den gesamten QR-Code (`did`, `name`, `enc`, `nonce`, `ts`, `broker`) ist nicht Teil der Phase-1-Spec.
+
+Grund: Ein solcher Hash wäre nur prüfbar, solange der Empfänger die exakte aktive Challenge noch lokal hält — inklusive exakt serialisiertem Timestamp. Nach Verbrauch der Nonce wird diese Challenge nicht persistiert und soll auch nicht dauerhaft Teil der öffentlichen Attestation werden. Für spätere Dritte hätte der Hash keinen verifizierbaren Wert, weil ihnen die ursprüngliche Challenge nicht vorliegt.
+
+Die Sicherheitsgarantie der Online-Verifikation ist deshalb bewusst enger definiert: Die Nonce beweist gegenüber dem Challenge-Ersteller, dass der Attestation-Issuer die aktuell angezeigte Challenge gesehen hat. Sie ist kein dauerhaft extern verifizierbarer Beweis über den gesamten QR-Code-Inhalt.
+
 ### Prüfungen beim Empfang
 
 Der Empfänger einer Verification-Attestation prüft:
@@ -109,6 +117,8 @@ Der Empfänger einer Verification-Attestation prüft:
 1. Ist die JWS-Signatur gültig für den `issuer`? (inklusive `alg=EdDSA` Whitelist, siehe [Core 002](002-signaturen-und-verifikation.md#algorithmus-validierung-muss))
 2. Enthält die Attestation-ID die aktive Challenge-Nonce?
 3. Ist der `ts` aus der Challenge aktuell (nicht älter als 5 Minuten)?
+
+Die aktive Challenge (mindestens `nonce` und `ts`) MUSS nur bis zur Verifikation oder Regenerierung des QR-Codes lokal gehalten werden. Sie MUSS nicht dauerhaft persistiert werden. Bei App-Neustart ist der sichere Fallback, alte aktive Challenges zu verwerfen und einen neuen QR-Code zu erzeugen.
 
 ### Nonce-History (MUSS)
 
