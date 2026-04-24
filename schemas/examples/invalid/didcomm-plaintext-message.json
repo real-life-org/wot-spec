@@ -1,0 +1,7 @@
+{
+  "id": "550e8400-e29b-41d4-a716-446655440000",
+  "type": "https://web-of-trust.de/protocols/log-entry/1.0",
+  "from": "did:key:z6Mko3ZEjKJWQAM5nDXKoZ9jErvvxbWbYgS8KJXYpC5Hbu8a",
+  "created_time": "2026-04-17T10:00:00Z",
+  "body": { "payload": "abc" }
+}

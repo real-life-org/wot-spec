@@ -1,0 +1,15 @@
+{
+  "name": "wot-spec",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "validate": "npm run validate:schemas && npm run validate:vectors && npm run validate:didcomm",
+    "validate:schemas": "python3 scripts/validate_schemas.py",
+    "validate:vectors": "python3 scripts/validate_test_vectors.py",
+    "validate:didcomm": "node scripts/validate_didcomm_envelope.mjs"
+  },
+  "devDependencies": {
+    "@veramo/did-comm": "7.0.0",
+    "didcomm-node": "0.4.1"
+  }
+}

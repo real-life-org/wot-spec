@@ -1,0 +1,9 @@
+{
+  "id": "550e8400-e29b-41d4-a716-446655440000",
+  "typ": "application/didcomm-plain+json",
+  "type": "https://web-of-trust.de/protocols/log-entry/1.0",
+  "from": "did:key:z6Mko3ZEjKJWQAM5nDXKoZ9jErvvxbWbYgS8KJXYpC5Hbu8a",
+  "to": ["did:key:z6MkpTHR8VNsBxYAAWHut2Geadd9jSwuBV8xRoAnwWsdvktH"],
+  "created_time": 1776514800,
+  "body": { "payload": "abc" }
+}

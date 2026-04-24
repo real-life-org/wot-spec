@@ -1,0 +1,9 @@
+{
+  "seq": 42,
+  "deviceId": "550e8400-e29b-41d4-a716-446655440000",
+  "docId": "7f3a2b10-4c5d-4e6f-8a7b-9c0d1e2f3a4b",
+  "authorKid": "did:key:z6Mko3ZEjKJWQAM5nDXKoZ9jErvvxbWbYgS8KJXYpC5Hbu8a#sig-0",
+  "keyGeneration": 3,
+  "data": "euBp22iusxYapnEx",
+  "timestamp": "2026-04-17T10:00:00Z"
+}

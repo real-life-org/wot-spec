@@ -1,0 +1,17 @@
+{
+  "id": "550e8400-e29b-41d4-a716-446655440000",
+  "typ": "application/didcomm-plain+json",
+  "type": "https://web-of-trust.de/protocols/space-invite/1.0",
+  "from": "did:key:z6Mko3ZEjKJWQAM5nDXKoZ9jErvvxbWbYgS8KJXYpC5Hbu8a",
+  "to": [],
+  "created_time": 1776945600,
+  "body": {
+    "spaceId": "not-a-uuid",
+    "brokerUrls": [],
+    "currentKeyGeneration": -1,
+    "spaceContentKeys": [],
+    "spaceCapabilitySigningKey": "def_456",
+    "adminDids": [],
+    "capability": "not-a-jws"
+  }
+}

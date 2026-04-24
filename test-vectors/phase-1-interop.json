@@ -1,0 +1,140 @@
+{
+  "name": "phase-1-interop",
+  "warning": "Test keys only. Never use in production.",
+  "identity": {
+    "mnemonic": "abandon abandon abandon abandon abandon abandon abandon abandon abandon abandon abandon about",
+    "bip39_seed_hex": "5eb00bbddcf069084889a8ab9155568165f5c453ccb85e70811aaed6f6da5fc19a5ac40b389cd370d086206dec8aa6c43daea6690f20ad3d8d48b2d2ce9e38e4",
+    "did": "did:key:z6Mko3ZEjKJWQAM5nDXKoZ9jErvvxbWbYgS8KJXYpC5Hbu8a",
+    "kid": "did:key:z6Mko3ZEjKJWQAM5nDXKoZ9jErvvxbWbYgS8KJXYpC5Hbu8a#sig-0",
+    "ed25519_seed_hex": "f5dfa334475ac58513d0be39daaa1ad4677e65a5a2dc42e695b7fc22881af96c",
+    "ed25519_public_hex": "7fa6ae99f7fc28a61096ad3d62f91a76b5c2b39bab0decfaa16c1611e8944f17",
+    "x25519_seed_hex": "955ae6771ff7a40465800baded885780c88527b2eabcd9ef4683dac041ab1e82",
+    "x25519_public_hex": "c8507873fd52a931a89550532a108125285259ff8dcd7af85c2c8317714a7944",
+    "x25519_public_b64": "yFB4c_1SqTGolVBTKhCBJShSWf-NzXr4XCyDF3FKeUQ",
+    "x25519_public_multibase": "z6LSqA7sbKGK3WVHP9SBcmv9ikp19iDNb1P5Q315kRPQrcTV"
+  },
+  "didcomm_plaintext_envelope": {
+    "validated_with": [
+      { "library": "didcomm-node", "version": "0.4.1" },
+      { "library": "@veramo/did-comm", "version": "7.0.0" }
+    ],
+    "message": {
+      "id": "550e8400-e29b-41d4-a716-446655440000",
+      "typ": "application/didcomm-plain+json",
+      "type": "https://web-of-trust.de/protocols/log-entry/1.0",
+      "from": "did:key:z6Mko3ZEjKJWQAM5nDXKoZ9jErvvxbWbYgS8KJXYpC5Hbu8a",
+      "to": ["did:key:z6MkpTHR8VNsBxYAAWHut2Geadd9jSwuBV8xRoAnwWsdvktH"],
+      "created_time": 1776514800,
+      "thid": "550e8400-e29b-41d4-a716-446655440000",
+      "body": {
+        "docId": "7f3a2b10-4c5d-4e6f-8a7b-9c0d1e2f3a4b",
+        "payload": "abc"
+      }
+    }
+  },
+  "did_resolution": {
+    "did_document": {
+      "id": "did:key:z6Mko3ZEjKJWQAM5nDXKoZ9jErvvxbWbYgS8KJXYpC5Hbu8a",
+      "verificationMethod": [
+        {
+          "id": "#sig-0",
+          "type": "Ed25519VerificationKey2020",
+          "controller": "did:key:z6Mko3ZEjKJWQAM5nDXKoZ9jErvvxbWbYgS8KJXYpC5Hbu8a",
+          "publicKeyMultibase": "z6Mko3ZEjKJWQAM5nDXKoZ9jErvvxbWbYgS8KJXYpC5Hbu8a"
+        }
+      ],
+      "authentication": ["#sig-0"],
+      "assertionMethod": ["#sig-0"],
+      "keyAgreement": [
+        {
+          "id": "#enc-0",
+          "type": "X25519KeyAgreementKey2020",
+          "controller": "did:key:z6Mko3ZEjKJWQAM5nDXKoZ9jErvvxbWbYgS8KJXYpC5Hbu8a",
+          "publicKeyMultibase": "z6LSqA7sbKGK3WVHP9SBcmv9ikp19iDNb1P5Q315kRPQrcTV"
+        }
+      ],
+      "service": [
+        {
+          "id": "#inbox",
+          "type": "WoTInbox",
+          "serviceEndpoint": "wss://broker.example.com"
+        }
+      ]
+    },
+    "jcs_sha256": "9f71bde97db9df9bc5fd14ab3c5a65dd3eb3e77fd1e74a43fe187a718015fefc"
+  },
+  "ecies": {
+    "recipient_x25519_public_b64": "yFB4c_1SqTGolVBTKhCBJShSWf-NzXr4XCyDF3FKeUQ",
+    "ephemeral_private_hex": "000102030405060708090a0b0c0d0e0f101112131415161718191a1b1c1d1e1f",
+    "ephemeral_public_b64": "j0DFrbaPJWJK5bIU6nZ6bslNgp09e14a0bpvPiE4KF8",
+    "shared_secret_hex": "1179ea1cdc7219cdb7a1167398653a65d679845fd5d6af8028f9f48d2ac11302",
+    "hkdf_info": "wot/ecies/v1",
+    "aes_key_hex": "5c9e63d8ba44c750ac09ffbc25ff6889a07fa784634a9d25104f519cc76b5b21",
+    "nonce_hex": "1a1b1c1d1e1f202122232425",
+    "plaintext": "Hello ECIES WoT",
+    "ciphertext_b64": "0DkOSxhxP_lROCSisq2DAbveWqoA_M2E2kidsoVFdw"
+  },
+  "log_payload_encryption": {
+    "space_content_key_hex": "0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef",
+    "device_id": "550e8400-e29b-41d4-a716-446655440000",
+    "seq": 42,
+    "nonce_hex": "7ae069db68aeb3161aa67131",
+    "plaintext": "{\"op\":\"set\",\"path\":[\"title\"],\"value\":\"Hello WoT\"}",
+    "ciphertext_tag_hex": "e852936e45c1669415dcb240c0e6387e18d69140a7b7d67ddcb0afaee01d200185bf4e74da522a28916a1ec0044de043471cf72ac3e1deac8790bd6ad53d66557a",
+    "blob_b64": "euBp22iusxYapnEx6FKTbkXBZpQV3LJAwOY4fhjWkUCnt9Z93LCvruAdIAGFv0502lIqKJFqHsAETeBDRxz3KsPh3qyHkL1q1T1mVXo"
+  },
+  "log_entry_jws": {
+    "payload": {
+      "seq": 42,
+      "deviceId": "550e8400-e29b-41d4-a716-446655440000",
+      "docId": "7f3a2b10-4c5d-4e6f-8a7b-9c0d1e2f3a4b",
+      "authorKid": "did:key:z6Mko3ZEjKJWQAM5nDXKoZ9jErvvxbWbYgS8KJXYpC5Hbu8a#sig-0",
+      "keyGeneration": 3,
+      "data": "euBp22iusxYapnEx6FKTbkXBZpQV3LJAwOY4fhjWkUCnt9Z93LCvruAdIAGFv0502lIqKJFqHsAETeBDRxz3KsPh3qyHkL1q1T1mVXo",
+      "timestamp": "2026-04-17T10:00:00Z"
+    },
+    "jws": "eyJhbGciOiJFZERTQSIsImtpZCI6ImRpZDprZXk6ejZNa28zWkVqS0pXUUFNNW5EWEtvWjlqRXJ2dnhiV2JZZ1M4S0pYWXBDNUhidThhI3NpZy0wIn0.eyJhdXRob3JLaWQiOiJkaWQ6a2V5Ono2TWtvM1pFaktKV1FBTTVuRFhLb1o5akVydnZ4YldiWWdTOEtKWFlwQzVIYnU4YSNzaWctMCIsImRhdGEiOiJldUJwMjJpdXN4WWFwbkV4NkZLVGJrWEJacFFWM0xKQXdPWTRmaGpXa1VDbnQ5WjkzTEN2cnVBZElBR0Z2MDUwMmxJcUtKRnFIc0FFVGVCRFJ4ejNLc1BoM3F5SGtMMXExVDFtVlhvIiwiZGV2aWNlSWQiOiI1NTBlODQwMC1lMjliLTQxZDQtYTcxNi00NDY2NTU0NDAwMDAiLCJkb2NJZCI6IjdmM2EyYjEwLTRjNWQtNGU2Zi04YTdiLTljMGQxZTJmM2E0YiIsImtleUdlbmVyYXRpb24iOjMsInNlcSI6NDIsInRpbWVzdGFtcCI6IjIwMjYtMDQtMTdUMTA6MDA6MDBaIn0.lIwGioTDMKdkkAkKnMTr1Eup-fnU7CcDVPiYSIM1-vsN0i--losDm8fwkKE5Lyn5Kmgo78nSGv2CJ9lEQ2PyDw"
+  },
+  "space_capability_jws": {
+    "signing_seed_hex": "202122232425262728292a2b2c2d2e2f303132333435363738393a3b3c3d3e3f",
+    "verification_key_hex": "29acbae141bccaf0b22e1a94d34d0bc7361e526d0bfe12c89794bc9322966dd7",
+    "verification_key_multibase": "z6MkhFwXNFWosLeugvSf4wcL9t3uuRXueGSFTRgSvHhWj5G2",
+    "payload": {
+      "type": "capability",
+      "spaceId": "7f3a2b10-4c5d-4e6f-8a7b-9c0d1e2f3a4b",
+      "audience": "did:key:z6Mko3ZEjKJWQAM5nDXKoZ9jErvvxbWbYgS8KJXYpC5Hbu8a",
+      "permissions": ["read", "write"],
+      "generation": 3,
+      "issuedAt": "2026-04-22T10:00:00Z",
+      "validUntil": "2026-10-22T10:00:00Z"
+    },
+    "jws": "eyJhbGciOiJFZERTQSIsImtpZCI6IndvdDpzcGFjZTo3ZjNhMmIxMC00YzVkLTRlNmYtOGE3Yi05YzBkMWUyZjNhNGIjY2FwLTMiLCJ0eXAiOiJ3b3QtY2FwYWJpbGl0eStqd3QifQ.eyJhdWRpZW5jZSI6ImRpZDprZXk6ejZNa28zWkVqS0pXUUFNNW5EWEtvWjlqRXJ2dnhiV2JZZ1M4S0pYWXBDNUhidThhIiwiZ2VuZXJhdGlvbiI6MywiaXNzdWVkQXQiOiIyMDI2LTA0LTIyVDEwOjAwOjAwWiIsInBlcm1pc3Npb25zIjpbInJlYWQiLCJ3cml0ZSJdLCJzcGFjZUlkIjoiN2YzYTJiMTAtNGM1ZC00ZTZmLThhN2ItOWMwZDFlMmYzYTRiIiwidHlwZSI6ImNhcGFiaWxpdHkiLCJ2YWxpZFVudGlsIjoiMjAyNi0xMC0yMlQxMDowMDowMFoifQ.lqBuMxntI15vmJCnT9UTavTQqM_sxbL4fcrt_n_cSakXE4fy-EFvnXWAngNq5uFYqPbX_r8W-TE16Md97pfWAQ"
+  },
+  "admin_key_derivation": {
+    "space_id": "7f3a2b10-4c5d-4e6f-8a7b-9c0d1e2f3a4b",
+    "hkdf_info": "wot/space-admin/7f3a2b10-4c5d-4e6f-8a7b-9c0d1e2f3a4b/v1",
+    "ed25519_seed_hex": "6687124c044cdcc7b7468905582571fb4bb652ab9c5d58830a92a856e03dd2a6",
+    "ed25519_public_hex": "ebf654f331fdbf131ca46ce2f28b269ceee064244e521b557a3e919bffe32c30",
+    "did": "did:key:z6MkvLMiE11z8wXjNScxqjcMJHNfNyc8XqDT4aGzry4pFTTd"
+  },
+  "personal_doc": {
+    "hkdf_info": "wot/personal-doc/v1",
+    "key_hex": "ed3b3cbec944063041a15cf14be4c2aecd87ec30f2085cd9f2f82333cfcd437c",
+    "doc_id": "ed3b3cbe-c944-0630-41a1-5cf14be4c2ae"
+  },
+  "sd_jwt_vc_trust_list": {
+    "disclosure": [
+      "salt-0001",
+      "entry",
+      {
+        "id": "did:key:z6Mko3ZEjKJWQAM5nDXKoZ9jErvvxbWbYgS8KJXYpC5Hbu8a",
+        "trustLevel": 3,
+        "liability": "4.0h",
+        "hopLimit": 2
+      }
+    ],
+    "disclosure_digest": "IgJ4myRVC6HCY4dk1zsagaGdOlXsm_21Uj7EFPQ74sY",
+    "issuer_signed_jwt": "eyJhbGciOiJFZERTQSIsImtpZCI6ImRpZDprZXk6ejZNa28zWkVqS0pXUUFNNW5EWEtvWjlqRXJ2dnhiV2JZZ1M4S0pYWXBDNUhidThhI3NpZy0wIiwidHlwIjoidmMrc2Qtand0In0.eyJfc2RfYWxnIjoic2hhLTI1NiIsImVudHJpZXMiOlt7Il9zZCI6WyJJZ0o0bXlSVkM2SENZNGRrMXpzYWdhR2RPbFhzbV8yMVVqN0VGUFE3NHNZIl19XSwiZXhwIjoxODA4MDUwODAwLCJpYXQiOjE3NzY1MTQ4MDAsImlzcyI6ImRpZDprZXk6ejZNa28zWkVqS0pXUUFNNW5EWEtvWjlqRXJ2dnhiV2JZZ1M4S0pYWXBDNUhidThhIiwidmN0IjoiaHR0cHM6Ly9odW1hbm1vbmV5LmV4YW1wbGUvY3JlZGVudGlhbHMvVHJ1c3RMaXN0L3YxIiwidmVyc2lvbiI6MTJ9.yDMUg74umfxSnD7RJUSIj3NYu7ml6wSv9W7tLocVdPBIJ0hil-QuIT9lkAFSyGV9Qa2ctEBTon8wxNvbUwuRCg",
+    "sd_jwt_compact": "eyJhbGciOiJFZERTQSIsImtpZCI6ImRpZDprZXk6ejZNa28zWkVqS0pXUUFNNW5EWEtvWjlqRXJ2dnhiV2JZZ1M4S0pYWXBDNUhidThhI3NpZy0wIiwidHlwIjoidmMrc2Qtand0In0.eyJfc2RfYWxnIjoic2hhLTI1NiIsImVudHJpZXMiOlt7Il9zZCI6WyJJZ0o0bXlSVkM2SENZNGRrMXpzYWdhR2RPbFhzbV8yMVVqN0VGUFE3NHNZIl19XSwiZXhwIjoxODA4MDUwODAwLCJpYXQiOjE3NzY1MTQ4MDAsImlzcyI6ImRpZDprZXk6ejZNa28zWkVqS0pXUUFNNW5EWEtvWjlqRXJ2dnhiV2JZZ1M4S0pYWXBDNUhidThhIiwidmN0IjoiaHR0cHM6Ly9odW1hbm1vbmV5LmV4YW1wbGUvY3JlZGVudGlhbHMvVHJ1c3RMaXN0L3YxIiwidmVyc2lvbiI6MTJ9.yDMUg74umfxSnD7RJUSIj3NYu7ml6wSv9W7tLocVdPBIJ0hil-QuIT9lkAFSyGV9Qa2ctEBTon8wxNvbUwuRCg~WyJzYWx0LTAwMDEiLCJlbnRyeSIseyJob3BMaW1pdCI6MiwiaWQiOiJkaWQ6a2V5Ono2TWtvM1pFaktKV1FBTTVuRFhLb1o5akVydnZ4YldiWWdTOEtKWFlwQzVIYnU4YSIsImxpYWJpbGl0eSI6IjQuMGgiLCJ0cnVzdExldmVsIjozfV0~"
+  }
+}

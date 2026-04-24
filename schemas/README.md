@@ -32,6 +32,12 @@ Status: initialer Draft. Die Schemas decken die in den Spec-Dokumenten beschrieb
 - JWS-Signaturen, DID-Resolution und Disclosure-Hashes werden durch Conformance-Tests geprueft, nicht durch JSON Schema.
 - Felder, die Extensions erlauben, muessen explizit mit `additionalProperties` oder `unevaluatedProperties` modelliert werden.
 
+## Beispiele
+
+- `examples/valid/` enthaelt je Schema mindestens ein gueltiges Beispiel.
+- `examples/invalid/` enthaelt je Schema mindestens ein bewusst ungueltiges Beispiel.
+- `scripts/validate_schemas.py` prueft, dass alle gueltigen Beispiele akzeptiert und alle ungueltigen Beispiele abgelehnt werden.
+
 ## Versionierung
 
 Schema-Versionen folgen den Wire-Versionen der zugehoerigen Formate. Breaking Schema-Aenderungen muessen in `CHANGELOG.md` und `VERSIONING.md` beruecksichtigt werden.

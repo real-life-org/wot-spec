@@ -6,6 +6,19 @@ Das Format folgt grob [Keep a Changelog](https://keepachangelog.com/en/1.1.0/). 
 
 ## Unreleased
 
+Noch keine Aenderungen.
+
+## v0.1.0-draft - 2026-04-24
+
+Erster oeffentlicher Draft-Snapshot der Spezifikation.
+
+### Enthaltene Profile
+
+- `wot-core@0.1` als Draft
+- `wot-sync@0.1` als Draft
+- `wot-rls@0.1` als Draft
+- `wot-hmc@0.1` als Draft
+
 ### Added
 
 - GitHub als kanonischer Publikationsort fuer die Spec eingefuehrt.
@@ -17,6 +30,9 @@ Das Format folgt grob [Keep a Changelog](https://keepachangelog.com/en/1.1.0/). 
 - `.github/ISSUE_TEMPLATE/` fuer Spec- und Research-Issues.
 - `schemas/` als geplanter Ort fuer JSON Schemas.
 - `test-vectors/` als normativer Ort fuer Interop-Testvektoren.
+- GitHub Actions Workflow fuer Schema-, Testvektor- und DIDComm-Envelope-Validierung.
+- Maschinenlesbare Phase-1-Interop-Testvektoren als JSON.
+- Valide und invalide Schema-Beispiele fuer alle aktuellen Payload-Schemas.
 
 ### Changed
 
@@ -27,20 +43,3 @@ Das Format folgt grob [Keep a Changelog](https://keepachangelog.com/en/1.1.0/). 
 - Zusaetzliche Testvektoren fuer DIDComm-Plaintext-Envelopes, DID-Resolution, ECIES, deterministische Nonces, Log-JWS, Capability-JWS, Admin-Key-Ableitung und SD-JWT VC ergaenzt.
 - Core 002 und Sync 007 klaeren `kid` fuer Space-Capabilities als `wot:space:<spaceId>#cap-<generation>`.
 - Sync 007 macht `typ: "application/didcomm-plain+json"` verpflichtend, damit Plaintext-Envelopes mit etablierten DIDComm-v2-Libraries validierbar sind.
-
-## v0.1.0-draft - geplant
-
-Erster oeffentlicher Draft-Snapshot der Spezifikation.
-
-### Enthaltene Profile
-
-- `wot-core@0.1` als Draft
-- `wot-sync@0.1` als Draft
-- `wot-rls@0.1` als Draft
-- `wot-hmc@0.1` als Draft
-
-### Release-Kriterien
-
-- Alle vorhandenen normativen Dokumente haben expliziten Draft-Status.
-- Krypto-Testvektoren sind unter `test-vectors/` verfuegbar.
-- `CONFORMANCE.md` beschreibt den erwarteten Mindestumfang fuer `wot-core@0.1`.

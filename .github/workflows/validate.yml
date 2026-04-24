@@ -1,0 +1,41 @@
+name: Validate Spec
+
+on:
+  pull_request:
+  push:
+    branches: [main]
+
+jobs:
+  validate:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+
+      - name: Set up Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+
+      - name: Install Python dependencies
+        run: python -m pip install -r requirements-dev.txt
+
+      - name: Install Node dependencies
+        run: npm install --no-package-lock
+
+      - name: Validate JSON Schemas and examples
+        run: npm run validate:schemas
+
+      - name: Validate test vectors
+        run: npm run validate:vectors
+
+      - name: Validate DIDComm envelope compatibility
+        run: npm run validate:didcomm
+
+      - name: Check whitespace
+        run: git diff --check
