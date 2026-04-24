@@ -9,8 +9,13 @@ Das Format folgt grob [Keep a Changelog](https://keepachangelog.com/en/1.1.0/). 
 ### Added
 
 - GitHub als kanonischer Publikationsort fuer die Spec eingefuehrt.
+- `ROADMAP.md` fuer Milestones, Arbeitsbloecke und Release-Kriterien.
 - `VERSIONING.md` fuer Repository-Releases, Spec-Profile und Wire-Versionen.
 - `CONFORMANCE.md` fuer Core-, Sync- und Extension-Konformitaet.
+- `CONTRIBUTING.md` fuer Beitragsregeln.
+- `LICENSE` mit CC-BY-4.0-Hinweis.
+- `.github/ISSUE_TEMPLATE/` fuer Spec- und Research-Issues.
+- `schemas/` als geplanter Ort fuer JSON Schemas.
 - `test-vectors/` als normativer Ort fuer Interop-Testvektoren.
 
 ### Changed

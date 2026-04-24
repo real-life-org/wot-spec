@@ -2,6 +2,8 @@
 
 Ein Protokoll für dezentrale Vertrauensnetzwerke basierend auf echten Begegnungen.
 
+**Status:** Draft. Diese Spezifikation ist oeffentlich einsehbar, aber noch nicht stabil und nicht produktionsreif. Breaking Changes sind bis `v1.0.0` ausdruecklich moeglich.
+
 Zwei Menschen treffen sich, verifizieren ihre Identität, und stellen sich gegenseitig signierte Aussagen aus — kryptographisch verifizierbar, offline-fähig, ohne zentrale Instanz.
 
 Das Protokoll besteht aus zwei Paketen:
@@ -45,9 +47,11 @@ WoT definiert keine neuen Standards — es kombiniert bestehende zu einem intero
 
 | Dokument | Beschreibung |
 |----------|-------------|
+| [ROADMAP](ROADMAP.md) | Milestones und naechste Arbeitsbloecke |
 | [VERSIONING](VERSIONING.md) | Release-Versionen, Spec-Profile, Wire-Versionen |
 | [CHANGELOG](CHANGELOG.md) | Nachvollziehbare Aenderungen zwischen Releases |
 | [CONFORMANCE](CONFORMANCE.md) | Anforderungen fuer konforme Implementierungen |
+| [CONTRIBUTING](CONTRIBUTING.md) | Beitragsregeln und PR-Erwartungen |
 | [Test-Vektoren](test-vectors/) | Normative Krypto-Werte fuer Interoperabilitaets-Tests |
 
 ## Dokumente
@@ -90,6 +94,7 @@ Nicht WoT-spezifisch — jede Local-First-App könnte das nutzen.
 
 | Dokument | Beschreibung |
 |----------|-------------|
+| [Schemas](schemas/) | Geplante JSON Schemas fuer normative Payloads |
 | [Test-Vektoren](test-vectors/) | Kanonische Krypto-Werte fuer Interoperabilitaets-Tests |
 
 ### Forschung
@@ -122,4 +127,4 @@ Alle Dokumente sind im Status **Entwurf**. Dieses Repository ist die neutrale Sp
 
 ## Lizenz
 
-[CC-BY-SA 4.0](https://creativecommons.org/licenses/by-sa/4.0/)
+[CC-BY 4.0](LICENSE)

@@ -1,0 +1,120 @@
+# Roadmap
+
+Diese Roadmap beschreibt die naechsten Arbeitsbloecke fuer die Web-of-Trust-Spezifikation. Sie ist operativ: Aus den Eintraegen sollen GitHub Issues, Releases und Implementierungsaufgaben entstehen.
+
+## Zielbild
+
+Die Spec soll als neutrales, versioniertes Interop-Profil dienen:
+
+- Menschen und Communities koennen WoT-Identitaeten, Attestations und Sync unabhaengig von einer einzelnen App implementieren.
+- TypeScript- und Rust-Implementierungen koennen dieselben Testvektoren bestehen.
+- Normative Dokumente, Schemas, Testvektoren und Conformance-Regeln sind getrennt von Research.
+
+## Milestones
+
+### `v0.1.0-draft`
+
+Erster oeffentlicher Draft-Snapshot.
+
+Release-Kriterien:
+
+- `LICENSE`, `CONTRIBUTING.md`, `VERSIONING.md`, `CHANGELOG.md`, `CONFORMANCE.md` vorhanden.
+- Normative Testvektoren liegen unter `test-vectors/`.
+- `schemas/` existiert mit Scope und Formatregeln.
+- Offene Kernarbeiten sind als GitHub Issues erfasst.
+- GitHub Release und Tag `v0.1.0-draft` erstellt.
+
+### `v0.2.0-interop`
+
+Erster Interop-Snapshot zwischen mindestens zwei Implementierungen.
+
+Release-Kriterien:
+
+- TypeScript und Rust bestehen die Core-Testvektoren.
+- ECIES-, DID-Resolution-, Log-Entry- und Capability-Testvektoren sind ergaenzt.
+- JSON Schemas fuer Core- und Sync-Objekte sind verfuegbar.
+- `wot-core@0.1` ist praktisch implementierbar ohne offene normative Luecken.
+
+### `v0.3.0-sync`
+
+Minimaler Sync-Snapshot.
+
+Release-Kriterien:
+
+- Minimaler Broker-Prototyp spricht Challenge-Response, Inbox und Log-Sync.
+- Personal Doc funktioniert mit Append-only Log und AES-GCM.
+- Restore/Clone- und `seq`-Kollisionsregeln sind getestet.
+
+### `v1.0.0-core`
+
+Stabiler Core-Snapshot.
+
+Release-Kriterien:
+
+- Core-Dokumente sind stabil genug fuer langfristige Implementierungen.
+- Mindestens zwei unabhaengige Implementierungen interoperieren fuer Identity, JWS, Attestations und Verification.
+- Breaking Changes am Core sind danach nur noch per Major Release erlaubt.
+
+## Arbeitsbloecke
+
+### A. Release-Vorbereitung
+
+- Lizenzdatei und Beitragsregeln finalisieren.
+- GitHub Issues aus dieser Roadmap anlegen.
+- `v0.1.0-draft` Release vorbereiten.
+
+### B. Normative Kanten schaerfen
+
+- `keyAgreement`-Zustaende fuer `did:key` sauber formulieren: signaturfaehig vs. kommunikationsfaehig.
+- AES-GCM Nonce-Domain klaeren: `docId` aufnehmen oder formalen Beweis dokumentieren.
+- Verification-Attestation an QR-Challenge binden, z.B. via `challengeHash`.
+- Inner-JWS-Pflichtfelder fuer Inbox-Nachrichten normativ machen.
+- `kid`, `authorKid`, `deviceKid` und Zweckbindung durch alle relevanten Dokumente konsistent halten.
+- Capability `kid`/Issuer/Audience-Semantik praezisieren.
+
+### C. Testvektoren erweitern
+
+- ECIES: X25519 ECDH + HKDF + AES-256-GCM.
+- Deterministische Nonce fuer Space/Personal-Doc Payloads.
+- `resolve(did:key)` zu DID-Dokument.
+- Log-Entry JWS.
+- Space Capability JWS.
+- Admin-Key-Ableitung aus BIP39 Seed + Space-ID.
+- SD-JWT VC Trust List mit Disclosures.
+
+### D. Schemas einfuehren
+
+- QR Challenge.
+- DID Document Profil.
+- Attestation VC Payload.
+- DIDComm Plaintext Message.
+- Log Entry Payload.
+- Capability Payload.
+- Profile-Service Response.
+- Space Invite und Key Rotation.
+
+### E. HMC-Extension konkretisieren
+
+- Trust-Score-Algorithmus formal spezifizieren.
+- Multipath mit Zyklen und Pfadabhaengigkeiten klaeren.
+- Versionierung und Ueberschreiben neuerer Trust-Aussagen definieren.
+- Hop-Limit-Propagation normativ machen.
+- SD-JWT `cnf` / Key-Binding entscheiden.
+- Widerruf / StatusList2021 fuer Trust Lists klaeren.
+
+### F. Implementierung nachziehen
+
+- TypeScript Core auf neue Testvektoren bringen.
+- Rust/HMC Core-Ableitungen gegen dieselben Testvektoren pruefen.
+- Attestations auf VC-JWS umstellen.
+- Verification-Flow auf QR-Felder und VC-JWS umstellen.
+- Minimalen Broker/Personal-Doc-Sync implementieren.
+
+## Nicht Phase 1
+
+- Per-Device Keys als vollstaendiges Modell.
+- DID-Migration zu `did:webvh`.
+- Forward-Secrecy / Double Ratchet fuer Inbox.
+- Sedimentree und RIBLT.
+- Feld-Level-Permissions im CRDT.
+- Tor/Cover-Traffic/Onion-Routing fuer Metadaten-Schutz.
