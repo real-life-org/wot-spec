@@ -38,7 +38,7 @@ Im Message Envelope (siehe [Sync 007](../02-wot-sync/007-transport-und-broker.md
   "type": "https://web-of-trust.de/protocols/trust-list-delta/1.0",
   "from": "did:key:z6Mk...alice",
   "to": ["did:key:z6Mk...bob"],
-  "created_time": "2026-04-17T10:00:00Z",
+  "created_time": 1776514800,
   "body": {
     "delta": "<SD-JWT-VC-Compact-String mit selektiv offengelegten Einträgen>"
   }

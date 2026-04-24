@@ -173,11 +173,16 @@ Jede Partei erstellt eine Verification-Attestation für die andere — als JWS-s
     "id": "did:key:z6Mk...alice",
     "claim": "in-person verifiziert"
   },
-  "validFrom": "2026-04-22T10:00:00Z"
+  "validFrom": "2026-04-22T10:00:00Z",
+
+  "iss": "did:key:z6Mk...bob",
+  "sub": "did:key:z6Mk...alice",
+  "nbf": 1745280000,
+  "jti": "urn:uuid:ver-<nonce>-<did-suffix>"
 }
 ```
 
-Die Attestation-ID enthält die Nonce aus dem QR-Code (z.B. `urn:uuid:ver-<nonce>-<did-suffix>`), damit der Empfänger sie seiner aktiven Challenge zuordnen kann.
+Die `jti` (Attestation-ID) enthält die Nonce aus dem QR-Code, damit der Empfänger sie seiner aktiven Challenge zuordnen kann.
 
 Die Verification-Attestation sagt: **"Ich habe diese Person getroffen und ihre Identität verifiziert."** Sie wird wie jede andere Attestation behandelt — der Empfänger besitzt sie und entscheidet ob er sie akzeptiert und zeigt (Empfängerprinzip, siehe [Core 003](003-attestations.md)).
 

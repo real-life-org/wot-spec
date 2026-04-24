@@ -298,7 +298,7 @@ Das `credentialSubject.id` kann verschiedene Dinge identifizieren:
 - VC Context von `2018/credentials/v1` auf `ns/credentials/v2` umstellen
 - `issuanceDate` → `validFrom`
 - `proof`-Objekt entfernen — Attestation als JWS Compact transportieren
-- `typ: "vc+jws"` und `kid` im JWS-Header setzen
+- `typ: "vc+jwt"` und `kid` im JWS-Header setzen
 
 **Human Money Core (Rust):**
 - SD-JWT VC ist bereits JWS-basiert — kein grundlegender Formatwechsel nötig

@@ -136,14 +136,14 @@ Das DID-Dokument einer Person erreicht andere Teilnehmer auf verschiedenen Wegen
 
 **Szenario: In-Person (offline, QR-Scan)**
 
-Der QR-Code (siehe [Core 004](004-verifikation.md)) enthält Hilfsfelder (`enc`, `inbox`), aus denen der Resolver ein Bootstrap-DID-Dokument konstruiert:
+Der QR-Code (siehe [Core 004](004-verifikation.md)) enthält Hilfsfelder (`enc`, `broker`), aus denen der Resolver ein Bootstrap-DID-Dokument konstruiert:
 
 ```
-QR-Code { did, enc, inbox, name, nonce, ts }
+QR-Code { did, enc, broker, name, nonce, ts }
   → resolve() konstruiert:
     - verificationMethod aus der DID (bei did:key: aus dem Key ableitbar)
     - keyAgreement aus dem enc-Feld
-    - service aus dem inbox-Feld
+    - service aus dem broker-Feld
 ```
 
 Das Bootstrap-Dokument ist ein **Provisorium** — es enthält die minimalen Daten für sofortige Kommunikation. Sobald Internet verfügbar ist, holt der Client das vollständige Profil (inkl. DID-Dokument) vom Profil-Service und ersetzt das Provisorium.
@@ -310,7 +310,7 @@ Für Admin-Keys gibt es keinen Grund für DID-Dokumente oder Key-Rotation — si
 | **Core 001** | Erzeugt Schlüsselmaterial. DID-Encoding wandert hierher. Referenziert dieses Dokument für "wie wird daraus eine DID". |
 | **Core 002** | Signatur-Verifikation nutzt `resolve(did).verificationMethod` statt direktem `didToPublicKeyBytes()`. |
 | **Core 003** | Issuer-Verifikation über `resolve()`. |
-| **Core 004** | QR-Code-Felder (`enc`, `inbox`) dienen als Bootstrap für den Resolver. Werden ab Phase 2 optional. |
+| **Core 004** | QR-Code-Felder (`enc`, `broker`) dienen als Bootstrap für den Resolver. Werden ab Phase 2 optional. |
 | **Sync 005** | Encryption Key Discovery: primär über `resolve(did).keyAgreement`. Die bisherigen Transport-Hacks (enc-Feld, encryptionPublicKey) werden Resolver-Quellen. |
 | **Sync 007** | Broker-Auth und Inbox-Routing über `resolve()`. |
 | **Sync 008** | Profil-Service wird eine DID-Dokument-Quelle neben dem Profil. Neuer Endpoint `/p/{did}/did` für DID-Dokumente. |
