@@ -41,6 +41,15 @@ WoT definiert keine neuen Standards — es kombiniert bestehende zu einem intero
 └─────────────────────────────────────────┘
 ```
 
+## Governance
+
+| Dokument | Beschreibung |
+|----------|-------------|
+| [VERSIONING](VERSIONING.md) | Release-Versionen, Spec-Profile, Wire-Versionen |
+| [CHANGELOG](CHANGELOG.md) | Nachvollziehbare Aenderungen zwischen Releases |
+| [CONFORMANCE](CONFORMANCE.md) | Anforderungen fuer konforme Implementierungen |
+| [Test-Vektoren](test-vectors/) | Normative Krypto-Werte fuer Interoperabilitaets-Tests |
+
 ## Dokumente
 
 ### WoT Core — Das Fundament
@@ -77,6 +86,12 @@ Nicht WoT-spezifisch — jede Local-First-App könnte das nutzen.
 | H02 | [Transactions](04-hmc-extensions/H02-transactions.md) | Gutscheine, Double-Spend-Prevention, SecureContainer |
 | H03 | [Gossip-Propagation](04-hmc-extensions/H03-gossip.md) | Trust-List-Verteilung über Inbox, Forward-Logik |
 
+### Normative Artefakte
+
+| Dokument | Beschreibung |
+|----------|-------------|
+| [Test-Vektoren](test-vectors/) | Kanonische Krypto-Werte fuer Interoperabilitaets-Tests |
+
 ### Forschung
 
 | Dokument | Beschreibung |
@@ -87,7 +102,6 @@ Nicht WoT-spezifisch — jede Local-First-App könnte das nutzen.
 | [Identitäts-Alternativen](research/identitaet-alternativen.md) | Exploration: NextGraph, CryptPad, Argent, Jazz, Passkeys, Hybrid-Vorschlag mit Guardian-Recovery |
 | [Migrations-Roadmap](research/migration-roadmap.md) | Phasenplan für die Überführung der Implementierungen in die Spec |
 | [Positionierung](research/positionierung.md) | Wo wir in der Landschaft stehen — für interne Klarheit und Outreach |
-| [Test-Vektoren](research/test-vektoren.md) | Kanonische Krypto-Werte für Interoperabilitäts-Tests |
 | [Briefing Sebastian](research/briefing-sebastian.md) | Zusammenfassung und offene Fragen für Sebastian |
 | [Interop und Zielgruppe](research/interop-und-zielgruppe.md) | Standards (DIDComm, OpenID4VC), Zielgruppen, eIDAS-Kontext |
 | [DIDComm Migration](research/didcomm-migration.md) | Analyse, Roadmap, fehlende Teile, Sicherheitsanalyse |
@@ -104,7 +118,7 @@ Die Spec ist an keine der beiden Implementierungen gebunden. Abweichungen zwisch
 
 ## Status
 
-Alle Dokumente sind im Status **Entwurf**. Dieses Repository ist ein Research-Repository — die Dokumente werden nach Fertigstellung in ihre jeweiligen Ziel-Repositories umziehen (WoT Core + Sync → `web-of-trust`, RLS Extensions → `real-life-stack`, HMC Extensions → `human-money-core`).
+Alle Dokumente sind im Status **Entwurf**. Dieses Repository ist die neutrale Spezifikationsquelle fuer WoT Core, WoT Sync und die dokumentierten Extensions. Normative Releases werden ueber Git-Tags und GitHub Releases versioniert; Details stehen in [VERSIONING.md](VERSIONING.md).
 
 ## Lizenz
 

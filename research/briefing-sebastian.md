@@ -117,7 +117,8 @@ Du nutzt PBKDF2 mit 100k Runden zusätzlich zum BIP39-PBKDF2. Wir nicht. Wenn St
 02-wot-sync/         ← Sync-Infrastruktur (005-010)
 03-rls-extensions/   ← Unsere Extensions (Badges)
 04-hmc-extensions/   ← Deine Extensions (Trust-Scores, Transactions, Gossip)
-research/            ← Forschung, Test-Vektoren, Interop-Analyse
+test-vectors/        ← Normative Interop-Testvektoren
+research/            ← Forschung, Interop-Analyse, Outreach
 ```
 
 ## Was beide Systeme davon hätten

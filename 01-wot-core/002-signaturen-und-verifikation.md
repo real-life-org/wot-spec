@@ -172,7 +172,7 @@ function verifyJws(jws: string, did: string): boolean {
 
 ## Testvektor
 
-Vollständige, verifizierbare Test-Vektoren mit konkreten Krypto-Werten finden sich in den [Test-Vektoren](../research/test-vektoren.md). Diese enthalten:
+Vollständige, verifizierbare Test-Vektoren mit konkreten Krypto-Werten finden sich in den [Test-Vektoren](../test-vectors/). Diese enthalten:
 
 1. **Identität:** Mnemonic → BIP39 Seed → HKDF → Ed25519 Key → did:key (mit exakten Hex-Werten für jeden Schritt)
 2. **JWS-Signatur:** Payload → JCS → Base64URL → Signing Input → Ed25519-Signatur → JWS Compact (mit verifizierbarer Signatur)
