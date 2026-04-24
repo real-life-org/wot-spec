@@ -120,8 +120,6 @@ Das Profil enthält zwei Bereiche: das **DID-Dokument** (kryptographische Identi
 }
 ```
 
-**Hinweis zur Rückwärtskompatibilität:** In Phase 1 (did:key) wird das `didDocument` vom Profil-Service **on-the-fly aus den bestehenden Feldern generiert**, falls es noch nicht explizit gespeichert ist. Der Client kann auch die flachen Felder (`encryptionPublicKey`, `brokers`) lesen, falls sie noch vorhanden sind — sie werden als Legacy-Felder behandelt und durch das `didDocument` ersetzt wenn beides vorhanden ist.
-
 **Verifikationen (`/p/{did}/v`):**
 
 ```json
@@ -165,14 +163,7 @@ Das Profil enthält zwei Bereiche: das **DID-Dokument** (kryptographische Identi
 | `avatar` | String | Nein | Avatar-Bild (Data-URL oder HTTPS-URL) |
 | `protocols` | Array | Nein | Unterstützte Protokoll-URIs. Ermöglicht Clients zu erkennen, welche Extensions der Peer unterstützt. |
 
-**Legacy-Felder (Phase-1-Übergang):**
-
-| Feld | Typ | Beschreibung |
-|------|-----|-------------|
-| `encryptionPublicKey` | String | X25519 Public Key — wird durch `didDocument.keyAgreement` ersetzt |
-| `brokers` | Array | Broker-URLs — wird durch `didDocument.service` ersetzt |
-
-Wenn sowohl Legacy-Felder als auch `didDocument` vorhanden sind, hat `didDocument` Vorrang.
+Keys und Broker-URLs stehen ausschließlich im `didDocument` (als `keyAgreement` und `service`). Es gibt keine separaten Top-Level-Felder für Encryption Keys oder Broker-URLs.
 
 ### Signatur-Prüfung beim PUT
 

@@ -145,7 +145,7 @@ Inbox-Nachrichtentyp `space-invite`, verschlüsselt mit ECIES:
   "type": "https://web-of-trust.de/protocols/space-invite/1.0",
   "from": "did:key:z6Mk...alice",
   "to": ["did:key:z6Mk...bob"],
-  "created_time": "2026-04-22T10:00:00Z",
+  "created_time": 1776945600,
   "body": {
     "spaceId": "uuid",
     "brokerUrls": ["wss://broker.example.com"],
@@ -258,7 +258,7 @@ Inbox-Nachrichtentyp `key-rotation`, verschlüsselt mit ECIES:
   "type": "https://web-of-trust.de/protocols/key-rotation/1.0",
   "from": "did:key:z6Mk...alice",
   "to": ["did:key:z6Mk...carol"],
-  "created_time": "2026-04-22T10:00:00Z",
+  "created_time": 1776945600,
   "body": {
     "spaceId": "uuid",
     "generation": 4,

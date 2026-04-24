@@ -382,7 +382,7 @@ Alle Nachrichten zwischen Peers (über Broker oder direkt) verwenden das **DIDCo
   "type": "https://web-of-trust.de/protocols/log-entry/1.0",
   "from": "did:key:z6MkhaXgBZDvotDkL5257faiztiGiC2QtKLGpbnnEGta2doK",
   "to": ["did:key:z6MkpTHR8VNsBxYAAWHut2Geadd9jSwuBV8xRoAnwWsdvktH"],
-  "created_time": "2026-04-17T10:00:00Z",
+  "created_time": 1776514800,
   "thid": "550e8400-e29b-41d4-a716-446655440000",
   "pthid": "7a1c2f80-aabb-4cdd-9eef-112233445566",
   "body": {
@@ -400,7 +400,7 @@ Alle Nachrichten zwischen Peers (über Broker oder direkt) verwenden das **DIDCo
 | `type` | URI | Ja | Nachrichtentyp als URI (siehe Tabelle unten) |
 | `from` | DID | Ja | Absender-DID |
 | `to` | Array von DIDs | Bedingt | Empfänger-DID(s). Pflicht bei Inbox-Nachrichten. |
-| `created_time` | ISO 8601 | Ja | Erstellungszeitpunkt (UTC). DIDComm spezifiziert Unix-Timestamps — wir verwenden ISO 8601 für Konsistenz mit W3C VCs und konvertieren an der Boundary. |
+| `created_time` | Integer (Unix-Seconds) | Ja | Erstellungszeitpunkt (UTC Epoch Seconds). DIDComm v2.1 konform. |
 | `thid` | UUID v4 | Optional | Thread-ID. Verknüpft Nachrichten die zu einer Konversation gehören (z.B. Request + Response). Die erste Nachricht eines Threads setzt `thid = id`; Folgenachrichten tragen denselben `thid`. |
 | `pthid` | UUID v4 | Optional | Parent-Thread-ID. Verweist auf einen übergeordneten Thread — für verschachtelte Konversationen (z.B. ein Sub-Protokoll das innerhalb eines größeren Flows läuft). |
 | `body` | Object | Ja | Nachrichteninhalt. Struktur abhängig vom `type`. |
@@ -629,7 +629,7 @@ Neue Nachrichtentypen DÜRFEN von Extensions definiert werden. Ein Client der ei
 
 ### DIDComm-Kompatibilität
 
-Das Nachrichtenformat ist bewusst am DIDComm v2 Plaintext Message Format ausgerichtet. Damit können DIDComm-Bibliotheken unsere Nachrichten lesen und wir können DIDComm-Nachrichten empfangen. Die einzige Abweichung ist `created_time` als ISO 8601 statt Unix-Timestamp — die Konvertierung geschieht an der Boundary zu externen DIDComm-Systemen.
+Das Nachrichtenformat ist **DIDComm v2.1 konform** auf Envelope-Ebene: `id`, `type`, `from`, `to`, `created_time` (Unix-Seconds), `body`, `thid`/`pthid`. DIDComm-Bibliotheken können unsere Plaintext-Messages lesen und routen. Die Verschlüsselung (ECIES statt DIDComm Authcrypt) ist eine bewusste Abweichung auf Crypto-Ebene — sie betrifft nicht die Envelope-Struktur.
 
 Für die Hintergründe dieser Entscheidung siehe [Research: Interop und Zielgruppe](../research/interop-und-zielgruppe.md).
 

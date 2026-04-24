@@ -53,7 +53,7 @@ Zwei Transportwege:
 
 1. **QR-Code (In-Person-Verifikation):** Das `enc`-Feld im QR-Code enthält den Base64URL-kodierten X25519 Public Key. Nach dem Scan ist der Key sofort lokal verfügbar — auch offline. Siehe [Core 004](../01-wot-core/004-verifikation.md).
 
-2. **Profil-Service (Online-Discovery):** Der Key wird im Nutzerprofil unter `encryptionPublicKey` veröffentlicht. Clients die keinen QR-Code-Austausch hatten (z.B. bei Space-Einladungen über Dritte) rufen den Key über den Profil-Service ab. Siehe [Sync 008](008-discovery.md).
+2. **Profil-Service / DID-Dokument (Online-Discovery):** Der Key steht als `keyAgreement` im DID-Dokument, das über den Profil-Service abrufbar ist (siehe [Core 005](../01-wot-core/005-did-resolution.md), [Sync 008](008-discovery.md)). Clients die keinen QR-Code-Austausch hatten (z.B. bei Space-Einladungen über Dritte) rufen das DID-Dokument ab und finden den Key dort.
 
 Clients MÜSSEN den Encryption Key nach dem ersten Empfang lokal cachen. In JWE-Headern (`kid`, `skid`) wird die DID ohne Fragment verwendet — die Auflösung zum X25519-Key geschieht protokollintern über den lokalen Cache, nicht über did:key-Fragment-Auflösung.
 
