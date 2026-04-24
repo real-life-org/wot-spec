@@ -111,11 +111,20 @@ Ein konformer WoT-Client MUSS eine `resolve()`-Funktion implementieren, die für
 ### Anforderungen
 
 - `resolve()` MUSS für alle unterstützten DID-Methoden ein DID-Dokument liefern
-- Das zurückgelieferte Dokument MUSS die Pflichtfelder enthalten (verificationMethod, authentication, assertionMethod, keyAgreement)
 - `resolve()` DARF Netzwerk-Calls machen (Profil-Service, Broker), aber MUSS auch offline funktionieren wenn das DID-Dokument lokal gecacht ist
 - Bei unbekannter DID-Methode: `null` zurückgeben
 - Bei bekannter DID-Methode aber fehlendem Dokument: `null` zurückgeben
-- **Für did:key ohne vorherigen Kontakt:** `resolve()` kann `verificationMethod` und `authentication` aus der DID ableiten (der Ed25519-Key steckt in der DID). Aber `keyAgreement` ist **nicht** aus der DID ableitbar (separater HKDF-Pfad). Verschlüsselung an eine unbekannte DID ist erst möglich nach Erstkonakt (QR-Scan oder Profil-Service-Lookup). Signatur-Verifikation funktioniert immer — dafür reicht der Ed25519-Key aus der DID.
+
+**Zwei DID-Dokument-Zustände:**
+
+Ein DID-Dokument kann in zwei Zuständen vorliegen:
+
+| Zustand | Felder | Wann | Was geht |
+|---|---|---|---|
+| **Signaturfähig** | `verificationMethod`, `authentication`, `assertionMethod` | Immer — für did:key aus der DID ableitbar | Signatur-Verifikation, Broker-Auth |
+| **Kommunikationsfähig** | Zusätzlich: `keyAgreement`, `service` | Erst nach Erstkonakt (QR-Scan oder Profil-Service) | Verschlüsselung, Inbox-Zustellung |
+
+Für did:key ohne vorherigen Kontakt liefert `resolve()` ein **signaturfähiges** Dokument — `keyAgreement` ist leer weil der X25519-Key nicht aus der DID ableitbar ist (separater HKDF-Pfad). Das reicht um Attestations zu **verifizieren**, aber nicht um Nachrichten zu **verschlüsseln**.
 
 ### Wer ruft resolve() auf?
 

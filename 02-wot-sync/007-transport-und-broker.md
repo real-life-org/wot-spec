@@ -459,7 +459,15 @@ Ablauf:
 4. Ausgabe: `{ epk, nonce, ciphertext }` (siehe [Sync 005](005-verschluesselung.md#verschlüsseltes-nachrichtenformat))
 5. Transport als Body der DIDComm-Envelope-Nachricht (type = `inbox/1.0`, `space-invite/1.0`, etc.)
 
-Auf Empfängerseite entschlüsselt der Client zuerst, verifiziert dann die innere JWS-Signatur gegen die DID des Senders. Die Signatur beweist: diese Nachricht kommt wirklich von Alice.
+**Pflichtfelder im inneren JWS-Payload (MUSS):**
+
+Der innere JWS MUSS mindestens enthalten: `from` (Sender-DID), `to` (Empfänger-DID), `type` (Nachrichtentyp), `id` (Message-ID), `created_time` (Unix-Seconds). Der Empfänger MUSS nach dem Entschlüsseln prüfen:
+
+1. JWS-Signatur verifizieren (Sender's Key via resolve())
+2. `to` MUSS die eigene DID sein — verhindert Misdirection (Nachricht an falschen Empfänger umgeleitet)
+3. `from` MUSS mit dem JWS-Signierer übereinstimmen — verhindert Sender-Spoofing
+4. `created_time` MUSS aktuell sein (nicht älter als konfigurierbar, z.B. 24h) — verhindert Replay
+5. `id` DARF nicht bereits verarbeitet worden sein (Message-ID-History) — zweite Replay-Verteidigung
 
 Siehe [Sync 005](005-verschluesselung.md#peer-to-peer-verschlüsselung-ecies) für Details.
 

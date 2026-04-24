@@ -130,6 +130,16 @@ Für die Verifikation werden benötigt:
 
 Kein externer Key-Server oder Zertifikatskette nötig — die DID selbst enthält den Public Key.
 
+### kid-Konsistenz (MUSS)
+
+Falls der JWS-Header ein `kid`-Feld enthält, MUSS der Verifier prüfen dass `kid` mit dem Signierer-Identifier im Payload konsistent ist. Konkret:
+
+- Bei Attestations: `kid` MUSS zur DID in `iss` / `issuer` passen
+- Bei Log-Einträgen: `kid` MUSS zur DID in `authorDid` passen
+- Bei Capabilities: `kid` MUSS zur DID in `issuer` passen
+
+"Passen" bedeutet: die DID im `kid` (ggf. ohne Fragment `#sig-0`) MUSS identisch sein mit der DID im Payload. Andernfalls MUSS der Verifier den JWS ablehnen — ein Mismatch deutet auf Manipulation hin.
+
 ### Algorithmus-Validierung (MUSS)
 
 Verifier MÜSSEN das `alg`-Feld im JWS-Header prüfen **bevor** die Signatur verifiziert wird. Nur `"EdDSA"` ist akzeptiert. Jede andere Angabe MUSS zur sofortigen Ablehnung führen — insbesondere:

@@ -88,8 +88,8 @@ Eindeutigkeit folgt aus den Protokoll-Garantien:
 - `seq` ist monoton aufsteigend pro `deviceId` pro `docId` (siehe [Sync 006](006-sync-protokoll.md))
 - `deviceId` ist per UUID v4 eindeutig pro Device
 - Damit ist `(deviceId, seq)` eindeutig innerhalb eines Dokuments
-- Der Space Key ist pro `docId` (und `keyGeneration`) eindeutig
-- Folge: `(Space Key, Nonce)` kann nicht kollidieren
+- **Jeder Space Content Key wird exakt für eine `docId` verwendet** — ein Space hat genau ein Dokument, ein Dokument hat genau einen Key pro Generation. Derselbe Key wird NIEMALS für mehrere docIds verwendet.
+- Folge: `(Space Content Key, Nonce)` kann nicht kollidieren — die Nonce ist pro docId eindeutig und der Key ist pro docId eindeutig
 
 Voraussetzung: der Client MUSS vor jedem Schreibvorgang den aktuellen `seq`-Stand aus dem Sync-Protokoll abrufen, nicht nur auf lokalen State vertrauen. Bei einer Divergenz (z.B. nach Device-Restore) MUSS der höhere Wert verwendet werden. Siehe [Sync 006](006-sync-protokoll.md#seq-konsistenz-muss).
 
