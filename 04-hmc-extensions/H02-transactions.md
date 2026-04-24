@@ -1,6 +1,6 @@
 # Human Money Extension: Payment
 
-- **Status:** Platzhalter
+- **Status:** Platzhalter (nicht normativ — wird mit Sebastian ausgearbeitet. Custody-Konzept siehe [Sync 010](../02-wot-sync/010-personal-doc.md#extension-hinweis-device-spezifische-felder))
 - **Autoren:** Sebastian Galek
 - **Datum:** 2026-04-13
 

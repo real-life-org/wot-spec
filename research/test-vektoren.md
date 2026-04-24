@@ -238,3 +238,14 @@ Eine konforme Implementierung MUSS:
 4. Für alle JCS-Test-Vektoren dieselben SHA-256 Hashes erzeugen
 
 Wenn alle vier Tests bestehen, ist die kryptographische Basis interoperabel.
+
+## Noch fehlende Test-Vektoren
+
+Folgende Vektoren werden ergänzt sobald die Implementierung auf dem neuen Sync-Stack steht:
+
+- **ECIES** — X25519 ECDH + HKDF + AES-256-GCM (Peer-to-Peer-Verschlüsselung)
+- **Space Content Key** — Deterministische Nonce aus (deviceId, seq), Verschlüsselung/Entschlüsselung
+- **Space Capability** — JWS-Signatur mit spaceCapabilitySigningKey, Broker-Verifikation
+- **DID-Dokument** — resolve() für did:key → DID-Dokument-Generierung
+- **Admin Key Ableitung** — HKDF mit Space-ID im Info-String
+- **SD-JWT VC** (HMC) — Trust-List-Signatur, Disclosure-Hashes, Selective Disclosure

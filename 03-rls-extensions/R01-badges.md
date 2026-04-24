@@ -1,6 +1,6 @@
 # Real Life Extension: Display
 
-- **Status:** Platzhalter
+- **Status:** Platzhalter (nicht normativ — wird ausgearbeitet wenn die Implementierung die Felder nutzt)
 - **Autoren:** Anton Tranelis
 - **Datum:** 2026-04-13
 

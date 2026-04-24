@@ -54,7 +54,7 @@ HKDF-SHA256 mit:
 - **Info:** `"wot/identity/ed25519/v1"`
 - **Ausgabe:** 32 Bytes (Ed25519-Seed)
 
-Ob zusätzliches Key-Stretching vor der HKDF-Ableitung angewendet wird, ist eine offene Frage (siehe Offene Frage 2).
+Kein zusätzliches Key-Stretching — BIP39-PBKDF2 ist ausreichend (siehe [Entschiedene Fragen](#entschiedene-fragen)).
 
 ### Schlüsselpaar
 
@@ -125,19 +125,15 @@ Beide Implementierungen müssen Änderungen vornehmen um dieser Spec zu entsprec
 | **Entropie** | 128 Bit | Konfigurierbar | Mindestens 128 Bit |
 | **Seed-Bytes** | Erste 32 Bytes | Volle 64 Bytes | **Volle 64 Bytes** |
 | **Passphrase** | `""` (leer) | `""` (leer) | `""` (immer leer) |
-| **Stretching** | Keines | PBKDF2 100k Runden | ❓ Mit Sebastian klären |
+| **Stretching** | Keines | PBKDF2 100k Runden | **Keines** (BIP39-PBKDF2 reicht) |
 | **HKDF Info** | `"wot-identity-v1"` | `"human-money-core/ed25519"` | **`"wot/identity/ed25519/v1"`** |
 | **Ed25519** | @noble/ed25519 | ed25519_dalek | Beliebige konforme Impl. |
 | **DID** | did:key + 0xed01 + Base58 | did:key + 0xed01 + Base58 | did:key + 0xed01 + Base58 |
 
-## Offene Fragen
+## Entschiedene Fragen
 
-### 1. Key-Stretching bei der Ableitung
+### Key-Stretching — kein Extra-Stretching
 
-Human Money Core verwendet PBKDF2 mit 100k Runden zusätzlich zum BIP39-PBKDF2. WoT Core verwendet kein zusätzliches Stretching.
+Human Money Core verwendet PBKDF2 mit 100k Runden zusätzlich zum BIP39-PBKDF2. **Die Spec verzichtet darauf.** Begründung: Bei 128 Bit Entropie aus einem korrekten BIP39-Mnemonic sind 2^128 Kombinationen physikalisch nicht durchprobierbar — zusätzliches Stretching bringt keinen realen Sicherheitsgewinn. Die Kosten (~500ms Unlock-Verzögerung auf Mobilgeräten) überwiegen den Nutzen. Sebastian stimmt zu.
 
-**Argumente dafür:** Bei Gutscheinen steht echtes Geld auf dem Spiel — zusätzlicher Brute-Force-Schutz ist sinnvoll. Schützt auch bei schwacher Entropie-Quelle.
-
-**Argumente dagegen:** Bei 128 Bit Entropie aus einem korrekten Mnemonic ist Brute-Force bereits unlösbar. Stretching kostet Performance bei jedem Unlock auf Mobilgeräten.
-
-Diese Entscheidung muss gemeinsam mit Sebastian getroffen werden. Wenn Stretching Teil des Standard-Pfades wird, ändert sich die DID — eine Migration ist nötig.
+**Anpassungsbedarf HMC:** Sebastian entfernt das zusätzliche PBKDF2. Das ändert die abgeleiteten Keys — eine Migration bestehender HMC-Identitäten ist nötig.

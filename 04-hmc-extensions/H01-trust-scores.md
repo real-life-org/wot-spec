@@ -149,10 +149,36 @@ Vertrauenslisten werden via Gossip verteilt:
 - [H03 Gossip-Propagation](H03-gossip.md) — Wie Trust-Lists via Inbox verteilt werden
 - Sebastians ADRs im [humoco-web-of-trust](https://github.com/minutogit/humoco-web-of-trust) — Detailanalysen zu Propagation, Reziprokem Routing, Spieltheorie
 
-## Zu klären
+## SD-JWT VC Validation (MUSS)
 
-- Detaillierte Spec der Trust-Berechnung (mit Sebastian)
-- Spieltheoretische Analyse der Hop-Limits (Sebastian hat Material in docs/research)
-- Integration von `cnf` (Key-Binding): soll der Holder einen eigenen Key haben, oder ist Key-Binding für unseren Use Case überflüssig?
-- ~~Passt das VC-Format für seine SD-JWT-Listen?~~ → Ja, wir nutzen SD-JWT VC (2026-04-19)
-- ~~Gossip-Protokoll: könnte es über unseren Broker/Sync laufen statt nur P2P?~~ → Ja, siehe [H03 Gossip-Propagation](H03-gossip.md)
+Verifier einer Trust-List MÜSSEN mindestens prüfen:
+
+1. **JWT-Signatur** verifizieren (Ed25519, `iss` → DID-Dokument via [Core 005](../01-wot-core/005-did-resolution.md) resolve())
+2. **`vct`** (Verifiable Credential Type) prüfen — MUSS mit dem erwarteten Credential-Typ übereinstimmen
+3. **`exp`** prüfen — nicht abgelaufen
+4. **`iat`** prüfen — liegt in der Vergangenheit
+5. **Disclosure-Hashes** prüfen — jede Disclosure MUSS gegen den korrespondierenden `_sd`-Digest im JWT verifiziert werden
+6. **`_sd_alg`** prüfen — MUSS `sha-256` sein
+
+Detaillierte Validation-Regeln für `cnf` (Key-Binding) und Holder-Verification werden mit Sebastian spezifiziert.
+
+## Sybil-Resistenz
+
+Die multiplikative Trust-Propagation (`Trust = Kante₁ × Kante₂ × ...`) bietet natürliche Dämpfung gegen Sybil-Angriffe: Fake-Accounts die nur über lange Ketten erreichbar sind, akkumulieren nie relevante Trust-Werte. Zusätzlich begrenzen Hop-Limits die maximale Propagationstiefe.
+
+**Normative Mindestanforderung:** Implementierungen MÜSSEN Trust-Werte aus Pfaden mit mehr als `hopLimit` Hops ignorieren. Implementierungen SOLLTEN Trust-Werte unter einem konfigurierbaren Minimum (z.B. 0.01) als Null behandeln.
+
+Formale spieltheoretische Analyse und Anti-Gaming-Regeln werden mit Sebastian vertieft (siehe Sebastians [Research-Dokumente](https://github.com/minutogit/humoco-web-of-trust/tree/main/docs/research)).
+
+## Erledigt
+
+- ~~Passt das VC-Format für seine SD-JWT-Listen?~~ → Ja, SD-JWT VC (2026-04-19)
+- ~~Gossip-Protokoll über Broker/Sync?~~ → Ja, siehe [H03](H03-gossip.md)
+- ~~Key-Stretching?~~ → Nein, BIP39-PBKDF2 reicht (2026-04-23)
+
+## Zu klären (mit Sebastian)
+
+- Detaillierte Spec der Trust-Berechnung
+- `cnf` Key-Binding: soll der Holder einen eigenen Key haben?
+- Formale Anti-Gaming-Regeln
+- Widerruf via StatusList2021 (siehe [Core 003](../01-wot-core/003-attestations.md#widerruf-credential-status))
