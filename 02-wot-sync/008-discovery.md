@@ -120,25 +120,27 @@ Das Profil enthält zwei Bereiche: das **DID-Dokument** (kryptographische Identi
 }
 ```
 
-**Verifikationen (`/p/{did}/v`):**
+**Verifikationen (`/p/{did}/v`)** und **Attestations (`/p/{did}/a`)** sind eigenständige JWS-Ressourcen mit einem **vereinfachten Schema** — sie enthalten kein `didDocument` und kein `profile`, nur die jeweiligen VC-Listen:
 
 ```json
 {
   "did": "did:key:z6Mk...",
+  "version": 5,
   "verifications": [ /* Verification-VCs (JWS-Strings) */ ],
   "updatedAt": "2026-04-22T10:00:00Z"
 }
 ```
 
-**Attestations (`/p/{did}/a`):**
-
 ```json
 {
   "did": "did:key:z6Mk...",
-  "attestations": [ /* Attestation-VCs (JWS-Strings), die der Holder als akzeptiert markiert hat */ ],
+  "version": 12,
+  "attestations": [ /* Attestation-VCs (JWS-Strings), die der Holder veröffentlicht hat */ ],
   "updatedAt": "2026-04-22T10:00:00Z"
 }
 ```
+
+Jede Ressource hat ihre eigene `version` (monoton, unabhängig von der Profil-Version) und wird separat signiert und aktualisiert.
 
 ### Pflichtfelder
 

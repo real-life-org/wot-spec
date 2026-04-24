@@ -115,6 +115,7 @@ Ein konformer WoT-Client MUSS eine `resolve()`-Funktion implementieren, die für
 - `resolve()` DARF Netzwerk-Calls machen (Profil-Service, Broker), aber MUSS auch offline funktionieren wenn das DID-Dokument lokal gecacht ist
 - Bei unbekannter DID-Methode: `null` zurückgeben
 - Bei bekannter DID-Methode aber fehlendem Dokument: `null` zurückgeben
+- **Für did:key ohne vorherigen Kontakt:** `resolve()` kann `verificationMethod` und `authentication` aus der DID ableiten (der Ed25519-Key steckt in der DID). Aber `keyAgreement` ist **nicht** aus der DID ableitbar (separater HKDF-Pfad). Verschlüsselung an eine unbekannte DID ist erst möglich nach Erstkonakt (QR-Scan oder Profil-Service-Lookup). Signatur-Verifikation funktioniert immer — dafür reicht der Ed25519-Key aus der DID.
 
 ### Wer ruft resolve() auf?
 

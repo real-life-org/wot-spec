@@ -338,6 +338,8 @@ Beide Nachrichten müssen mit einem **bestehenden Admin Key** für diesen Space 
 
 Für das persönliche Dokument (Identität, Keys) stellt der User sich seine eigene Capability aus. Das persönliche Dokument hat kein Space Keypair — stattdessen signiert der User die Capability direkt mit seinem **Haupt-Ed25519-Key** (DID). Der Broker prüft: `issuer` = `audience` = authentifizierte DID.
 
+**Unterschied zum Space-Capability-Modell:** Bei Spaces signiert der geteilte `spaceCapabilitySigningKey`, bei Personal Docs signiert der persönliche Ed25519-Key (DID). Das ist eine bewusste Vereinfachung — ein Personal Doc hat genau einen Eigentümer, kein Gruppen-Key-Management nötig. Die Capability-Felder (`spaceId`, `generation`, `validUntil`) werden analog verwendet, aber `spaceId` wird durch die deterministische Personal-Doc-ID ersetzt (siehe [Sync 010](010-personal-doc.md)).
+
 ## Zwei Kanäle
 
 Der Broker bietet zwei Kommunikationskanäle:
@@ -799,14 +801,13 @@ Im P2P-Modus gibt es keinen Broker, der Capabilities prüft. Stattdessen prüft 
 
 Nur erlaubt zwischen Devices desselben Users (gleiche DID im Handshake).
 
-### Verbindung mit Member-Entfernung
+### Bewusste Limitation: Entfernte Members im P2P-Modus
 
-Nach einer Space-Key-Rotation haben entfernte Member den alten Space Private Key noch. Sie können theoretisch in einem P2P-Kontakt einem noch-Member begegnen und sich als Member ausgeben. **Verteidigung:**
+Nach einer Space-Key-Rotation haben entfernte Members den alten Space Content Key und den alten Space Capability Signing Key noch. Am **Broker** scheitern sie sofort — der alte Capability Verification Key ist ungültig. Im **P2P-Modus** (offline, ohne Broker) gibt es keinen autoritativen Membership-Check. Das ist eine **inhärente Limitation des Offline-Betriebs**, nicht ein Protokoll-Fehler.
 
-- Der `sync-request` enthält Log-Einträge mit `keyGeneration`
-- Verbleibende Members schreiben ausschließlich Einträge mit der aktuellen (höchsten) `keyGeneration`
-- Ein entfernter Member könnte nur Einträge mit alter `keyGeneration` produzieren — die werden von anderen verbleibenden Members als "historisch" erkannt und der Peer als potentiell veraltet eingestuft
-- Bei Unsicherheit SOLLEN Members Metadaten zum aktuellen Space-State aus einer vertrauenswürdigen Quelle (anderer Member oder Broker) nachsynchronisieren
+**Bestmögliche Heuristik:** Verbleibende Members schreiben Einträge mit der aktuellen (höchsten) `keyGeneration`. Ein Peer der nur Einträge mit einer älteren `keyGeneration` produzieren kann, ist wahrscheinlich entfernt worden. Clients SOLLEN solche Peers als **verdächtig** markieren und empfangene Daten nicht in den lokalen CRDT-State mergen, bis der Membership-Status über eine vertrauenswürdige Quelle (Broker, anderer Member) bestätigt wurde.
+
+**Was das bedeutet:** Im reinen Offline-P2P-Modus kann ein entfernter Member kurzfristig Daten empfangen die er nicht mehr sehen sollte (mit dem alten Key verschlüsselt). Er kann keine neuen Daten produzieren die von aktiven Members als aktuell akzeptiert werden (falsche keyGeneration). Sobald ein Broker erreichbar ist, wird der Zustand korrigiert.
 
 ### Sync-Ablauf nach Handshake
 

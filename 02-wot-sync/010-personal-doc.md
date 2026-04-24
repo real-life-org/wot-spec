@@ -244,9 +244,9 @@ Der User kann in der App ein Device als deaktiviert markieren. Das setzt `revoke
 
 Nach Deaktivierung:
 
-- Andere Mitglieder und Broker wissen dass diese `deviceId` nicht mehr vertrauenswürdig ist
-- Neue Log-Einträge mit dieser `deviceId` werden von anderen Devices abgelehnt
-- Der Broker lehnt Authentisierung mit dieser `deviceId` ab
+- **Broker:** Lehnt Authentisierung mit dieser `deviceId` ab (via `device-revoke` Nachricht, siehe [Sync 007](007-transport-und-broker.md#device-deaktivierung))
+- **Eigene Geräte:** Sehen die Deaktivierung im Personal Doc (CRDT-Sync zwischen eigenen Devices)
+- **Andere Peers (Space-Members):** Werden **nicht direkt benachrichtigt** — sie prüfen DID-Signaturen, nicht Device-IDs. Im Shared-Seed-Modell hat die Device-ID für andere Peers keine sicherheitsrelevante Bedeutung.
 - Der User SOLLTE alle Space Content Keys rotieren (siehe unten)
 
 ### Limitationen der Device-Deaktivierung (MUSS dokumentiert)
