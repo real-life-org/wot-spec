@@ -23,6 +23,10 @@ Das Format folgt grob [Keep a Changelog](https://keepachangelog.com/en/1.1.0/). 
 - Testvektoren aus `research/` in den normativen Bereich verschoben.
 - README um Governance-, Versionierungs- und Konformitaetsverweise erweitert.
 - Core 004 begruendet explizit, warum Verification-Attestations die QR-Challenge nur ueber die Nonce binden und keinen `challengeHash` verwenden.
+- JSON Schemas fuer die zentralen Core-, Sync- und HMC-Payloads ergaenzt.
+- Zusaetzliche Testvektoren fuer DIDComm-Plaintext-Envelopes, DID-Resolution, ECIES, deterministische Nonces, Log-JWS, Capability-JWS, Admin-Key-Ableitung und SD-JWT VC ergaenzt.
+- Core 002 und Sync 007 klaeren `kid` fuer Space-Capabilities als `wot:space:<spaceId>#cap-<generation>`.
+- Sync 007 macht `typ: "application/didcomm-plain+json"` verpflichtend, damit Plaintext-Envelopes mit etablierten DIDComm-v2-Libraries validierbar sind.
 
 ## v0.1.0-draft - geplant
 

@@ -57,7 +57,7 @@ Alle signierten Daten im Protokoll nutzen JWS Compact Serialization (RFC 7515). 
 
 Unser Nachrichtenformat folgt dem DIDComm v2 Plaintext Message Format (DIF) — auf Envelope-Ebene:
 
-- **Plaintext Envelope** mit `id`, `type`, `from`, `to`, `created_time`, `body`
+- **Plaintext Envelope** mit `id`, `typ`, `type`, `from`, `to`, `created_time`, `body`
 - **Threading** via `thid` / `pthid` für Request/Response und verschachtelte Konversationen
 - **ECIES** (X25519 + HKDF + AES-256-GCM) für 1:1-Verschlüsselung, Sender-Auth über innere JWS-Signatur
 - **Feature-Discovery** über `protocols`-Feld im Profil (kein Laufzeit-Protokoll)
@@ -67,7 +67,7 @@ Unser Nachrichtenformat folgt dem DIDComm v2 Plaintext Message Format (DIF) — 
 Was DIDComm uns konkret bringt:
 
 - **Design-Disziplin** — klare Layer-Trennung, durchdachte Patterns
-- **Library-Kompatibilität** — didcomm-rust (SICPA), didcomm-js für Aries-Ökosystem-Interop
+- **Library-Kompatibilität auf Envelope-Ebene** — `didcomm-node` (SICPA/didcomm-rust) und Veramo DIDComm koennen unsere Plaintext-Messages parsen
 - **Formale Security-Analysen** verfügbar (ACM CCS 2024)
 - **Envelope-Standard-Konformität** — billig zu bekommen, gibt uns Option-Value
 
@@ -127,6 +127,6 @@ research/            ← Forschung, Interop-Analyse, Outreach
 
 **Unsere App** könnte deine Trust-Scores anzeigen — "Alice vertraut Bob zu 85%" neben unseren Pfad-Anzeigen.
 
-**Beide Apps** wären DIDComm-kompatibel — andere dezentrale Projekte könnten mit uns interagieren ohne unser internes Protokoll zu kennen.
+**Beide Apps** hätten einen DIDComm-v2-kompatiblen Plaintext-Envelope — andere dezentrale Projekte könnten Messages zumindest erkennen, routen und über Adapter-Brücken weiterverarbeiten.
 
 Beides auf demselben Vertrauensgraphen. Qualitativ und quantitativ als verschiedene Facetten derselben Beziehungen.

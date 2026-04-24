@@ -2,7 +2,7 @@
 
 Dieser Ordner enthaelt JSON Schemas fuer normative Payloads der Web-of-Trust-Spezifikation.
 
-Status: geplant. Die Schemas werden schrittweise ergaenzt, sobald die jeweiligen Formate in den Spec-Dokumenten stabil genug sind.
+Status: initialer Draft. Die Schemas decken die in den Spec-Dokumenten beschriebenen Kern-Payloads ab und werden mit den Formaten weiter geschaerft.
 
 ## Ziele
 
@@ -10,7 +10,7 @@ Status: geplant. Die Schemas werden schrittweise ergaenzt, sobald die jeweiligen
 - Breaking Changes werden als Schema-Aenderungen sichtbar.
 - Testvektoren koennen automatisch gegen die Schemas geprueft werden.
 
-## Geplante Schemas
+## Vorhandene Schemas
 
 | Schema | Dokument | Zweck |
 |---|---|---|

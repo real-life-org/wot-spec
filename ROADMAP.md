@@ -31,7 +31,7 @@ Erster Interop-Snapshot zwischen mindestens zwei Implementierungen.
 Release-Kriterien:
 
 - TypeScript und Rust bestehen die Core-Testvektoren.
-- ECIES-, DID-Resolution-, Log-Entry- und Capability-Testvektoren sind ergaenzt.
+- DIDComm-Library-Validierung, ECIES-, DID-Resolution-, Log-Entry- und Capability-Testvektoren sind ergaenzt.
 - JSON Schemas fuer Core- und Sync-Objekte sind verfuegbar.
 - `wot-core@0.1` ist praktisch implementierbar ohne offene normative Luecken.
 
@@ -75,6 +75,7 @@ Release-Kriterien:
 ### C. Testvektoren erweitern
 
 - ECIES: X25519 ECDH + HKDF + AES-256-GCM.
+- DIDComm Plaintext Envelope gegen etablierte DIDComm-v2-Libraries validieren.
 - Deterministische Nonce fuer Space/Personal-Doc Payloads.
 - `resolve(did:key)` zu DID-Dokument.
 - Log-Entry JWS.
@@ -92,6 +93,7 @@ Release-Kriterien:
 - Capability Payload.
 - Profile-Service Response.
 - Space Invite und Key Rotation.
+- Trust List Delta.
 
 ### E. HMC-Extension konkretisieren
 

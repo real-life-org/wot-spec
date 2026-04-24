@@ -1,0 +1,16 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://web-of-trust.de/schemas/qr-challenge.schema.json",
+  "title": "WoT QR Challenge",
+  "type": "object",
+  "required": ["did", "name", "enc", "nonce", "ts"],
+  "additionalProperties": false,
+  "properties": {
+    "did": { "type": "string", "pattern": "^did:[a-z0-9]+:.+" },
+    "name": { "type": "string", "minLength": 1 },
+    "enc": { "type": "string", "pattern": "^[A-Za-z0-9_-]+$" },
+    "nonce": { "type": "string", "format": "uuid" },
+    "ts": { "type": "string", "format": "date-time" },
+    "broker": { "type": "string", "pattern": "^(wss?|https?)://.+" }
+  }
+}

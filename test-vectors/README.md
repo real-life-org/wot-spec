@@ -62,8 +62,8 @@ Payload (JSON, bereits JCS-konform):
 ### Schritt 1: Base64URL-Kodierung
 
 ```
-Header:  {"alg":"EdDSA","typ":"JWT"}
-         -> eyJhbGciOiJFZERTQSIsInR5cCI6IkpXVCJ9
+Header:  {"alg":"EdDSA","kid":"did:key:z6Mko3ZEjKJWQAM5nDXKoZ9jErvvxbWbYgS8KJXYpC5Hbu8a#sig-0","typ":"JWT"}
+         -> eyJhbGciOiJFZERTQSIsImtpZCI6ImRpZDprZXk6ejZNa28zWkVqS0pXUUFNNW5EWEtvWjlqRXJ2dnhiV2JZZ1M4S0pYWXBDNUhidThhI3NpZy0wIiwidHlwIjoiSldUIn0
 
 Payload: {"claim":"kann gut programmieren","id":"did:key:z6Mko3ZEjKJWQAM5nDXKoZ9jErvvxbWbYgS8KJXYpC5Hbu8a"}
          -> eyJjbGFpbSI6Imthbm4gZ3V0IHByb2dyYW1taWVyZW4iLCJpZCI6ImRpZDprZXk6ejZNa28zWkVqS0pXUUFNNW5EWEtvWjlqRXJ2dnhiV2JZZ1M4S0pYWXBDNUhidThhIn0
@@ -72,20 +72,20 @@ Payload: {"claim":"kann gut programmieren","id":"did:key:z6Mko3ZEjKJWQAM5nDXKoZ9
 ### Schritt 2: Signing Input
 
 ```
-eyJhbGciOiJFZERTQSIsInR5cCI6IkpXVCJ9.eyJjbGFpbSI6Imthbm4gZ3V0IHByb2dyYW1taWVyZW4iLCJpZCI6ImRpZDprZXk6ejZNa28zWkVqS0pXUUFNNW5EWEtvWjlqRXJ2dnhiV2JZZ1M4S0pYWXBDNUhidThhIn0
+eyJhbGciOiJFZERTQSIsImtpZCI6ImRpZDprZXk6ejZNa28zWkVqS0pXUUFNNW5EWEtvWjlqRXJ2dnhiV2JZZ1M4S0pYWXBDNUhidThhI3NpZy0wIiwidHlwIjoiSldUIn0.eyJjbGFpbSI6Imthbm4gZ3V0IHByb2dyYW1taWVyZW4iLCJpZCI6ImRpZDprZXk6ejZNa28zWkVqS0pXUUFNNW5EWEtvWjlqRXJ2dnhiV2JZZ1M4S0pYWXBDNUhidThhIn0
 ```
 
 ### Schritt 3: Ed25519 Signatur
 
 ```
 Signature (Base64URL):
-KIXws6t8QYMlYL1NsRjeEg0FA25v5xMbRbAR9bR0cURPHfO_Mr5ay5nyou6bIasqgc7OR1vJi0HX4s_1jQaUAA
+Vq9gkh5pPBFYMEz8BRL7yE73jeyY8aS6nYp5OErIyybWw6eJT5NDIoFRgTzuOCvq5gep7K2qGjSpnZBQZxEdAA
 ```
 
 ### Schritt 4: JWS Compact
 
 ```
-eyJhbGciOiJFZERTQSIsInR5cCI6IkpXVCJ9.eyJjbGFpbSI6Imthbm4gZ3V0IHByb2dyYW1taWVyZW4iLCJpZCI6ImRpZDprZXk6ejZNa28zWkVqS0pXUUFNNW5EWEtvWjlqRXJ2dnhiV2JZZ1M4S0pYWXBDNUhidThhIn0.KIXws6t8QYMlYL1NsRjeEg0FA25v5xMbRbAR9bR0cURPHfO_Mr5ay5nyou6bIasqgc7OR1vJi0HX4s_1jQaUAA
+eyJhbGciOiJFZERTQSIsImtpZCI6ImRpZDprZXk6ejZNa28zWkVqS0pXUUFNNW5EWEtvWjlqRXJ2dnhiV2JZZ1M4S0pYWXBDNUhidThhI3NpZy0wIiwidHlwIjoiSldUIn0.eyJjbGFpbSI6Imthbm4gZ3V0IHByb2dyYW1taWVyZW4iLCJpZCI6ImRpZDprZXk6ejZNa28zWkVqS0pXUUFNNW5EWEtvWjlqRXJ2dnhiV2JZZ1M4S0pYWXBDNUhidThhIn0.Vq9gkh5pPBFYMEz8BRL7yE73jeyY8aS6nYp5OErIyybWw6eJT5NDIoFRgTzuOCvq5gep7K2qGjSpnZBQZxEdAA
 ```
 
 ### Verifikation
@@ -239,16 +239,19 @@ Eine konforme Implementierung MUSS:
 2. Den JWS-Testvektor verifizieren koennen (Signatur ueber den Signing Input mit dem Public Key).
 3. Den AES-256-GCM Ciphertext mit dem gegebenen Key und Nonce entschluesseln koennen.
 4. Fuer alle JCS-Test-Vektoren dieselben SHA-256 Hashes erzeugen.
+5. Die Phase-1-Interop-Vektoren in [`phase-1-interop.md`](phase-1-interop.md) reproduzieren koennen.
 
-Wenn alle vier Tests bestehen, ist die kryptographische Basis interoperabel.
+Wenn diese Tests bestehen, ist die kryptographische Basis interoperabel.
 
-## Noch fehlende Test-Vektoren
+## Weitere Test-Vektoren
 
-Folgende Vektoren werden ergaenzt sobald die Implementierung auf dem neuen Sync-Stack steht:
+Die folgenden Vektoren sind in [`phase-1-interop.md`](phase-1-interop.md) dokumentiert:
 
-- **ECIES** - X25519 ECDH + HKDF + AES-256-GCM (Peer-to-Peer-Verschluesselung)
-- **Space Content Key** - Deterministische Nonce aus (deviceId, seq), Verschluesselung/Entschluesselung
-- **Space Capability** - JWS-Signatur mit spaceCapabilitySigningKey, Broker-Verifikation
-- **DID-Dokument** - resolve() fuer did:key -> DID-Dokument-Generierung
-- **Admin Key Ableitung** - HKDF mit Space-ID im Info-String
-- **SD-JWT VC** (HMC) - Trust-List-Signatur, Disclosure-Hashes, Selective Disclosure
+- **DIDComm Plaintext Envelope** - validiert mit etablierten DIDComm-v2-Libraries.
+- **ECIES** - X25519 ECDH + HKDF + AES-256-GCM (Peer-to-Peer-Verschluesselung).
+- **Space Content Key** - Deterministische Nonce aus `(deviceId, seq)`, Verschluesselung/Entschluesselung.
+- **Space Capability** - JWS-Signatur mit `spaceCapabilitySigningKey`, Broker-Verifikation.
+- **DID-Dokument** - `resolve()` fuer `did:key` plus Bootstrap-`keyAgreement`.
+- **Admin Key Ableitung** - HKDF mit Space-ID im Info-String.
+- **Personal Doc Key** - deterministische Document-ID.
+- **SD-JWT VC** (HMC) - Trust-List-Signatur, Disclosure-Hashes, Selective Disclosure.

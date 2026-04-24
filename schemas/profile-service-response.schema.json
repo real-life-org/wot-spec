@@ -1,0 +1,25 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://web-of-trust.de/schemas/profile-service-response.schema.json",
+  "title": "WoT Profile Service Response",
+  "type": "object",
+  "required": ["did", "version", "didDocument", "profile", "updatedAt"],
+  "additionalProperties": false,
+  "properties": {
+    "did": { "type": "string", "pattern": "^did:[a-z0-9]+:.+" },
+    "version": { "type": "integer", "minimum": 0 },
+    "didDocument": { "type": "object" },
+    "profile": {
+      "type": "object",
+      "required": ["name"],
+      "additionalProperties": true,
+      "properties": {
+        "name": { "type": "string", "minLength": 1 },
+        "bio": { "type": "string" },
+        "avatar": { "type": "string" },
+        "protocols": { "type": "array", "items": { "type": "string", "format": "uri" } }
+      }
+    },
+    "updatedAt": { "type": "string", "format": "date-time" }
+  }
+}

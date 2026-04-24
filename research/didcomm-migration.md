@@ -1,6 +1,6 @@
 # DIDComm v2 Migration — Analyse und Roadmap
 
-*Stand: 19. April 2026*
+*Stand: 24. April 2026*
 
 ## Was ist DIDComm?
 
@@ -20,7 +20,7 @@ Kernprinzipien:
 DIDComm ist ein durchdachter Stack mit klarer Layer-Trennung (Envelope / Protokoll / Anwendung), formaler Security-Analyse (ACM CCS 2024) und einem durchdachten Threading-Modell. Wer DIDComm-konform spezifiziert, vermeidet viele typische Fehler.
 
 **Library-Kompatibilität für die SSI-Nische:**
-`didcomm-rust` (SICPA) und `didcomm-js` existieren und werden gepflegt. Wer DIDComm-Envelope spricht, kann direkt mit diesen Bibliotheken arbeiten und ist mit dem Aries/Hyperledger SSI-Ökosystem (Indicio, Procivis, Lissi, esatus) interoperabel.
+`didcomm-rust`/`didcomm-node` (SICPA) und Veramo DIDComm existieren und werden gepflegt. Unser Anspruch ist aktuell enger: WoT-Plaintext-Envelopes sollen von diesen Bibliotheken geparst und geroutet werden koennen. Verschluesselung und signierte WoT-Envelopes beanspruchen derzeit keine volle DIDComm-Wire-Kompatibilitaet.
 
 **Architektonische Übereinstimmung:**
 DIDComm teilt unsere Werte: P2P, offline-fähig, dezentral, keine zentrale Autorität. Das macht DIDComm zu einem natürlichen Envelope-Standard für uns.
@@ -56,7 +56,7 @@ Wenn wir auf diesen Ebenen die richtigen Wahlen treffen, sind wir auch dann inte
 
 ### Was wir daraus konkret ableiten
 
-- **Envelope-Ebene: DIDComm-kompatibel bleiben** — billig, gibt uns Aries-Nischen-Interop und Design-Disziplin
+- **Envelope-Ebene: DIDComm-Plaintext-kompatibel bleiben** — billig, gibt uns Aries-Nischen-Interop und Design-Disziplin
 - **Format-Ebene: SD-JWT VC adoptieren** — für Trust-Lists (H01) und als Option für Attestations. Das ist der strategisch wichtige Interop-Baustein.
 - **NICHT verfolgen: Forward Routing, Mediator Coordination, Pickup Protocol** — das sind Aries-spezifische Protokolle für Enterprise-Mediator-Szenarien, die uns Komplexität einbringen ohne klaren Gewinn für unser P2P-Modell.
 - **NICHT verfolgen als Haupt-Pfad: Issue Credential 3.0, Present Proof 3.0 über DIDComm** — hier läuft der Mainstream über OpenID4VC. Wenn wir breitere Exchange-Interop wollen, wäre OpenID4VCI/VP strategisch wichtiger.
@@ -65,7 +65,7 @@ Wenn wir auf diesen Ebenen die richtigen Wahlen treffen, sind wir auch dann inte
 
 DIDComm ist aktiv gepflegt (v2.1 Work in Progress), hat formale Sicherheitsanalyse und eine etablierte Nische im SSI-Sektor. Wenn das dezentrale Ökosystem außerhalb des staatlich geprägten eIDAS-Pfads wächst, **könnte** DIDComm weiter an Bedeutung gewinnen. Das ist keine Gewissheit, aber eine plausible Wette.
 
-Gleichzeitig: selbst wenn DIDComm nicht zum breiten Standard wird, verlieren wir wenig — unser Envelope-Overhead (~300 Bytes bei Authcrypt, JWE JSON Serialization statt Compact) ist gering, und unsere echte Interop hängt an den Format-Standards, nicht am Envelope.
+Gleichzeitig: selbst wenn DIDComm nicht zum breiten Standard wird, verlieren wir wenig — der Plaintext-Envelope ist klein, und unsere echte Interop hängt an den Format-Standards, nicht am Envelope.
 
 ## Aktueller Stand unserer Kompatibilität
 
@@ -75,8 +75,8 @@ Wir verfolgen **selektive DIDComm-Compliance** auf Envelope- und Utility-Ebene, 
 
 | Schicht | Status | Details |
 |---|---|---|
-| Plaintext Message Format | Kompatibel | `id`, `type` (URI), `from`, `to`, `body` ([Sync 007](../02-wot-sync/007-transport-und-broker.md#message-envelope-didcomm-kompatibel)) |
-| JWS Signaturen | Kompatibel | Identisch mit DIDComm Signed Messages ([Core 002](../01-wot-core/002-signaturen-und-verifikation.md)) |
+| Plaintext Message Format | Library-validiert kompatibel | `id`, `typ`, `type` (URI), `from`, `to`, `created_time`, `body` ([Sync 007](../02-wot-sync/007-transport-und-broker.md#message-envelope-didcomm-kompatibel)); validiert mit `didcomm-node` und `@veramo/did-comm` |
+| JWS Signaturen | WoT-Profil | JWS Compact fuer persistente WoT-Daten. Signierte WoT-Envelopes sind strukturell an DIDComm angelehnt, aber noch nicht als DIDComm Signed Messages library-validiert. |
 | Krypto-Primitive | Kompatibel | X25519, AES-256-GCM, Ed25519 |
 | Verschlüsselung | Eigenes Profil (ECIES) | ECIES statt DIDComm Authcrypt (ECDH-1PU). Begründung: siehe [Sync 005](../02-wot-sync/005-verschluesselung.md#warum-ecies-statt-didcomm-authcrypt) |
 | Type-URIs | Kompatibel | `https://web-of-trust.de/protocols/.../1.0` |
@@ -257,22 +257,21 @@ Für uns relevant: die Schwächen betreffen hauptsächlich den Forward/Routing-F
 
 ### Roadmap
 
-**Phase 1 (abgeschlossen): Envelope-Kompatibilität**
-- Plaintext Message Format ✅
+**Phase 1 (aktueller Stand): Plaintext-Envelope-Kompatibilitaet**
+- Plaintext Message Format mit `typ: "application/didcomm-plain+json"` ✅
 - Type-URIs ✅
-- JWS Signaturen ✅
-- Authcrypt (ECDH-1PU) ✅
-
-**Phase 2 (abgeschlossen 2026-04-19): Envelope-Vollständigkeit**
-- JWE-Verpackung spezifizieren ✅
 - Threading-Felder (`thid`, `pthid`) ✅
-- Trust Ping 2.0 ✅
-- Discover Features 2.0 ✅
+- Interop-Test gegen SICPA `didcomm-node` und Veramo DIDComm ✅
 
-**Phase 3 (optional, nicht blockierend):**
+**Nicht als DIDComm-Wire-Kompatibilitaet beansprucht:**
+- JWE/Authcrypt — bewusst durch ECIES ersetzt
+- DIDComm Signed Messages — WoT nutzt JWS Compact, aber erhebt erst nach eigenen Library-Tests einen Kompatibilitaetsanspruch
+- Trust Ping / Discover Features — durch Broker-Presence und Profil-`protocols` ersetzt
+
+**Phase 2 (optional, nicht blockierend):**
 - Out-of-Band 2.0 als QR-Code-Format in Core 004 (Interop-Baustein, klein)
 - Problem Report 2.0 (strukturierte Fehler)
-- Interop-Test gegen SICPA `didcomm-rust`
+- Library-validierte Signed-Envelope-Testvektoren, falls wir DIDComm-Signed-Kompatibilitaet beanspruchen wollen
 - DID-Dokumente mit Service-Endpoints (falls externe DIDComm-Agenten adressiert werden sollen)
 
 **Bewusst nicht auf der Roadmap:**

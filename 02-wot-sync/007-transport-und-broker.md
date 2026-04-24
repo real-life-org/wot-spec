@@ -11,7 +11,7 @@ Dieses Dokument spezifiziert wie Daten zwischen Peers transportiert werden und w
 ## Referenzierte Standards
 
 - **WebSocket** (RFC 6455) — Primärer Transportkanal
-- **DIDComm v2** (DIF) — Nachrichtenformat und Verschlüsselung
+- **DIDComm v2** (DIF) — Plaintext Message Envelope (keine DIDComm-JWE/Authcrypt-Verschluesselung)
 - **Ed25519** (RFC 8032) — Signatur im Message Envelope
 - **ECIES** (siehe [Sync 005](005-verschluesselung.md)) — 1:1-Verschlüsselung für Inbox-Nachrichten
 
@@ -260,7 +260,7 @@ Eine Capability ist ein JWS, signiert mit dem **Space Private Key**:
 | `issuedAt` | ISO 8601 | Ja | Erstellungszeitpunkt |
 | `validUntil` | ISO 8601 | Ja | Ablaufzeitpunkt — nach diesem Moment ist die Capability ungültig |
 
-Der JWS wird mit dem Space Private Key signiert. Der `kid` im JWS-Header ist die Space-ID. Der Broker verifiziert mit dem aktuellen Space Public Key.
+Der JWS wird mit dem Space Private Key signiert. Der `kid` im JWS-Header MUSS den Space-Kontext und die Capability-Key-Generation referenzieren: `wot:space:<spaceId>#cap-<generation>`. Der Broker verifiziert mit dem aktuellen Space Capability Verification Key fuer genau diesen Space und diese Generation.
 
 **Empfohlene Gültigkeitsdauer:**
 
@@ -374,13 +374,14 @@ Broker: Alle Geräte haben bestätigt → Nachricht löschen
 
 ## Message Envelope (DIDComm-kompatibel)
 
-Alle Nachrichten zwischen Peers (über Broker oder direkt) verwenden das **DIDComm v2 Plaintext Message Format** ([DIF DIDComm Messaging v2](https://identity.foundation/didcomm-messaging/spec/v2.0/)). Das stellt Interoperabilität mit dem DIDComm-Ökosystem sicher.
+Alle Nachrichten zwischen Peers (über Broker oder direkt) verwenden das **DIDComm v2 Plaintext Message Format** ([DIF DIDComm Messaging v2](https://identity.foundation/didcomm-messaging/spec/v2.0/)). Das stellt Interoperabilität auf der Envelope-Ebene sicher: etablierte DIDComm-v2-Libraries können WoT-Plaintext-Messages parsen und routen. Die Verschlüsselung bleibt WoT-spezifisch (ECIES statt DIDComm-JWE/Authcrypt).
 
 ### Plaintext Message
 
 ```json
 {
   "id": "550e8400-e29b-41d4-a716-446655440000",
+  "typ": "application/didcomm-plain+json",
   "type": "https://web-of-trust.de/protocols/log-entry/1.0",
   "from": "did:key:z6MkhaXgBZDvotDkL5257faiztiGiC2QtKLGpbnnEGta2doK",
   "to": ["did:key:z6MkpTHR8VNsBxYAAWHut2Geadd9jSwuBV8xRoAnwWsdvktH"],
@@ -399,6 +400,7 @@ Alle Nachrichten zwischen Peers (über Broker oder direkt) verwenden das **DIDCo
 | Feld | Typ | Pflicht | Beschreibung |
 |------|-----|---------|-------------|
 | `id` | UUID v4 | Ja | Eindeutige Nachrichten-ID |
+| `typ` | String | Ja | Media Type. Für Plaintext Messages MUSS `application/didcomm-plain+json` gesetzt sein. |
 | `type` | URI | Ja | Nachrichtentyp als URI (siehe Tabelle unten) |
 | `from` | DID | Ja | Absender-DID |
 | `to` | Array von DIDs | Bedingt | Empfänger-DID(s). Pflicht bei Inbox-Nachrichten. |
@@ -437,9 +439,9 @@ Der Envelope wird NUR dann als **Signed Message** verpackt, wenn der Body nicht 
 | `space-invite`, `key-rotation`, `member-update` | Innerer JWS im Klartext-Body + ECIES-Wrap | Encrypted (ECIES) |
 | `state-digest`, `state-digest-request` | Envelope-JWS (ephemer) | Signed |
 
-### Signatur (DIDComm Signed Message)
+### Signatur (WoT Envelope-JWS)
 
-Wenn ein Envelope signiert wird, geschieht das als **JWS Compact Serialization** — identisch mit dem DIDComm Signed Message Format und unseren Attestations ([Core 002](../01-wot-core/002-signaturen-und-verifikation.md)):
+Wenn ein Envelope signiert wird, geschieht das als **JWS Compact Serialization** — identisch mit unseren Attestations ([Core 002](../01-wot-core/002-signaturen-und-verifikation.md)) und strukturell an DIDComm Signed Messages angelehnt. Anders als beim Plaintext Envelope beanspruchen WoT Envelope-JWS derzeit keine Library-validierte DIDComm-Signed-Message-Kompatibilitaet; dieser Anspruch wird erst mit eigenen Signed-Envelope-Testvektoren erhoben.
 
 1. Plaintext Message mit JCS kanonisieren (RFC 8785)
 2. JCS-Bytes als Base64URL kodieren
@@ -639,7 +641,7 @@ Neue Nachrichtentypen DÜRFEN von Extensions definiert werden. Ein Client der ei
 
 ### DIDComm-Kompatibilität
 
-Das Nachrichtenformat ist **DIDComm v2.1 konform** auf Envelope-Ebene: `id`, `type`, `from`, `to`, `created_time` (Unix-Seconds), `body`, `thid`/`pthid`. DIDComm-Bibliotheken können unsere Plaintext-Messages lesen und routen. Die Verschlüsselung (ECIES statt DIDComm Authcrypt) ist eine bewusste Abweichung auf Crypto-Ebene — sie betrifft nicht die Envelope-Struktur.
+Das Nachrichtenformat ist **DIDComm v2.1 konform** auf Envelope-Ebene: `id`, `typ`, `type`, `from`, `to`, `created_time` (Unix-Seconds), `body`, `thid`/`pthid`. DIDComm-Bibliotheken können unsere Plaintext-Messages lesen und routen. Die Verschlüsselung (ECIES statt DIDComm Authcrypt) ist eine bewusste Abweichung auf Crypto-Ebene — sie betrifft nicht die Envelope-Struktur.
 
 Für die Hintergründe dieser Entscheidung siehe [Research: Interop und Zielgruppe](../research/interop-und-zielgruppe.md).
 

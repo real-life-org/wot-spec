@@ -35,6 +35,7 @@ Im Message Envelope (siehe [Sync 007](../02-wot-sync/007-transport-und-broker.md
 ```json
 {
   "id": "uuid",
+  "typ": "application/didcomm-plain+json",
   "type": "https://web-of-trust.de/protocols/trust-list-delta/1.0",
   "from": "did:key:z6Mk...alice",
   "to": ["did:key:z6Mk...bob"],

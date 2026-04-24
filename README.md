@@ -18,7 +18,7 @@ WoT definiert keine neuen Standards — es kombiniert bestehende zu einem intero
 |----------|-----------|
 | [DID](https://www.w3.org/TR/did-core/) (W3C) | Dezentrale Identität (DID-Methoden-agnostisch, Phase 1: `did:key`) |
 | [Verifiable Credentials](https://www.w3.org/TR/vc-data-model-2.0/) (W3C) | Signierte Aussagen (Attestations) |
-| [DIDComm v2.1](https://identity.foundation/didcomm-messaging/spec/v2.1/) (DIF) | Message-Envelope-Struktur (selektive Kompatibilität, siehe [didcomm-migration](research/didcomm-migration.md)) |
+| [DIDComm v2.1](https://identity.foundation/didcomm-messaging/spec/v2.1/) (DIF) | Plaintext-Message-Envelope-Struktur (selektive, library-validierte Kompatibilität; keine DIDComm-JWE/Authcrypt-Kompatibilität) |
 | [Ed25519](https://datatracker.ietf.org/doc/html/rfc8032) (RFC 8032) | Signaturen |
 | [JWS](https://datatracker.ietf.org/doc/html/rfc7515) (RFC 7515) | Signaturformat |
 | [JCS](https://datatracker.ietf.org/doc/html/rfc8785) (RFC 8785) | Kanonisierung |
@@ -52,7 +52,7 @@ WoT definiert keine neuen Standards — es kombiniert bestehende zu einem intero
 | [CHANGELOG](CHANGELOG.md) | Nachvollziehbare Aenderungen zwischen Releases |
 | [CONFORMANCE](CONFORMANCE.md) | Anforderungen fuer konforme Implementierungen |
 | [CONTRIBUTING](CONTRIBUTING.md) | Beitragsregeln und PR-Erwartungen |
-| [Test-Vektoren](test-vectors/) | Normative Krypto-Werte fuer Interoperabilitaets-Tests |
+| [Test-Vektoren](test-vectors/) | Normative Krypto-Werte und DIDComm-Envelope-Validierung fuer Interoperabilitaets-Tests |
 
 ## Dokumente
 

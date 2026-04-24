@@ -142,6 +142,7 @@ Inbox-Nachrichtentyp `space-invite`, verschlüsselt mit ECIES:
 ```json
 {
   "id": "uuid",
+  "typ": "application/didcomm-plain+json",
   "type": "https://web-of-trust.de/protocols/space-invite/1.0",
   "from": "did:key:z6Mk...alice",
   "to": ["did:key:z6Mk...bob"],
@@ -255,6 +256,7 @@ Inbox-Nachrichtentyp `key-rotation`, verschlüsselt mit ECIES:
 ```json
 {
   "id": "uuid",
+  "typ": "application/didcomm-plain+json",
   "type": "https://web-of-trust.de/protocols/key-rotation/1.0",
   "from": "did:key:z6Mk...alice",
   "to": ["did:key:z6Mk...carol"],

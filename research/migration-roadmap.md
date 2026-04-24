@@ -20,9 +20,9 @@ Die Spec ist in den letzten Wochen (vor allem seit dem 18./19.04.2026) substanzi
 | Core 002 Signaturen | v1.0 (alg-strict, JCS-Test-Vektoren) | Teilweise konform | Zu prüfen | Klein |
 | Core 003 Attestations | v1.0 (W3C VC 2.0) | Teilweise konform | Teilweise konform | Mittel |
 | Core 004 Verifikation | v1.0 (QR-Challenge-Response) | Vorhanden | Zu prüfen | Klein |
-| Sync 005 Verschlüsselung | v1.0+ (JWE JSON, Constant-Time, Det-Nonce aus seq) | Abweichend (ECIES, zufällige Nonce) | Abweichend (SecureContainer, ChaCha20) | Groß |
+| Sync 005 Verschlüsselung | v1.0+ (ECIES, Constant-Time, Det-Nonce aus seq) | Teilweise (ECIES vorhanden, Nonce/Key-Pfade pruefen) | Abweichend (SecureContainer, ChaCha20) | Mittel |
 | Sync 006 Sync-Protokoll | v1.0+ (Multi-Source-Sync) | Append-Only-Logs da, Multi-Source fehlt | Eigenes Modell (Gutschein-Transfer) | Mittel |
-| Sync 007 Transport | v1.0+ (Threading, Trust Ping, Discover Features, Envelope-Policy, Capability-TTL, Nonce-History) | Teilweise | Eigenes (L2-Server) | Groß |
+| Sync 007 Transport | v1.0+ (DIDComm-Plaintext-Envelope mit `typ`, Threading, Envelope-Policy, Capability-TTL, Nonce-History) | Teilweise | Eigenes (L2-Server) | Mittel |
 | Sync 008 Discovery | v1.0 (Profile-Service, Broker-Discovery) | Läuft (wot-profiles) | Zu prüfen | Klein |
 | Sync 009 Gruppen | v1.0 (Einladungen, Key-Rotation) | Implementiert | Nicht direkt anwendbar | Mittel |
 | Sync 010 Personal Doc | v1.0 (neu, 2026-04-19) | Fehlt | Fehlt | Groß |
@@ -79,15 +79,15 @@ Die Spec ist in den letzten Wochen (vor allem seit dem 18./19.04.2026) substanzi
 **Spec-Dokumente:**
 
 - Sync 005 (Verschlüsselung)
-  - JWE JSON Serialization für Authcrypt
+  - ECIES statt DIDComm-JWE/Authcrypt
   - Constant-Time-MUSS
   - Deterministische Nonce aus `(deviceId, seq)` für Gruppen-Verschlüsselung
 - Sync 006 (Sync-Protokoll)
   - Multi-Source-Sync für Censorship-Detection
 - Sync 007 (Transport)
-  - DIDComm-konformer Envelope mit `thid`/`pthid` Threading
-  - Trust Ping 2.0
-  - Discover Features 2.0
+  - DIDComm-v2-kompatibler Plaintext-Envelope mit `typ: "application/didcomm-plain+json"` und `thid`/`pthid` Threading
+  - Broker-Presence statt Trust Ping 2.0
+  - Profil-`protocols` statt Discover Features 2.0
   - Envelope-Signatur-Policy (wann Signed Message, wann nicht)
   - Capability `validUntil` Pflichtfeld
   - Nonce-History (24h) beim Broker
@@ -101,10 +101,10 @@ Die Spec ist in den letzten Wochen (vor allem seit dem 18./19.04.2026) substanzi
 
 **Impl-Aktionen WoT Core (TypeScript):**
 
-- Authcrypt-Implementierung umbauen auf ECDH-1PU mit JWE JSON Output
+- ECIES-Implementierung auf Spec-Vektoren pruefen
 - Nonce-Generator anpassen (aus seq ableiten bei Gruppen-Verschlüsselung)
 - DIDComm-Envelope mit Threading-Feldern ausstatten
-- Trust-Ping-Handler, Discover-Features-Handler bauen
+- Broker-Presence und Profil-Discovery nachziehen
 - Broker-Code: Capability-TTL-Check, Nonce-History
 - Multi-Source-Sync-Logik im Client
 - Personal-Doc-Modul neu

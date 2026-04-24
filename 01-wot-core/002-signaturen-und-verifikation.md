@@ -43,7 +43,9 @@ BASE64URL(header) . BASE64URL(payload) . BASE64URL(signature)
 { "alg": "EdDSA", "typ": "<kontextspezifisch>", "kid": "<DID-URL>" }
 ```
 
-`kid` (Key Identifier) ist **PFLICHT** in jedem WoT-JWS. Es identifiziert welcher konkrete Key die Signatur erzeugt hat — als DID-URL mit Fragment (z.B. `did:key:z6Mk...#sig-0`). Der Verifier nutzt `kid` um über `resolve()` ([Core 005](005-did-resolution.md)) den richtigen Public Key zu finden. In Phase 1 ist das Fragment immer `#sig-0` (einziger Key). In Phase 2 (Per-Device-Keys) zeigt es auf den spezifischen Device-Key.
+`kid` (Key Identifier) ist **PFLICHT** in jedem WoT-JWS. Es identifiziert welcher konkrete Key die Signatur erzeugt hat. Fuer DID-gebundene Signaturen ist `kid` eine DID-URL mit Fragment (z.B. `did:key:z6Mk...#sig-0`). Der Verifier nutzt `kid` um ueber `resolve()` ([Core 005](005-did-resolution.md)) den richtigen Public Key zu finden. In Phase 1 ist das Fragment immer `#sig-0` (einziger Key). In Phase 2 (Per-Device-Keys) zeigt es auf den spezifischen Device-Key.
+
+Fuer nicht-DID-gebundene Signaturen DARF `kid` ein kontextspezifischer Key-Identifier sein. Beispiel: Space-Capabilities werden mit dem `spaceCapabilitySigningKey` signiert; ihr `kid` ist `wot:space:<spaceId>#cap-<generation>` und wird gegen den beim Broker registrierten Space Capability Verification Key geprueft, nicht ueber DID-Resolution.
 
 Das `typ`-Feld identifiziert den Inhalt des JWS. Kontextspezifische Werte:
 
@@ -52,7 +54,7 @@ Das `typ`-Feld identifiziert den Inhalt des JWS. Kontextspezifische Werte:
 | Attestation (VC 2.0) | `"vc+jwt"` | W3C VC-JOSE-COSE Standard. Payload enthält JWT Claims (`iss`, `sub`, `nbf`) neben VC-Feldern. |
 | SD-JWT VC (Trust-Lists) | `"vc+sd-jwt"` | IETF SD-JWT VC Draft |
 | Capability | `"wot-capability+jwt"` | WoT-spezifisch |
-| DIDComm-Envelope | `"application/didcomm-signed+json"` | DIDComm v2.1 |
+| WoT Envelope-JWS | `"wot-envelope+jwt"` | WoT-spezifischer signierter Envelope, strukturell an DIDComm angelehnt |
 | Log-Eintrag, interne Nachricht | `typ` kann weggelassen werden | Protokoll-intern |
 
 **Attestations verwenden `vc+jwt`** und enthalten sowohl W3C VC 2.0 Felder als auch JWT Registered Claims (siehe [Core 003](003-attestations.md)). Die JWT Claims sind redundant zu den VC-Feldern, stellen aber sicher dass Standard-JWT-Bibliotheken und externe VC-Verifier die Attestations korrekt parsen können.
@@ -117,13 +119,14 @@ Ein einheitliches Encoding vereinfacht die Implementierung und eliminiert Konver
 Für die Verifikation werden benötigt:
 
 1. Die signierten Daten (oder deren JWS-Repräsentation)
-2. Die DID des Signierers
+2. Das `kid` aus dem JWS-Header
+3. Den zum `typ` passenden Key-Resolver (DID-Resolution fuer DID-gebundene Signaturen, Space-Key-Registry fuer Space-Capabilities)
 
 **Ablauf:**
 
 1. JWS in drei Segmente splitten: `headerB64.payloadB64.signatureB64`
 2. Header dekodieren und `alg`-Feld prüfen — siehe Algorithmus-Validierung unten
-3. Ed25519 Public Key aus der DID extrahieren: `did:key:z...` → Multibase dekodieren → Multicodec-Präfix `0xed01` entfernen → 32 Bytes Public Key
+3. Public Key ueber `kid` aufloesen: DID-URL → `resolve(did)` → `verificationMethod`; Space-Capability → registrierter Space Capability Verification Key
 4. Signing Input: **exakt die empfangenen Bytes** `headerB64 + "." + payloadB64` — keine Re-Serialisierung, keine Re-Kanonisierung
 5. Signatur aus Base64URL dekodieren
 6. Ed25519-Signatur gegen Signing Input und Public Key verifizieren
@@ -134,13 +137,13 @@ Kein externer Key-Server oder Zertifikatskette nötig — die DID selbst enthäl
 
 ### kid-Konsistenz (MUSS)
 
-Falls der JWS-Header ein `kid`-Feld enthält, MUSS der Verifier prüfen dass `kid` mit dem Signierer-Identifier im Payload konsistent ist. Konkret:
+Der Verifier MUSS pruefen, dass `kid` mit dem Signierer- oder Kontext-Identifier im Payload konsistent ist. Konkret:
 
 - Bei Attestations: `kid` MUSS zur DID in `iss` / `issuer` passen
-- Bei Log-Einträgen: `kid` MUSS zur DID in `authorDid` passen
-- Bei Capabilities: `kid` MUSS zur DID in `issuer` passen
+- Bei Log-Einträgen: `kid` MUSS zur DID in `authorKid` passen
+- Bei Space-Capabilities: `kid` MUSS `spaceId` und `generation` referenzieren (Format: `wot:space:<spaceId>#cap-<generation>`)
 
-"Passen" bedeutet: die DID im `kid` (ggf. ohne Fragment `#sig-0`) MUSS identisch sein mit der DID im Payload. Andernfalls MUSS der Verifier den JWS ablehnen — ein Mismatch deutet auf Manipulation hin.
+"Passen" bedeutet bei DID-gebundenen Signaturen: die DID im `kid` (ohne Fragment) MUSS identisch sein mit der DID im Payload. Bei Space-Capabilities MUSS der Space-Kontext im `kid` mit dem Payload uebereinstimmen. Andernfalls MUSS der Verifier den JWS ablehnen — ein Mismatch deutet auf Manipulation hin.
 
 ### Algorithmus-Validierung (MUSS)
 

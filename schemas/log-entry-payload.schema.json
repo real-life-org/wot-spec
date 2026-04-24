@@ -1,0 +1,17 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://web-of-trust.de/schemas/log-entry-payload.schema.json",
+  "title": "WoT Log Entry Payload",
+  "type": "object",
+  "required": ["seq", "deviceId", "docId", "authorKid", "keyGeneration", "data", "timestamp"],
+  "additionalProperties": false,
+  "properties": {
+    "seq": { "type": "integer", "minimum": 0 },
+    "deviceId": { "type": "string", "format": "uuid" },
+    "docId": { "type": "string", "format": "uuid" },
+    "authorKid": { "type": "string", "pattern": "^did:[a-z0-9]+:.+#.+$" },
+    "keyGeneration": { "type": "integer", "minimum": 0 },
+    "data": { "type": "string", "pattern": "^[A-Za-z0-9_-]+$" },
+    "timestamp": { "type": "string", "format": "date-time" }
+  }
+}

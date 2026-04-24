@@ -1,0 +1,42 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://web-of-trust.de/schemas/attestation-vc-payload.schema.json",
+  "title": "WoT Attestation VC Payload",
+  "type": "object",
+  "required": ["@context", "type", "issuer", "credentialSubject", "validFrom", "iss", "sub", "nbf"],
+  "additionalProperties": true,
+  "properties": {
+    "@context": {
+      "type": "array",
+      "contains": { "const": "https://www.w3.org/ns/credentials/v2" },
+      "items": { "type": "string" }
+    },
+    "type": {
+      "type": "array",
+      "allOf": [
+        { "contains": { "const": "VerifiableCredential" } },
+        { "contains": { "const": "WotAttestation" } }
+      ],
+      "items": { "type": "string" }
+    },
+    "issuer": { "type": "string", "pattern": "^did:[a-z0-9]+:.+" },
+    "credentialSubject": {
+      "type": "object",
+      "required": ["id", "claim"],
+      "additionalProperties": true,
+      "properties": {
+        "id": { "type": "string", "minLength": 1 },
+        "claim": { "type": "string", "minLength": 1 }
+      }
+    },
+    "validFrom": { "type": "string", "format": "date-time" },
+    "validUntil": { "type": "string", "format": "date-time" },
+    "id": { "type": "string", "minLength": 1 },
+    "credentialStatus": { "type": "object" },
+    "iss": { "type": "string", "pattern": "^did:[a-z0-9]+:.+" },
+    "sub": { "type": "string", "minLength": 1 },
+    "nbf": { "type": "integer", "minimum": 0 },
+    "exp": { "type": "integer", "minimum": 0 },
+    "jti": { "type": "string", "minLength": 1 }
+  }
+}

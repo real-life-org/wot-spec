@@ -31,7 +31,7 @@ Eine Implementierung ist `wot-core@0.1`-konform, wenn sie die folgenden Faehigke
 
 - JWS Compact Serialization mit `alg=EdDSA` erzeugen und verifizieren.
 - JCS nach RFC 8785 fuer JSON-Payloads verwenden.
-- `kid` im JWS-Header auswerten, wenn vorhanden.
+- `kid` im JWS-Header verpflichtend setzen und auswerten.
 - Signatur-Keys ueber `resolve(did)` und DID-Dokumente aufloesen.
 
 ### Attestations
@@ -73,7 +73,8 @@ Eine Implementierung ist `wot-sync@0.1`-konform, wenn sie zusaetzlich `wot-core@
 
 ### Transport und Broker
 
-- DIDComm-kompatible Plaintext Messages mit den spezifizierten Feldern parsen.
+- DIDComm-v2-kompatible Plaintext Messages mit `typ: "application/didcomm-plain+json"` erzeugen und parsen.
+- Envelope-Testvektoren mit mindestens einer etablierten DIDComm-v2-Library validieren.
 - Broker-Challenge-Response mit DID-Signaturen umsetzen.
 - Capabilities als JWS verifizieren.
 - Inbox-Nachrichten pro Device zustellen und ACKs verarbeiten.

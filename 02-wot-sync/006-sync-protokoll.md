@@ -140,10 +140,11 @@ Ein Log-Eintrag wird als `body` einer DIDComm-Nachricht transportiert:
 ```json
 {
   "id": "uuid",
+  "typ": "application/didcomm-plain+json",
   "type": "https://web-of-trust.de/protocols/log-entry/1.0",
   "from": "did:key:z6Mk...alice",
   "to": ["did:key:z6Mk...broker"],
-  "created_time": "2026-04-17T10:00:00Z",
+  "created_time": 1776420000,
   "body": {
     "entry": "<JWS Compact String des Log-Eintrags>"
   }

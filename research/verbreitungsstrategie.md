@@ -19,7 +19,7 @@ Unser Web of Trust ist die dezentrale Alternative: Identität und Vertrauen basi
 ### Was wir tun
 
 - Spec finalisieren (mit Sebastian) — zwei Implementierungen die nachweislich interoperieren
-- Sync-Stack nach aktueller Spec implementieren (JWE JSON Serialization, Threading, Trust Ping 2.0, Discover Features 2.0 — alle in Sync 007 spezifiziert) — DIDComm v2.1-konform
+- Sync-Stack nach aktueller Spec implementieren: DIDComm-v2.1-kompatibler Plaintext-Envelope (library-validiert), WoT-eigene ECIES-Verschluesselung, Threading, Broker-Inbox und Profil-basierte Feature-Discovery
 - Erste Communities nutzen WoT aktiv (Real Life Stack, Human Money)
 - Material vorbereiten: "Was ist die Alternative zu eIDAS?" — technisch fundiert, verständlich erklärt, für Menschen die sich verweigern wollen
 
