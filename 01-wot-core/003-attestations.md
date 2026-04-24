@@ -201,12 +201,12 @@ Die Attestation gehört dem Subject. Konkret:
 - Der Issuer erstellt und signiert die Attestation (als JWS)
 - Die Attestation wird verschlüsselt an den Subject/Holder übermittelt
 - Der Holder speichert den JWS lokal
-- Der Holder entscheidet ob er sie akzeptiert und wem er sie zeigt
+- Der Holder entscheidet ob er sie veröffentlicht
 - Der Issuer behält keine Kopie (kann aber natürlich eine behalten)
 
 ### Akzeptanz
 
-Der Holder hat ein lokales `accepted`-Flag pro Attestation. Nicht akzeptierte Attestations sind unsichtbar für Dritte. Das Flag ist **nicht Teil des VC** und wird **nicht signiert** — es ist eine reine lokale Entscheidung.
+Der Holder hat ein lokales `public`-Flag pro Attestation. Nicht veröffentlichte Attestations sind unsichtbar für Dritte (nicht im Profil-Service). Das Flag ist **nicht Teil des VC** und wird **nicht signiert** — es ist eine reine lokale Entscheidung, gespeichert als Metadaten neben dem JWS im Personal Doc.
 
 ## Unveränderlichkeit
 

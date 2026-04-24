@@ -129,9 +129,9 @@ Empfangene und erstellte Attestations (siehe [Core 003](../01-wot-core/003-attes
   "<attestation-id>": {
     "id": "uuid",
     "direction": "received | issued",
-    "credential": "<vollständiger W3C VC>",
+    "jws": "<JWS Compact String — das autoritative, signierte VC>",
     "receivedAt": "2026-02-10T15:30:00Z",
-    "accepted": true
+    "public": false
   }
 }
 ```
