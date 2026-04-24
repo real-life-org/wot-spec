@@ -138,6 +138,16 @@ Für did:key ohne vorherigen Kontakt liefert `resolve()` ein **signaturfähiges*
 | Sync 007 (Inbox-Zustellung) | Broker-URL des Empfängers | `service` |
 | Sync 009 (Einladung) | Encryption Key für ECIES | `keyAgreement` |
 
+### Zweck-Bindung (MUSS)
+
+Ein Verifier MUSS prüfen dass der verwendete Key für den jeweiligen Zweck autorisiert ist:
+
+- **Attestations und Trust-Lists** MÜSSEN mit einem Key signiert sein der in `assertionMethod` gelistet ist — das sind öffentliche Aussagen die an die Identität gebunden sind, nicht an ein Gerät
+- **Broker-Login und Sync** DÜRFEN mit einem Key aus `authentication` signiert werden — das sind Session-bezogene Aktionen
+- **Device-Enrollment und Admin-Delegation** SOLLEN mit einem Key aus `capabilityDelegation` signiert werden (Phase 2)
+
+In Phase 1 verweisen `authentication`, `assertionMethod` und `capabilityDelegation` alle auf denselben Key (`#sig-0`). Die Trennung hat aktuell keine praktische Auswirkung, bereitet aber den Wechsel zu Per-Device-Keys vor: Device-Keys werden dann in `authentication` stehen (dürfen Sync/Login), aber NICHT in `assertionMethod` (dürfen keine Attestations signieren).
+
 ## DID-Dokument-Quellen
 
 Das DID-Dokument einer Person erreicht andere Teilnehmer auf verschiedenen Wegen. Es gibt keine Priorisierungs-Hierarchie, sondern **verschiedene Quellen für verschiedene Situationen**:

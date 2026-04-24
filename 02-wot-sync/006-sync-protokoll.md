@@ -62,7 +62,7 @@ Ein Log-Eintrag ist ein **JWS-signierter Datensatz**. Er wird über das DIDComm-
   "seq": 42,
   "deviceId": "550e8400-e29b-41d4-a716-446655440000",
   "docId": "7f3a2b10-4c5d-4e6f-8a7b-9c0d1e2f3a4b",
-  "authorDid": "did:key:z6MkhaXgBZDvotDkL5257faiztiGiC2QtKLGpbnnEGta2doK",
+  "authorKid": "did:key:z6MkhaXgBZDvotDkL5257faiztiGiC2QtKLGpbnnEGta2doK#sig-0",
   "keyGeneration": 3,
   "data": "<Base64URL-kodierter verschlüsselter Blob>",
   "timestamp": "2026-04-17T10:00:00Z"
@@ -74,7 +74,7 @@ Ein Log-Eintrag ist ein **JWS-signierter Datensatz**. Er wird über das DIDComm-
 | `seq` | Integer | Ja | Aufsteigend, pro deviceId pro docId. Beginnt bei 0. |
 | `deviceId` | UUID v4 | Ja | Welches Gerät hat den Eintrag erzeugt |
 | `docId` | UUID v4 | Ja | Zu welchem Dokument gehört der Eintrag |
-| `authorDid` | DID | Ja | DID des Autors (für Signatur-Verifikation) |
+| `authorKid` | DID-URL | Ja | Verification Method ID des Signierenden (z.B. `did:key:z6Mk...#sig-0`). DID wird aus dem Teil vor `#` extrahiert. In Phase 1 ist das Fragment immer `#sig-0` (einziger Key). In Phase 2 identifiziert es einen spezifischen Device-Key. |
 | `keyGeneration` | Integer | Ja | Generation des Space Content Keys der zur Verschlüsselung verwendet wurde (siehe [Sync 005](005-verschluesselung.md)) |
 | `data` | String | Ja | Base64URL-kodierter AES-256-GCM Ciphertext (Nonce + Ciphertext + Auth Tag, siehe [Sync 005](005-verschluesselung.md)) |
 | `timestamp` | ISO 8601 | Ja | Erstellungszeitpunkt (UTC) |
@@ -131,7 +131,7 @@ Der Log-Eintrag wird als JWS signiert — gemäß [Core 002](../01-wot-core/002-
 4. Ed25519-Signatur über die Signing-Input-Bytes
 5. Ergebnis: JWS Compact String
 
-Ein Empfänger verifiziert die Signatur indem er `authorDid` aus dem Payload auflöst und den Public Key extrahiert.
+Ein Empfänger verifiziert die Signatur indem er die DID aus `authorKid` extrahiert (Teil vor `#`), das DID-Dokument via `resolve()` auflöst ([Core 005](../01-wot-core/005-did-resolution.md)), die `verificationMethod` mit der passenden `id` findet und den Public Key daraus extrahiert.
 
 ### Transport über DIDComm
 

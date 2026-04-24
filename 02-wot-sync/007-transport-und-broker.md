@@ -513,7 +513,7 @@ Ein Peer publiziert einen neuen Log-Eintrag an andere Peers. Der Log-Eintrag sel
 }
 ```
 
-Der JWS-Payload des Eintrags enthält die Felder `seq`, `deviceId`, `docId`, `authorDid`, `keyGeneration`, `data`, `timestamp` — JCS-kanonisiert, Ed25519-signiert. Vollständiges Schema in [Sync 006 Log-Eintrag](006-sync-protokoll.md#log-eintrag).
+Der JWS-Payload des Eintrags enthält die Felder `seq`, `deviceId`, `docId`, `authorKid`, `keyGeneration`, `data`, `timestamp` — JCS-kanonisiert, Ed25519-signiert. Vollständiges Schema in [Sync 006 Log-Eintrag](006-sync-protokoll.md#log-eintrag).
 
 **Broker-Indexing:** Der Broker extrahiert `docId`, `deviceId`, `seq` aus dem JWS-Payload (Base64URL-dekodieren des mittleren Segments, JCS-kanonisiertes JSON parsen). Diese drei Felder braucht er für Indexing, Sync-Anfragen und Kollisionserkennung. Der Broker MUSS die JWS-Signatur NICHT verifizieren — Signatur-Verifikation ist Aufgabe der Peers, die die Einträge letztendlich konsumieren. Der Broker darf sie aber als zusätzliche Integritätsprüfung durchführen.
 

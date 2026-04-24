@@ -40,8 +40,10 @@ BASE64URL(header) . BASE64URL(payload) . BASE64URL(signature)
 **Header:**
 
 ```json
-{ "alg": "EdDSA", "typ": "<kontextspezifisch>" }
+{ "alg": "EdDSA", "typ": "<kontextspezifisch>", "kid": "<DID-URL>" }
 ```
+
+`kid` (Key Identifier) ist **PFLICHT** in jedem WoT-JWS. Es identifiziert welcher konkrete Key die Signatur erzeugt hat — als DID-URL mit Fragment (z.B. `did:key:z6Mk...#sig-0`). Der Verifier nutzt `kid` um über `resolve()` ([Core 005](005-did-resolution.md)) den richtigen Public Key zu finden. In Phase 1 ist das Fragment immer `#sig-0` (einziger Key). In Phase 2 (Per-Device-Keys) zeigt es auf den spezifischen Device-Key.
 
 Das `typ`-Feld identifiziert den Inhalt des JWS. Kontextspezifische Werte:
 

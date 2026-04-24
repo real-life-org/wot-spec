@@ -75,13 +75,20 @@ Liste der registrierten Geräte des Users:
 {
   "<deviceId>": {
     "deviceId": "550e8400-e29b-41d4-a716-446655440000",
+    "deviceKid": null,
     "name": "Alice's Handy",
+    "status": "active",
     "registeredAt": "2026-01-15T10:00:00Z",
     "lastActive": "2026-04-18T10:00:00Z",
     "revokedAt": null
   }
 }
 ```
+
+**Begriffliche Trennung:**
+
+- **`deviceId`** (UUID) — lokaler Sequenz-/Nonce-Namespace. Identifiziert das Gerät im Sync-Protokoll. Existiert immer.
+- **`deviceKid`** (DID-URL, optional) — kryptographischer Device-Key als Verification Method ID (z.B. `did:peer:4z...#device-phone-1`). In Phase 1 ist `deviceKid` immer `null` (Shared-Seed-Modell, kein eigener Device-Key). In Phase 2 (Per-Device-Keys) wird hier die DID-URL des Device-Keys eingetragen.
 
 Jedes Gerät trägt sich beim ersten Start selbst ein. Der User kann in der App Geräte aktiv deaktivieren (siehe [Device-Verlust](#device-verlust)).
 
