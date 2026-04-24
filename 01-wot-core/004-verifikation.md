@@ -226,6 +226,6 @@ Die Verifikation ist schwächer als bei einem physischen Treffen — sie beweist
 - Verification als JWS-signiertes VC 2.0 (statt eigenem Format)
 - Zustellung als DIDComm-Nachricht (statt eigenes MessageEnvelope)
 
-## Zu klären
+## Zukunft (nicht Phase 1)
 
-- **Claim-Link-Protokoll:** QR-Codes für automatische Badge-Vergabe bei Events (Organisator stellt Attestation-Template bereit, Teilnehmer scannen). Das ist ein verwandtes aber separates Thema — siehe [Core 003, Abschnitt Claim-Link](003-attestations.md#claim-link-qr-code-für-events).
+- **Claim-Link-Protokoll:** QR-Codes für automatische Badge-Vergabe bei Events — separates Design-Thema, siehe [Core 003](003-attestations.md#zukunft-nicht-phase-1).

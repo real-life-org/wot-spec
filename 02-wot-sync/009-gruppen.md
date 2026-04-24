@@ -390,7 +390,7 @@ Der Broker sieht nur:
 
 Für feinere Permissions (Read-Only Members, Feld-Ebenen-Rechte, delegierbare Rollen) können in Zukunft **Capability-Chains** eingeführt werden (z.B. Keyhive/Beelay-Modell). Das ist ein signifikanter Architektur-Schritt der erst sinnvoll wird wenn die zugrundeliegenden Frameworks produktionsreif sind.
 
-## Zu klären
+## Zukunft (nicht Phase 1)
 
-- **Admin-Transfer-Protokoll:** Details für "Admin überträgt seine Rolle an jemanden der noch nicht Admin ist" — Reihenfolge der Operationen (erst `admin-add`, dann `admin-remove`).
-- **Capability-Caching:** Wie lange sollen Broker Capabilities cachen? Bei jeder Rotation müssen alle alten Capabilities verworfen werden.
+- **Admin-Transfer:** Reihenfolge `admin-add` → `admin-remove`. Wird spezifiziert wenn Multi-Admin in der Implementierung gebraucht wird.
+- **Capability-Caching:** Broker-seitige Cache-Dauer. Wird bei der Broker-Implementierung entschieden.

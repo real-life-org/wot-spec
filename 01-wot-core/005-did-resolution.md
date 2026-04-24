@@ -339,22 +339,8 @@ Für Admin-Keys gibt es keinen Grund für DID-Dokumente oder Key-Rotation — si
 - Core 001: DID-Encoding-Details entfernen, auf dieses Dokument verweisen
 - BIP39-Wortlisten-Semantik in Core 001 korrigieren (siehe unten)
 
-## Offene Fragen
+## Zukunft (Phase 2)
 
-### 1. Phase-2-DID-Methode
-
-Die endgültige DID-Methode für Phase 2 steht noch nicht fest. Kandidaten:
-
-- **did:webvh** — verifiable History, JSONL-Log, HTTPS + Offline, Libraries verfügbar
-- **did:keri** — append-only Key Event Log, Pre-Rotation, Witnesses, production-ready (GLEIF vLEI)
-- **Eigene Methode** — maximale Kontrolle, höchster Aufwand
-
-Die Entscheidung wird getroffen wenn die Phase-1-Implementierung läuft und die Anforderungen aus der Praxis klar sind. Die resolve()-Abstraktion ermöglicht den Wechsel ohne Breaking Change.
-
-### 2. DID-Dokument-Signatur
-
-Soll das DID-Dokument selbst signiert sein (JWS)? Für did:key ist das nicht nötig (das Dokument ist deterministisch). Für did:webvh ist die Signatur Teil des Logs. Für den Profil-Service ist die JWS-Signatur bereits spezifiziert.
-
-### 3. DID-Dokument-Versionierung
-
-Für Phase 2 (did:webvh) braucht das DID-Dokument eine Versionierung (monoton, hash-verkettet). Für Phase 1 (did:key) gibt es keine Versionen — das Dokument ist statisch.
+- **DID-Methode:** Kandidaten sind did:webvh (verifiable History, JSONL-Log) und did:keri (Key Event Log, Pre-Rotation). Entscheidung wenn Phase-1-Implementierung läuft. Die resolve()-Abstraktion ermöglicht den Wechsel ohne Breaking Change. Siehe [identity-migration.md](../research/identity-migration.md) und [identitaet-alternativen.md](../research/identitaet-alternativen.md).
+- **DID-Dokument-Signatur:** Für did:key nicht nötig (deterministisch). Für did:webvh Teil des Logs. Für den Profil-Service bereits als JWS spezifiziert.
+- **DID-Dokument-Versionierung:** Für did:key gibt es keine Versionen (statisch). Für did:webvh monoton und hash-verkettet (Teil der Methoden-Spec).

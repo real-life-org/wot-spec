@@ -247,7 +247,7 @@ Nach Deaktivierung:
 - Andere Mitglieder und Broker wissen dass diese `deviceId` nicht mehr vertrauenswürdig ist
 - Neue Log-Einträge mit dieser `deviceId` werden von anderen Devices abgelehnt
 - Der Broker lehnt Authentisierung mit dieser `deviceId` ab
-- Der User sollte alle Space Content Keys rotieren (siehe unten)
+- Der User SOLLTE alle Space Content Keys rotieren (siehe unten)
 
 ### Limitationen der Device-Deaktivierung (MUSS dokumentiert)
 
@@ -383,9 +383,9 @@ Der Broker speichert das verschlüsselte Personal Doc solange der User bei ihm r
 
 Für den Fall dass auch der Broker nicht mehr erreichbar ist, sollte ein zusätzliches lokales Backup (z.B. Vault) genutzt werden.
 
-## Zu klären
+## Zukunft (nicht Phase 1)
 
-- **Migration bei Identity-Rotation:** Wie wird das Personal Doc beim DID-Wechsel übernommen? Details in [identity-migration.md](../research/identity-migration.md).
-- **Mehrere Identitäten pro Gerät:** Soll ein Device mehrere Personal Docs (verschiedene Seeds) gleichzeitig verwalten können? Aktuell nicht spezifiziert.
-- **Verschlüsselung sensibler Felder:** Die `groupKeys` sind hochsensitiv. Zusätzliche Verschlüsselung jenseits des Personal Doc Keys denkbar (z.B. per Hardware-Keystore).
-- **Profil-Publish-Workflow:** Das `profile`-Feld im Personal Doc ist der Master, der Profil-Service ist die öffentliche Kopie. Wie oft wird publiziert, wer kann publish-Berechtigung haben?
+- **Identity-Rotation:** Personal Doc bei DID-Wechsel — siehe [identity-migration.md](../research/identity-migration.md).
+- **Mehrere Identitäten pro Gerät:** Aktuell nicht spezifiziert. Entscheidung bei Bedarf.
+- **Verschlüsselung sensibler Felder:** `groupKeys` sind hochsensitiv — zusätzliche Verschlüsselung (Hardware-Keystore) als Implementierungsentscheidung.
+- **Profil-Publish-Workflow:** Automatisches vs. manuelles Publizieren — Implementierungsentscheidung.

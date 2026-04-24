@@ -304,20 +304,8 @@ Das `credentialSubject.id` kann verschiedene Dinge identifizieren:
 - SD-JWT VC ist bereits JWS-basiert — kein grundlegender Formatwechsel nötig
 - VC Context auf v2 prüfen
 
-## Offene Fragen
+## Zukunft (nicht Phase 1)
 
-### 1. WoT Vocabulary URI
-
-`"https://web-of-trust.de/vocab/v1"` — die Domain steht fest, aber das Vocabulary-Dokument unter dieser URI muss noch erstellt werden.
-
-### 2. Subjects jenseits von Personen
-
-Wie identifizieren wir Projekte, Orte, Veranstaltungen als Subjects? Der W3C VC Standard erlaubt jede URI als `credentialSubject.id` — DIDs, UUIDs (`urn:uuid:...`), URLs. Die konkrete Entscheidung welches Format für welchen Subject-Typ verwendet wird steht noch aus.
-
-### 3. Claim-Link Protokoll
-
-Wie funktioniert der QR-Code-basierte Claim-Link technisch? Offene Design-Fragen:
-- Enthält der QR-Code das Attestation-Template direkt oder eine URL?
-- Wie authentifiziert sich der Scanner (DID-Austausch)?
-- Wer signiert — das Handy des Organisators, sein Broker, oder ein delegiertes Device?
-- Funktioniert es offline (Bluetooth/LAN) oder nur online?
+- **WoT Vocabulary URI:** JSON-LD Context-Dokument unter `https://web-of-trust.de/vocab/v1` hosten (definiert WotAttestation, claim, TrustRating etc.). Für Phase 1 funktioniert der URI als Type-Identifier ohne auflösbares Dokument.
+- **Subjects jenseits von Personen:** Projekte, Orte, Veranstaltungen als `credentialSubject.id` — Format wird bei Bedarf spezifiziert (UUIDs, URLs, DIDs).
+- **Claim-Link Protokoll:** QR-Codes für automatische Badge-Vergabe bei Events — separates Design-Thema.
