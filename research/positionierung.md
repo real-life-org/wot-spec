@@ -89,7 +89,7 @@ Die EU rollt bis Ende 2026 die European Digital Identity Wallet aus. Das wird ei
 
 ## Community-Resilienz als strategischer Kern
 
-Grace Rachmany, seit 2026 Executive Director der Decentralized Identity Foundation, hielt vor einigen Jahren einen Workshop mit dem Arbeitstitel *"When the shit hits the fan"* — über Gemeinschaften als resiliente Keimzellen, die in Krisenzeiten Ressourcen teilen und einander tragen. Das Thema war damals durch Corona geprägt. Seitdem hat sich gezeigt, dass Pandemien nicht die letzte Form großflächiger Unterbrechung waren, die uns beschäftigt.
+In der Decentralized-Identity-Community gibt es seit Jahren eine Diskussion unter dem Arbeitstitel *"When the shit hits the fan"* — über Gemeinschaften als resiliente Keimzellen, die in Krisenzeiten Ressourcen teilen und einander tragen. Das Thema war damals durch Corona geprägt. Seitdem hat sich gezeigt, dass Pandemien nicht die letzte Form großflächiger Unterbrechung waren, die uns beschäftigt.
 
 Digitale Infrastruktur kann in solchen Zeiten eines von zweierlei sein: fragile Abhängigkeit, oder tragende Struktur. Wenn Serverparks nicht erreichbar sind, wenn Datenschutzskandale zentrale Plattformen diskreditieren, wenn ein Regierungswechsel Behörden-Zugänge verändert — wovon hängt dann ab, dass Menschen digital zusammenarbeiten können?
 
@@ -109,7 +109,7 @@ Community-Resilienz ist deshalb nicht ein zusätzliches Argument für Web of Tru
 
 **Finanzierung:** Bewerbung bei NLnet NGI Zero Commons (36.000 €) eingereicht, Entscheidung im Frühsommer 2026 erwartet. Bisher: Ehrenamt, Eigenfinanzierung.
 
-**Kooperationen in Planung:** DIF-Mitgliedschaft, Gespräche mit Willow-Entwicklern, KERI-Community. Grace Rachmany als DIF-ED steht auf der Kontaktliste — wir kennen uns persönlich aus dem European Ecovillage Network Gathering.
+**Kooperationen in Planung:** DIF-Mitgliedschaft, Gespräche mit Willow-Entwicklern, KERI-Community.
 
 ## Weiterführende Dokumente
 
