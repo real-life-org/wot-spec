@@ -3,6 +3,9 @@
 - **Status:** Entwurf
 - **Autoren:** Anton Tranelis
 - **Datum:** 2026-04-22
+- **Scope:** In-person Verification, QR-Challenges, Nonce-History und Verification-Attestations
+- **Depends on:** Core 001, Core 002, Core 003, Core 005
+- **Conformance profile:** `wot-core@0.1`
 
 ## Zusammenfassung
 

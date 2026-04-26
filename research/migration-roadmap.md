@@ -1,5 +1,7 @@
 # Migrations-Roadmap — von aktueller Implementation zu Spec v1.x
 
+> **Nicht normativ:** Dieses Dokument ist Hintergrund, Analyse oder Planung. Normative Anforderungen stehen in den Spec-Dokumenten und in `CONFORMANCE.md`.
+
 - **Status:** Planungsdokument
 - **Autoren:** Anton Tranelis
 - **Datum:** 2026-04-20

@@ -1,5 +1,7 @@
 # Positionierung — Web of Trust
 
+> **Nicht normativ:** Dieses Dokument ist Hintergrund, Analyse oder Planung. Normative Anforderungen stehen in den Spec-Dokumenten und in `CONFORMANCE.md`.
+
 *Stand: 20. April 2026*
 
 ## Elevator-Pitch

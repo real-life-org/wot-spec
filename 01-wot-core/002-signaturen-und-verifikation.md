@@ -3,6 +3,9 @@
 - **Status:** Entwurf
 - **Autoren:** Anton Tranelis, Sebastian Galek
 - **Datum:** 2026-04-13
+- **Scope:** Signaturformate, JWS/JCS-Verifikation und Algorithmus-Validierung
+- **Depends on:** Core 001, Core 005, JWS, JCS, Ed25519
+- **Conformance profile:** `wot-core@0.1`
 
 ## Zusammenfassung
 

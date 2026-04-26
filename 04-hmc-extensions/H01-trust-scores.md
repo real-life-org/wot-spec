@@ -3,6 +3,9 @@
 - **Status:** Entwurf
 - **Autoren:** Sebastian Galek, Anton Tranelis
 - **Datum:** 2026-04-19
+- **Scope:** HMC Trust-Level, Haftung und Trust-Propagation
+- **Depends on:** Core 003, SD-JWT VC
+- **Conformance profile:** `wot-hmc@0.1`
 
 ## Zusammenfassung
 

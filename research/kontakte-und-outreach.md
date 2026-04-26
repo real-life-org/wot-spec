@@ -1,5 +1,7 @@
 # Kontakte und Outreach
 
+> **Nicht normativ:** Dieses Dokument ist Hintergrund, Analyse oder Planung. Normative Anforderungen stehen in den Spec-Dokumenten und in `CONFORMANCE.md`.
+
 *Stand: 18. April 2026*
 
 Schlüsselpersonen und Projekte für die Verbreitung des WoT-Protokolls. Priorisiert nach Relevanz und Erreichbarkeit. Viele Kontakte stammen aus der [DWeb Principles Signatarliste](https://getdweb.net/principles/) — Menschen die sich öffentlich zu dezentralen Werten bekannt haben.

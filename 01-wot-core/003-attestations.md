@@ -3,6 +3,9 @@
 - **Status:** Entwurf
 - **Autoren:** Anton Tranelis, Sebastian Galek
 - **Datum:** 2026-04-21
+- **Scope:** WoT Attestations als W3C VC 2.0 mit VC-JOSE-COSE/JWS
+- **Depends on:** Core 001, Core 002, Core 005, W3C VC 2.0, VC-JOSE-COSE
+- **Conformance profile:** `wot-core@0.1`
 
 ## Zusammenfassung
 

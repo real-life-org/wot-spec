@@ -3,6 +3,9 @@
 - **Status:** Entwurf
 - **Autoren:** Sebastian Galek, Anton Tranelis
 - **Datum:** 2026-04-16
+- **Scope:** HMC Gossip-Protokoll fuer Trust-Listen und Transaktionsdaten
+- **Depends on:** H01, H02, Sync 006, Sync 007
+- **Conformance profile:** `wot-hmc@0.1`
 
 ## Zusammenfassung
 

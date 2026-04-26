@@ -3,6 +3,9 @@
 - **Status:** Platzhalter (nicht normativ — wird mit Sebastian ausgearbeitet. Custody-Konzept siehe [Sync 010](../02-wot-sync/010-personal-doc.md#extension-hinweis-device-spezifische-felder))
 - **Autoren:** Sebastian Galek
 - **Datum:** 2026-04-13
+- **Scope:** HMC Transaktionen, Vouchers und Settlement-Bezug
+- **Depends on:** Core 003, H01, Sync 010
+- **Conformance profile:** `wot-hmc@0.1` (geplant, aktuell Platzhalter)
 
 ## Zusammenfassung
 

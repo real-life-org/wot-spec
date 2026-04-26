@@ -3,6 +3,9 @@
 - **Status:** Entwurf
 - **Autoren:** Anton Tranelis
 - **Datum:** 2026-04-18
+- **Scope:** Personal Doc, Cross-Device Sync, Device-Management und Self-Addressed Messages
+- **Depends on:** Core 001, Core 002, Sync 005, Sync 006, Sync 007
+- **Conformance profile:** `wot-sync@0.1`
 
 ## Zusammenfassung
 

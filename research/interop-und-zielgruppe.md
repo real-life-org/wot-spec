@@ -1,5 +1,7 @@
 # Interoperabilität, Zielgruppe und Standards
 
+> **Nicht normativ:** Dieses Dokument ist Hintergrund, Analyse oder Planung. Normative Anforderungen stehen in den Spec-Dokumenten und in `CONFORMANCE.md`.
+
 *Stand: 17. April 2026*
 
 ## Was ist unser Protokoll?

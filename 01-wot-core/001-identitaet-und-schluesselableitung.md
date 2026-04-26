@@ -3,6 +3,9 @@
 - **Status:** Entwurf
 - **Autoren:** Anton Tranelis, Sebastian Galek
 - **Datum:** 2026-04-23
+- **Scope:** Seed-, Key- und DID-Key-Ableitung fuer WoT Core
+- **Depends on:** BIP39, HKDF, Ed25519, X25519
+- **Conformance profile:** `wot-core@0.1`
 
 ## Zusammenfassung
 

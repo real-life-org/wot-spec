@@ -3,6 +3,9 @@
 - **Status:** Entwurf
 - **Autoren:** Anton Tranelis
 - **Datum:** 2026-04-13
+- **Scope:** Broker, Transport, Capabilities, DIDComm Plaintext Envelopes und P2P-Sync
+- **Depends on:** Core 002, Core 004, Core 005, Sync 005, Sync 006, Sync 009, Sync 010
+- **Conformance profile:** `wot-sync@0.1`
 
 ## Zusammenfassung
 

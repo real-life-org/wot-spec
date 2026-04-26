@@ -1,5 +1,7 @@
 # DIDComm v2 Migration — Analyse und Roadmap
 
+> **Nicht normativ:** Dieses Dokument ist Hintergrund, Analyse oder Planung. Normative Anforderungen stehen in den Spec-Dokumenten und in `CONFORMANCE.md`.
+
 *Stand: 24. April 2026*
 
 ## Was ist DIDComm?

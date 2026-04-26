@@ -3,6 +3,9 @@
 - **Status:** Entwurf
 - **Autoren:** Anton Tranelis
 - **Datum:** 2026-04-13
+- **Scope:** ECIES, AES-GCM, Space Keys und Nonce-Konstruktion im Sync Layer
+- **Depends on:** Core 001, Core 002, Core 005
+- **Conformance profile:** `wot-sync@0.1`
 
 ## Zusammenfassung
 

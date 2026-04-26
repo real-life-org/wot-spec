@@ -3,6 +3,9 @@
 - **Status:** Entwurf
 - **Autoren:** Anton Tranelis
 - **Datum:** 2026-04-22
+- **Scope:** Spaces, Membership, Einladungen, Rollen und Key-Rotation
+- **Depends on:** Core 001, Sync 005, Sync 006, Sync 007
+- **Conformance profile:** `wot-sync@0.1`
 
 ## Zusammenfassung
 

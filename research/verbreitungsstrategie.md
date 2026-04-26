@@ -1,5 +1,7 @@
 # Verbreitungsstrategie — Web of Trust 2026-2031
 
+> **Nicht normativ:** Dieses Dokument ist Hintergrund, Analyse oder Planung. Normative Anforderungen stehen in den Spec-Dokumenten und in `CONFORMANCE.md`.
+
 *Stand: 19. April 2026*
 
 ## Ausgangslage

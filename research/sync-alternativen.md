@@ -1,5 +1,7 @@
 # Sync-Protokoll-Alternativen — Landschafts-Recherche
 
+> **Nicht normativ:** Dieses Dokument ist Hintergrund, Analyse oder Planung. Normative Anforderungen stehen in den Spec-Dokumenten und in `CONFORMANCE.md`.
+
 - **Status:** Research / Exploration
 - **Authors:** Anton Tranelis
 - **Datum:** 2026-04-11 (erstellt), 2026-04-20 (umbenannt)

@@ -3,6 +3,9 @@
 - **Status:** Entwurf
 - **Autoren:** Anton Tranelis
 - **Datum:** 2026-04-23
+- **Scope:** DID-Dokumente, Resolution-Interface und DID-Methoden-Profile fuer WoT
+- **Depends on:** Core 001, DID Core, did:key
+- **Conformance profile:** `wot-core@0.1`
 
 ## Zusammenfassung
 

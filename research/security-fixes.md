@@ -1,5 +1,7 @@
 # Security Fixes — Aufwand und Trade-offs
 
+> **Nicht normativ:** Dieses Dokument ist Hintergrund, Analyse oder Planung. Normative Anforderungen stehen in den Spec-Dokumenten und in `CONFORMANCE.md`.
+
 *Stand: 2026-04-18*
 
 Konkrete Analyse was es bedeuten würde jede identifizierte Schwachstelle zu beheben. Die Quick Wins (alg-Strict, Nonce-History, Capability validUntil, JCS-Test-Vektoren, deterministische Nonce-Konstruktion) wurden am 18.04.2026 umgesetzt und aus diesem Dokument entfernt. Verbleibend: Moderate Arbeit und Fundamentale Änderungen.

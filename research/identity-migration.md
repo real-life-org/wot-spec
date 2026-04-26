@@ -1,5 +1,7 @@
 # Identity Migration — Schlüsselrotation und DID-Wechsel
 
+> **Nicht normativ:** Dieses Dokument ist Hintergrund, Analyse oder Planung. Normative Anforderungen stehen in den Spec-Dokumenten und in `CONFORMANCE.md`.
+
 - **Status:** Research
 - **Autoren:** Anton Tranelis
 - **Datum:** 2026-04-23

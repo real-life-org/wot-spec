@@ -1,5 +1,7 @@
 # Security Analysis — WoT Spec
 
+> **Nicht normativ:** Dieses Dokument ist Hintergrund, Analyse oder Planung. Normative Anforderungen stehen in den Spec-Dokumenten und in `CONFORMANCE.md`.
+
 *Adversarial review, ursprünglich 2026-04-18. Tabellenkopf und Fix-Markierungen aktualisiert 2026-04-19.*
 
 Eine kritische Analyse der aktuellen Spec aus Angreifer-Perspektive. Die Schwachstellen reichen von implementierungsabhängigen Problemen bis zu fundamentalen Protokoll-Lücken. Eingeteilt nach Schwere und Wahrscheinlichkeit.

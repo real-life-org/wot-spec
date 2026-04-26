@@ -3,6 +3,9 @@
 - **Status:** Entwurf
 - **Autoren:** Anton Tranelis
 - **Datum:** 2026-04-22
+- **Scope:** Broker-Discovery, Profil-Service und Auffindbarkeit von Sync-Endpunkten
+- **Depends on:** Core 005, Sync 007
+- **Conformance profile:** `wot-sync@0.1`
 
 ## Zusammenfassung
 

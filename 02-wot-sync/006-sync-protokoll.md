@@ -3,6 +3,9 @@
 - **Status:** Entwurf
 - **Autoren:** Anton Tranelis
 - **Datum:** 2026-04-13
+- **Scope:** Append-only Logs, Sequenzen, Konflikterkennung und Sync-Ablauf
+- **Depends on:** Core 002, Sync 005
+- **Conformance profile:** `wot-sync@0.1`
 
 ## Zusammenfassung
 
