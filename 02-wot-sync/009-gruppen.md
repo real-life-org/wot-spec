@@ -11,15 +11,15 @@ Dieses Dokument spezifiziert wie Gruppen (Spaces) im Sync Layer funktionieren �
 ## Referenzierte Dokumente
 
 - [Core 001: Identität](../01-wot-core/001-identitaet-und-schluesselableitung.md) — Schlüsselableitung, HKDF-Pfade
-- [Sync 005: Verschlüsselung](005-verschluesselung.md) — Space-Schlüssel, ECIES, Space-Keypair
+- [Sync 005: Verschlüsselung](005-verschluesselung.md) — Space-Schlüssel, ECIES, Space Capability Key Pair
 - [Sync 007: Transport und Broker](007-transport-und-broker.md) — Inbox, Message Envelope, Capabilities
 
 ## Grundprinzip
 
-Eine Gruppe (Space) ist ein verschlüsselter Raum für Zusammenarbeit. Alle Mitglieder teilen einen **symmetrischen Space Key** (für Datenverschlüsselung) und ein **Space-Keypair** (für Capability-Signaturen am Broker).
+Eine Gruppe (Space) ist ein verschlüsselter Raum für Zusammenarbeit. Alle Mitglieder teilen einen **Space Content Key** (für Datenverschlüsselung) und ein **Space Capability Key Pair** (für Capability-Signaturen am Broker).
 
 ```
-Space = Space Key (sym) + Space Keypair (asym) + Admin(s) + Mitgliederliste + Daten (CRDT)
+Space = Space Content Key (sym) + Space Capability Key Pair (asym) + Admin(s) + Mitgliederliste + Daten (CRDT)
 ```
 
 Die Mitgliederliste ist Teil der Sync-Daten und wird wie alle anderen Änderungen über Append-only Logs synchronisiert (siehe [Sync 006](006-sync-protokoll.md)).
@@ -92,7 +92,7 @@ Feinere Rollen (Moderator, Read-Only) erzeugen Komplexität bei der Synchronisat
 
 2. Alice registriert den Space beim Broker:
    → Space-ID
-   → Space Public Key (für Capability-Verifikation)
+   → Space Capability Verification Key (für Capability-Verifikation)
    → Admin-DIDs (aktuell: Alice's abgeleitete Admin-DID)
    → Registrierung signiert mit Admin Key
 
@@ -109,16 +109,16 @@ Feinere Rollen (Moderator, Read-Only) erzeugen Komplexität bei der Synchronisat
 ```
 Alice (Member oder Admin) lädt Bob ein:
 
-1. Alice signiert eine Capability für Bob mit dem Space Private Key
+1. Alice signiert eine Capability für Bob mit dem Space Capability Signing Key
 
 2. Alice erstellt eine Einladungs-Nachricht:
    - Space-ID
-   - Aktueller Space Key (Generation N)
-   - Alle bisherigen Space Keys (Generation 0..N-1) für historische Daten
-   - Space Private Key (Ed25519)
+   - Aktueller Space Content Key (Generation N)
+   - Alle bisherigen Space Content Keys (Generation 0..N-1) für historische Daten
+   - Space Capability Signing Key (Ed25519)
    - Admin-DIDs (aus dem CRDT, für UI-Anzeige)
    - Heim-Broker-URL(s) des Space
-   - Capability (signiert vom Absender mit Space Private Key)
+   - Capability (signiert vom Absender mit Space Capability Signing Key)
 
 3. Alice verschlüsselt die Einladung via ECIES für Bobs X25519 Public Key
    (siehe Sync 005)
@@ -128,7 +128,7 @@ Alice (Member oder Admin) lädt Bob ein:
 5. Bob empfängt, entschlüsselt und akzeptiert die Einladung
 
 6. Bob verbindet sich mit dem Heim-Broker, zeigt seine Capability vor
-   → Broker verifiziert Signatur mit Space Public Key → OK
+   → Broker verifiziert Signatur mit Space Capability Verification Key → OK
 
 7. Bob synchronisiert die Daten (Catch-Up)
 ```
@@ -217,7 +217,7 @@ Admin Alice befördert Bob zum Admin:
 
 ## Key-Rotation (Member-Entfernung)
 
-Bei Member-Entfernung wird der Space Key **und** das Space Keypair gemeinsam rotiert — damit werden auch alte Capabilities ungültig.
+Bei Member-Entfernung werden Space Content Key **und** Space Capability Key Pair gemeinsam rotiert — damit werden auch alte Capabilities ungültig.
 
 ### Ablauf
 
@@ -287,8 +287,8 @@ Zwei Member laden gleichzeitig neue Leute ein → kein Konflikt. Beide Einladung
 
 Alice (Admin) entfernt Bob, während Carol (Member) Dave einlädt:
 - Bobs Entfernung + Rotation gewinnt
-- Dave's Einladung enthält den alten Space Key und alte Capability
-- Dave braucht den neuen Space Key und die neue Capability
+- Daves Einladung enthält den alten Space Content Key und die alte Capability
+- Dave braucht den neuen Space Content Key und die neue Capability
 - Admin muss Dave die neuen Keys nachliefern (erkennt beim nächsten Sync, dass ein neuer Member mit veralteten Keys existiert)
 
 ### Gleichzeitige Rotationen durch verschiedene Admins
@@ -305,7 +305,7 @@ In der Praxis sollten Admins sich informell absprechen bevor sie rotieren — da
 | `key-rotation` | Inbox | Neuer Content Key + Capability Signing Key nach Member-Entfernung |
 | `admin-add` | Broker | Neue Admin-DID beim Broker registrieren (signiert von bestehendem Admin) |
 | `admin-remove` | Broker | Admin-DID entfernen (signiert von anderem Admin) |
-| `space-rotate` | Broker | Rotation des Space Public Keys (signiert von einem Admin) |
+| `space-rotate` | Broker | Rotation des Space Capability Verification Keys (signiert von einem Admin) |
 
 ## Zusammenspiel mit dem Broker
 
@@ -317,18 +317,18 @@ Wenn ein User einen Space erstellt, registriert er ihn beim Broker:
 {
   "type": "space-register",
   "spaceId": "uuid",
-  "spacePublicKey": "<base64url>",
+  "spaceCapabilityVerificationKey": "<base64url>",
   "adminDids": ["did:key:z6Mk...admin-derived"]
 }
 ```
 
-Signiert mit dem (noch einzigen) Admin Key. Der Broker akzeptiert die Registrierung, speichert Space-ID, Space Public Key und Admin-DIDs. Später können Admins hinzugefügt, entfernt oder das Keypair rotiert werden (jeweils signiert von einem eingetragenen Admin).
+Signiert mit dem (noch einzigen) Admin Key. Der Broker akzeptiert die Registrierung, speichert Space-ID, Space Capability Verification Key und Admin-DIDs. Später können Admins hinzugefügt, entfernt oder das Capability Key Pair rotiert werden (jeweils signiert von einem eingetragenen Admin).
 
 ### Capability-Prüfung
 
 Wenn ein Client Daten für einen Space syncen will:
 1. Client sendet seine Capability
-2. Broker prüft JWS-Signatur mit dem aktuellen Space Public Key
+2. Broker prüft JWS-Signatur mit dem aktuellen Space Capability Verification Key
 3. OK → Sync erlaubt
 
 Details siehe [Sync 007](007-transport-und-broker.md#autorisierung-capabilities).
@@ -339,18 +339,18 @@ Wenn ein Admin offline ist während er einen Member entfernt:
 - Die Remove-Operation wird lokal im Log gespeichert
 - Rotation-Nachricht an Broker wird lokal vorbereitet
 - Beim nächsten Reconnect werden Log und Rotation synchronisiert
-- Der Broker aktualisiert Space Public Key und invalidiert alte Capabilities
+- Der Broker aktualisiert Space Capability Verification Key und invalidiert alte Capabilities
 
 ## Sicherheitsmodell
 
 ### Grundprinzip: Vertrauen innerhalb der Gruppe
 
-Innerhalb einer Gruppe herrscht Vertrauen. Jedes Mitglied mit dem Space Key darf alles lesen und alles schreiben. Es gibt keine Feldebenen-Berechtigungen — der CRDT-Merge unterscheidet nicht nach Autor.
+Innerhalb einer Gruppe herrscht Vertrauen. Jedes Mitglied mit dem Space Content Key darf alles lesen und alles schreiben. Es gibt keine Feldebenen-Berechtigungen — der CRDT-Merge unterscheidet nicht nach Autor.
 
 ### Drei Regeln
 
-1. **Alle Members dürfen alles lesen und schreiben.** Ein Space Key, ein CRDT, keine Feldrechte.
-2. **Alle Members dürfen Capabilities für neue Members signieren** (mit dem Space Private Key). Einladungen sind nicht auf Admins beschränkt.
+1. **Alle Members dürfen alles lesen und schreiben.** Ein Space Content Key, ein CRDT, keine Feldrechte.
+2. **Alle Members dürfen Capabilities für neue Members signieren** (mit dem Space Capability Signing Key). Einladungen sind nicht auf Admins beschränkt.
 3. **Nur Admins dürfen rotieren (= Members ausschließen).** Rotation-Nachrichten werden am Broker geprüft — nur Nachrichten signiert mit einem registrierten Admin Key werden akzeptiert.
 
 ### Admin-Austritt
@@ -379,7 +379,7 @@ Durch abgeleitete Admin-Keys erfährt der Broker **nicht**:
 
 Der Broker sieht nur:
 - Space-ID
-- Space Public Key
+- Space Capability Verification Key
 - Abgeleitete Admin-DIDs (pro Space eindeutig, nicht verknüpfbar)
 - Capability-Signaturen (bestätigen Zugriff, offenbaren aber nicht wer signiert hat)
 

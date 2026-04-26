@@ -6,7 +6,13 @@ Das Format folgt grob [Keep a Changelog](https://keepachangelog.com/en/1.1.0/). 
 
 ## Unreleased
 
-Noch keine Aenderungen.
+### Added
+
+- `GLOSSARY.md` fuer normative Begriffe und konsistente Terminologie.
+
+### Changed
+
+- Erste Terminologie-Korrekturen in Sync-Dokumenten: `Master Key`/`Space Private Key`/`authorDid` durch aktuelle Begriffe ersetzt.
 
 ## v0.1.0-draft - 2026-04-24
 

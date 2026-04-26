@@ -95,7 +95,7 @@ In der aktuellen Spec-Version verwenden **alle Geräte eines Users denselben See
 
 ### Zukünftiger Upgrade-Pfad: Per-Device Keys
 
-Eine sauberere Architektur wären **Per-Device Keys** — jedes Gerät hat ein eigenes Schlüsselpaar, das vom Master-Key signiert wird. Damit würde:
+Eine sauberere Architektur wären **Per-Device Keys** — jedes Gerät hat ein eigenes Schlüsselpaar, das von der Hauptidentität signiert wird. Damit würde:
 
 - Der Seed nur noch auf einem primären Gerät liegen
 - Device-Revocation kryptographisch bedeutungsvoll werden

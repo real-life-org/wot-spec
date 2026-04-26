@@ -167,7 +167,7 @@ Device-Deaktivierung wird über eine **signierte Revocation-Nachricht** kommuniz
 }
 ```
 
-Signiert mit dem Ed25519-Key der angegebenen DID (Master Key). Der Broker MUSS prüfen:
+Signiert mit dem Identity Key der angegebenen DID. Der Broker MUSS prüfen:
 
 1. JWS-Signatur gültig gegen den Ed25519-Key aus `did`
 2. Der Broker markiert `(did, deviceId)` als `revoked`
@@ -229,13 +229,13 @@ Der Broker ist E2EE — er kann die Mitgliederliste eines Space nicht lesen (ver
 Der Broker kennt pro Space zwei Arten von Schlüsseln:
 
 - **Space Capability Verification Key (Ed25519)** — verifiziert **Capabilities** die an einzelne Members ausgestellt werden. Alle Members besitzen den Space Capability Signing Key und können Capabilities signieren. Bei Key-Rotation (Member-Entfernung) wird das Keypair erneuert — alte Capabilities werden damit ungültig.
-- **Admin-DID(s)** — abgeleitete, space-spezifische Ed25519-Keys (siehe [Sync 009](009-gruppen.md#admin-key-ableitung)). Nur Admins können **Broker-Management-Nachrichten** signieren (Rotation des Space Keypairs, Admin hinzufügen/entfernen).
+- **Admin-DID(s)** — abgeleitete, space-spezifische Ed25519-Keys (siehe [Sync 009](009-gruppen.md#admin-key-ableitung)). Nur Admins können **Broker-Management-Nachrichten** signieren (Rotation des Space Capability Key Pairs, Admin hinzufügen/entfernen).
 
-Das löst das Delegations-Problem: jeder Member kann einladen (= Capabilities signieren), weil alle den Space Private Key haben. Nur Admins können rotieren.
+Das löst das Delegations-Problem: jeder Member kann einladen (= Capabilities signieren), weil alle den `spaceCapabilitySigningKey` haben. Nur Admins können rotieren.
 
 ### Capability-Format
 
-Eine Capability ist ein JWS, signiert mit dem **Space Private Key**:
+Eine Capability ist ein JWS, signiert mit dem **Space Capability Signing Key**:
 
 **JWS-Payload:**
 
@@ -260,7 +260,7 @@ Eine Capability ist ein JWS, signiert mit dem **Space Private Key**:
 | `issuedAt` | ISO 8601 | Ja | Erstellungszeitpunkt |
 | `validUntil` | ISO 8601 | Ja | Ablaufzeitpunkt — nach diesem Moment ist die Capability ungültig |
 
-Der JWS wird mit dem Space Private Key signiert. Der `kid` im JWS-Header MUSS den Space-Kontext und die Capability-Key-Generation referenzieren: `wot:space:<spaceId>#cap-<generation>`. Der Broker verifiziert mit dem aktuellen Space Capability Verification Key fuer genau diesen Space und diese Generation.
+Der JWS wird mit dem Space Capability Signing Key signiert. Der `kid` im JWS-Header MUSS den Space-Kontext und die Capability-Key-Generation referenzieren: `wot:space:<spaceId>#cap-<generation>`. Der Broker verifiziert mit dem aktuellen Space Capability Verification Key fuer genau diesen Space und diese Generation.
 
 **Empfohlene Gültigkeitsdauer:**
 
@@ -336,9 +336,9 @@ Beide Nachrichten müssen mit einem **bestehenden Admin Key** für diesen Space 
 
 ### Persönliche Dokumente
 
-Für das persönliche Dokument (Identität, Keys) stellt der User sich seine eigene Capability aus. Das persönliche Dokument hat kein Space Keypair — stattdessen signiert der User die Capability direkt mit seinem **Haupt-Ed25519-Key** (DID). Der Broker prüft: `issuer` = `audience` = authentifizierte DID.
+Für das persönliche Dokument (Identität, Keys) stellt der User sich seine eigene Capability aus. Das persönliche Dokument hat kein Space Capability Key Pair — stattdessen signiert der User die Capability direkt mit seinem **Identity Key** (DID). Der Broker prüft: `issuer` = `audience` = authentifizierte DID.
 
-**Unterschied zum Space-Capability-Modell:** Bei Spaces signiert der geteilte `spaceCapabilitySigningKey`, bei Personal Docs signiert der persönliche Ed25519-Key (DID). Das ist eine bewusste Vereinfachung — ein Personal Doc hat genau einen Eigentümer, kein Gruppen-Key-Management nötig. Die Capability-Felder (`spaceId`, `generation`, `validUntil`) werden analog verwendet, aber `spaceId` wird durch die deterministische Personal-Doc-ID ersetzt (siehe [Sync 010](010-personal-doc.md)).
+**Unterschied zum Space-Capability-Modell:** Bei Spaces signiert der geteilte `spaceCapabilitySigningKey`, bei Personal Docs signiert der persönliche Identity Key (DID). Das ist eine bewusste Vereinfachung — ein Personal Doc hat genau einen Eigentümer, kein Gruppen-Key-Management nötig. Die Capability-Felder (`spaceId`, `generation`, `validUntil`) werden analog verwendet, aber `spaceId` wird durch die deterministische Personal-Doc-ID ersetzt (siehe [Sync 010](010-personal-doc.md)).
 
 ## Zwei Kanäle
 
@@ -456,7 +456,7 @@ Inbox-Nachrichten (1:1) werden mit **ECIES** verschlüsselt — X25519 + HKDF + 
 Ablauf:
 
 1. Sender erstellt den Klartext-Body (z.B. Attestation, Space-Invite)
-2. Sender signiert den Body mit seinem Ed25519-Master-Key → innerer JWS
+2. Sender signiert den Body mit seinem Identity Key → innerer JWS
 3. Sender verschlüsselt den JWS-String mit ECIES für den X25519-Key des Empfängers
 4. Ausgabe: `{ epk, nonce, ciphertext }` (siehe [Sync 005](005-verschluesselung.md#verschlüsseltes-nachrichtenformat))
 5. Transport als Body der DIDComm-Envelope-Nachricht (type = `inbox/1.0`, `space-invite/1.0`, etc.)
@@ -771,9 +771,9 @@ Im P2P-Modus gibt es keinen "Server" — beide Peers müssen sich gegenseitig au
        "responderNonce": nonce_B
      }
 
-5. Alice signiert (transcript || "role:initiator") mit ihrem Master-Key:
+5. Alice signiert (transcript || "role:initiator") mit ihrem Identity Key:
    → { type: "p2p-auth", did: did_A, role: "initiator", signature: Sig_Alice }
-6. Bob signiert (transcript || "role:responder") mit seinem Master-Key:
+6. Bob signiert (transcript || "role:responder") mit seinem Identity Key:
    → { type: "p2p-auth", did: did_B, role: "responder", signature: Sig_Bob }
 
 7. Alice rekonstruiert denselben Transcript und verifiziert Sig_Bob gegen Bobs Public Key
@@ -785,7 +785,7 @@ Im P2P-Modus gibt es keinen "Server" — beide Peers müssen sich gegenseitig au
 **Wichtige Eigenschaften:**
 
 - **Initiator/Responder-Rolle** wird am Anfang der Verbindung eindeutig festgelegt (z.B. wer zuerst `p2p-hello` sendet ist Initiator). Die Rolle wird in die Signatur mit einbezogen, damit ein Angreifer die Signatur des einen nicht als die des anderen ausgeben kann.
-- **Alle Handshake-Parameter** (DIDs, Device-IDs, beide Nonces) sind Teil des signierten Transcripts. Ein Angreifer, der nur Nonces spiegelt oder DIDs manipuliert, kann keine gültige Signatur produzieren, ohne den tatsächlichen Master-Key zu besitzen.
+- **Alle Handshake-Parameter** (DIDs, Device-IDs, beide Nonces) sind Teil des signierten Transcripts. Ein Angreifer, der nur Nonces spiegelt oder DIDs manipuliert, kann keine gültige Signatur produzieren, ohne den tatsächlichen Identity Key zu besitzen.
 - **Reflection-Schutz:** Weil die Signatur rollen-spezifisch ist (`"role:initiator"` vs `"role:responder"`) und die DIDs explizit im Transcript stehen, kann ein Angreifer nicht seine eigene Signatur aus einer anderen Session als die einer anderen Partei ausgeben.
 
 Nach dem Handshake kennt jeder Peer die **DID + deviceId** des anderen (authentisch verifiziert) und kann damit den normalen Sync-Protokoll-Flow (`sync-request`, `sync-response`) anstoßen.
@@ -805,7 +805,7 @@ Im P2P-Modus gibt es keinen Broker, der Capabilities prüft. Stattdessen prüft 
 
 1. Kennt der Peer das fragliche Dokument? (Space-ID in seiner Liste?)
 2. Ist die DID des Gegenübers in der lokalen Mitgliederliste dieses Space?
-3. Kann der Gegenüber den Besitz des Space Private Keys beweisen (durch erfolgreiches Entschlüsseln eines Test-Challenges oder durch eine vorzeigbare Capability)?
+3. Kann der Gegenüber aktuellen Space-Zugriff beweisen (durch erfolgreiches Entschlüsseln einer Test-Challenge mit dem Space Content Key oder durch eine vorzeigbare Capability)?
 
 **Für persönliche Dokumente:**
 

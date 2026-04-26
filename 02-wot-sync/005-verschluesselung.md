@@ -200,7 +200,7 @@ Für persistente Gruppen mit geteilten verschlüsselten Daten (CRDT-Dokumente) h
 - Versioniert nach **Generation** (monoton aufsteigender Integer, beginnend bei 0)
 - Alte Schlüssel werden aufbewahrt um historische Daten entschlüsseln zu können
 - Neue Schlüssel werden bei Einladung via ECIES an Members verteilt
-- In älteren Entwurfs-Texten auch als "Space Key" referenziert — der offizielle normative Name ist `spaceContentKey`
+- In älteren Entwurfs-Texten auch als "Space Key" referenziert — der offizielle normative Name ist **Space Content Key** beziehungsweise `spaceContentKey`
 
 ### Space Capability Key Pair (asymmetrisch)
 
@@ -244,15 +244,15 @@ Der Admin-Public-Key wird beim Broker registriert. Broker-Management-Nachrichten
 
 ### Schlüsselrotation
 
-Bei Entfernung eines Mitglieds werden **Space Key und Space Keypair gemeinsam rotiert**:
+Bei Entfernung eines Mitglieds werden **Space Content Key und Space Capability Key Pair gemeinsam rotiert**:
 
-1. Neuer Space Key generieren (Generation + 1)
-2. Neues Space Keypair generieren
-3. Admin sendet `space-rotate`-Nachricht an Broker (signiert mit Admin Key) — neuer Space Public Key wird aktiv, alte Capabilities ungültig
-4. Admin verteilt neuen Space Key + neuen Space Private Key + neue Capability an alle verbleibenden Mitglieder via ECIES
-5. Neue Daten werden mit dem neuen Space Key verschlüsselt
-6. Alte Daten bleiben mit dem alten Space Key lesbar (für Mitglieder die damals Zugriff hatten)
-7. Das entfernte Mitglied hat weder neuen Space Key noch gültige Capability
+1. Neuen Space Content Key generieren (Generation + 1)
+2. Neues Space Capability Key Pair generieren
+3. Admin sendet `space-rotate`-Nachricht an Broker (signiert mit Admin Key) — neuer Space Capability Verification Key wird aktiv, alte Capabilities ungültig
+4. Admin verteilt neuen Space Content Key + neuen Space Capability Signing Key + neue Capability an alle verbleibenden Mitglieder via ECIES
+5. Neue Daten werden mit dem neuen Space Content Key verschlüsselt
+6. Alte Daten bleiben mit dem alten Space Content Key lesbar (für Mitglieder die damals Zugriff hatten)
+7. Das entfernte Mitglied hat weder neuen Space Content Key noch gültige Capability
 
 ### Encrypt-then-Sync
 

@@ -289,7 +289,7 @@ Die Broker-seitige Erkennung eines Konflikts (`SEQ_COLLISION_DETECTED`, siehe [S
 
 Extensions des WoT-Protokolls (z.B. HMC, RLS) dürfen eigene Datenstrukturen im Personal Doc verwenden. Falls eine Extension in einzelnen Items ein device-spezifisches Feld führt (z.B. HMC-Vouchers mit einer `custodyDeviceId` zur Lokalisierung der aktiven Verwahrung), gilt:
 
-- Bei einem **deviceId-Wechsel** (siehe Restore/Clone-Detection oben) MUSS die Extension ihre device-spezifischen Felder konsistent aktualisieren — z.B. durch Master-Key-signierte CRDT-Operationen, die die alte `deviceId` durch die neue ersetzen
+- Bei einem **deviceId-Wechsel** (siehe Restore/Clone-Detection oben) MUSS die Extension ihre device-spezifischen Felder konsistent aktualisieren — z.B. durch Identity-Key-signierte CRDT-Operationen, die die alte `deviceId` durch die neue ersetzen
 - Extensions, die solche Felder verwenden, MÜSSEN dokumentieren, wie sie auf deviceId-Wechsel reagieren
 - Der Core stellt nur die CRDT-Infrastruktur und das Device-Rotation-Event bereit — die Semantik der device-spezifischen Felder liegt bei der Extension
 
@@ -323,7 +323,7 @@ Drei Szenarien:
 Das Personal Doc nutzt **dieselbe Infrastruktur wie Space-Dokumente** (siehe [Sync 006](006-sync-protokoll.md)):
 
 - Append-only Log pro `deviceId`
-- Einträge mit `seq`, `deviceId`, `docId`, `authorDid`, `keyGeneration`, `data`
+- Einträge mit `seq`, `deviceId`, `docId`, `authorKid`, `keyGeneration`, `data`
 - Signierung und Nonce-Konstruktion identisch
 - Transport über DIDComm-Nachrichten
 

@@ -10,10 +10,11 @@ Eine konforme Implementierung MUSS:
 
 1. Alle fuer das beanspruchte Profil relevanten `MUSS`-Anforderungen erfuellen.
 2. Alle relevanten Testvektoren in `test-vectors/` reproduzieren oder verifizieren.
-3. Unbekannte optionale Felder ignorieren, sofern das jeweilige Dokument nichts anderes verlangt.
-4. Unbekannte Nachrichtentypen sicher ignorieren und nicht als gueltige bekannte Typen behandeln.
-5. JWS `alg` strikt gegen die erlaubte Whitelist pruefen.
-6. Signaturen ueber exakt die empfangenen JWS-Signing-Input-Bytes verifizieren.
+3. Die Terminologie aus `GLOSSARY.md` konsistent interpretieren.
+4. Unbekannte optionale Felder ignorieren, sofern das jeweilige Dokument nichts anderes verlangt.
+5. Unbekannte Nachrichtentypen sicher ignorieren und nicht als gueltige bekannte Typen behandeln.
+6. JWS `alg` strikt gegen die erlaubte Whitelist pruefen.
+7. Signaturen ueber exakt die empfangenen JWS-Signing-Input-Bytes verifizieren.
 
 ## `wot-core@0.1`
 
