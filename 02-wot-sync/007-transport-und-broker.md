@@ -20,82 +20,17 @@ Dieses Dokument spezifiziert wie Daten zwischen Peers transportiert werden und w
 
 ## Broker
 
-### Was ein Broker ist
+Ein Broker ist ein immer erreichbarer Peer fuer Store-and-Forward, Log-Sync, Device-Inboxen und Push-Signale. Broker speichern nur verschluesselte Inhalte und Autorisierungs-Metadaten:
 
-Ein Broker ist ein Peer mit Superkräften:
+- verschluesselte Log-Eintraege fuer Dokumente (siehe [Sync 006](006-sync-protokoll.md))
+- verschluesselte Inbox-Nachrichten pro Device
+- Capabilities fuer Dokumentzugriff
+- Device-Registrierungen pro DID
+- Push-Endpoints
 
-| Eigenschaft | Normaler Peer | Broker |
-|-------------|--------------|--------|
-| Online | Manchmal | Immer |
-| Speichert Daten | Lokal für sich | Für alle berechtigten Peers |
-| Push Notifications | Nein | Ja |
-| Erreichbar | Nur im LAN / NAT Traversal | Öffentliche IP |
-| Autorisierung | Client prüft Membership lokal | Capabilities vom Admin |
-| Betrieben von | User | Community oder Anbieter |
+Broker sehen keinen Klartext, keine Inbox-Inhalte und keine Space-Mitgliederlisten. Ein einzelner Broker kann Nachrichten zurueckhalten; Clients mit hoeheren Sicherheitsanforderungen SOLLTEN mehrere Broker parallel nutzen und Heads vergleichen (siehe [Sync 006](006-sync-protokoll.md#censorship--und-split-brain-detection)).
 
-### Was ein Broker speichert
-
-- **Log-Einträge** — verschlüsselte Append-only Logs für alle Dokumente seiner User (siehe [Sync 006](006-sync-protokoll.md))
-- **Inbox-Nachrichten** — verschlüsselte direkte Nachrichten (Attestations, Einladungen, Key-Rotation). Pro Device vorgehalten, gelöscht nach ACK aller Geräte.
-- **Capabilities** — signierte Zugriffsberechtigung pro User pro Dokument (vom Admin ausgestellt)
-- **Device-Registrierungen** — welche Device-IDs zu welcher DID gehören
-- **Push-Endpoints** — UnifiedPush-Registrierungen für Offline-Notifications
-
-### Was ein Broker NICHT sieht
-
-- Klartext (alles ist E2EE verschlüsselt)
-- Welcher CRDT-Typ verwendet wird
-- Den Inhalt der Dokumente
-- Den Inhalt der Inbox-Nachrichten
-- Die Mitgliederliste eines Space (verschlüsselt)
-
-### Broker-Deployment-Klassen — Sicherheitseinordnung
-
-Das Protokoll unterstützt mehrere Broker-Konfigurationen mit unterschiedlichem Sicherheitsniveau:
-
-| Modell | Zensur-Resistenz | Split-Brain-Detection | Typischer Einsatz |
-|---|---|---|---|
-| **Single Broker** | **Niedrig** | Nicht möglich | Private Gruppen mit vertrauenswürdigem Broker-Betreiber |
-| **Multi-Broker (redundant)** | Mittel | Möglich via Head-Vergleich | Community-Spaces |
-| **User-gewählter Broker-Mix** | Hoch | Möglich | Hochsensitive Gruppen |
-
-**Single-Broker-Deployments sind eine explizit niedrigere Sicherheitsklasse:**
-
-- Ein bösartiger oder gehackter Broker kann Nachrichten zurückhalten oder unterdrücken, ohne dass Clients das merken
-- Es gibt keinen zweiten Sync-Pfad über den Inkonsistenzen erkannt werden könnten
-- Der Broker-Betreiber muss als vertrauenswürdiger Akteur angenommen werden
-
-Clients, die in Umgebungen mit hohen Sicherheitsanforderungen arbeiten (kritische Infrastruktur, Aktivismus, Krisenkommunikation), SOLLTEN mehrere Broker parallel nutzen und die Multi-Source-Sync-Logik aus [Sync 006](006-sync-protokoll.md#censorship--und-split-brain-detection) aktivieren.
-
-### Community-betriebene Broker
-
-Ein Broker ist ein einfacher Service:
-
-- Nimmt verschlüsselte Blobs entgegen
-- Speichert sie (SQLite, Filesystem, was auch immer)
-- Liefert sie auf Anfrage aus
-- Sendet Push-Notifications wenn User offline sind
-
-Kein Domain-Name nötig (IP reicht). Kein Verständnis der Daten nötig. Kein CRDT-Code nötig.
-
-## Zwei Schichten
-
-Das Sync-Protokoll ([Sync 006](006-sync-protokoll.md)) ist **peer-agnostisch** — es funktioniert identisch zwischen zwei Handys, zwischen Handy und Broker, oder zwischen zwei Brokern. Jeder Peer spricht dasselbe Protokoll.
-
-Der Broker fügt eine **Schicht darüber** hinzu:
-
-```
-┌──────────────────────────────────────────────────┐
-│  Broker-Schicht (nur Broker)                     │
-│  Authentisierung, Autorisierung (Capabilities),  │
-│  Inbox (Store-and-Forward, pro Device), Push     │
-├──────────────────────────────────────────────────┤
-│  Sync-Protokoll (alle Peers gleich)              │
-│  Log-Einträge austauschen, JWS verifizieren      │
-└──────────────────────────────────────────────────┘
-```
-
-Im **direkten P2P-Modus** (LAN, Bluetooth) fällt die Broker-Schicht weg. Der Client prüft selbst ob der Gegenüber Member ist (Mitgliederliste liegt lokal vor). Keine Capabilities nötig — das Vertrauen ist direkt. Die P2P-Authentisierung ist in [Direkter P2P-Sync](#direkter-p2p-sync) spezifiziert.
+Das Sync-Protokoll selbst ist peer-agnostisch. Die Broker-Schicht ergaenzt Authentisierung, Capability-Pruefung, Store-and-Forward und Push. Im direkten P2P-Modus faellt diese Broker-Schicht weg; P2P-Authentisierung ist in [Direkter P2P-Sync](#direkter-p2p-sync) spezifiziert.
 
 ## Authentisierung
 
@@ -181,25 +116,11 @@ Signiert mit dem Identity Key der angegebenen DID. Der Broker MUSS prüfen:
 
 ### Device-Liste im Broker
 
-Der Broker speichert pro DID:
-
-| Feld | Beschreibung |
-|------|-------------|
-| `deviceId` | UUID v4 |
-| `firstSeenAt` | Zeitstempel der Erstregistrierung |
-| `lastSeenAt` | Zeitstempel der letzten Verbindung |
-| `status` | `active`, `revoked` |
-| `revokedAt` | Zeitstempel der Revocation (falls vorhanden) |
-
-Diese Liste ist nicht Teil des E2EE-Modells — der Broker kennt sie im Klartext. Sie enthält keine sensiblen Inhalte, nur Identifikations-Metadaten.
+Der Broker speichert pro DID mindestens `deviceId`, `firstSeenAt`, `lastSeenAt`, `status` (`active` oder `revoked`) und optional `revokedAt`. Diese Liste ist Broker-Metadatum und liegt im Klartext vor.
 
 ### Race Conditions
 
-**Gleichzeitige Registrierung zweier Devices mit demselben Seed:** Kein Problem. UUIDs sind per Definition (v4) eindeutig — zwei parallele Registrierungen produzieren unterschiedliche Device-IDs. Beide werden akzeptiert.
-
-**Registrierung eines Devices während eine Revocation verarbeitet wird:** Der Broker MUSS Revocations atomisch anwenden. Falls eine Registrierung in dem Moment ankommt, in dem eine Revocation für dieselbe `deviceId` verarbeitet wird, wird die Revocation zuerst angewendet — die Registrierung schlägt dann mit `DEVICE_REVOKED` fehl.
-
-**Conflict bei UUID-Kollision:** Bei v4-UUIDs ist das astronomisch unwahrscheinlich (~2^122 Zustände). Falls es doch passiert (defekte RNG, Restore aus Backup): Broker lehnt mit `DEVICE_ID_CONFLICT` ab, Client muss eine neue UUID generieren.
+Der Broker MUSS Revocations atomisch anwenden. Wenn Registrierung und Revocation fuer dieselbe `deviceId` konkurrieren, gewinnt die Revocation und die Registrierung wird mit `DEVICE_REVOKED` abgelehnt. Ist eine `deviceId` bereits fuer eine andere DID registriert, MUSS der Broker mit `DEVICE_ID_CONFLICT` ablehnen.
 
 ## Store-and-Forward pro Device
 
@@ -219,22 +140,15 @@ Inbox-Nachrichten werden **pro Device** zwischengespeichert, nicht pro DID. Das 
 - Wenn ein Device für längere Zeit (z.B. 90 Tage) nicht verbindet, DARF der Broker es als inaktiv behandeln und seine ausstehenden Nachrichten löschen
 - Für kritische Nachrichten (Space-Einladungen, Key-Rotationen) SOLLTE der Sender einen Liefernachweis implementieren (z.B. erneutes Senden nach Timeout)
 
-### Warum pro Device und nicht pro DID
-
-Das Protokoll garantiert damit, dass jedes Device alle für es relevanten Nachrichten mindestens einmal sieht — insbesondere Space-Einladungen und Key-Rotationen. Das ist ein Fallback für den Fall, dass Personal-Doc-Sync zwischen den Devices des Users zeitweise nicht funktioniert (Offline, Broker-Ausfall, etc.).
+Der pro-Device-Zustellpfad stellt sicher, dass jedes aktive Device kritische Nachrichten wie Space-Einladungen und Key-Rotationen mindestens einmal erhaelt.
 
 ## Autorisierung (Capabilities)
 
 Der Broker ist E2EE — er kann die Mitgliederliste eines Space nicht lesen (verschlüsselt mit dem Space Content Key). Deshalb braucht er einen externen Beweis, dass ein Client auf ein Dokument zugreifen darf.
 
-### Zwei-Schlüssel-Modell für Spaces
+### Space-Schlüssel am Broker
 
-Der Broker kennt pro Space zwei Arten von Schlüsseln:
-
-- **Space Capability Verification Key (Ed25519)** — verifiziert **Capabilities** die an einzelne Members ausgestellt werden. Alle Members besitzen den Space Capability Signing Key und können Capabilities signieren. Bei Key-Rotation (Member-Entfernung) wird das Keypair erneuert — alte Capabilities werden damit ungültig.
-- **Admin-DID(s)** — abgeleitete, space-spezifische Ed25519-Keys (siehe [Sync 009](009-gruppen.md#admin-key-ableitung)). Nur Admins können **Broker-Management-Nachrichten** signieren (Rotation des Space Capability Key Pairs, Admin hinzufügen/entfernen).
-
-Das löst das Delegations-Problem: jeder Member kann einladen (= Capabilities signieren), weil alle den `spaceCapabilitySigningKey` haben. Nur Admins können rotieren.
+Der Broker kennt pro Space den `spaceCapabilityVerificationKey` fuer Capability-Pruefung und die `adminDid(s)` fuer Broker-Management-Nachrichten. Members signieren Capabilities mit dem geteilten `spaceCapabilitySigningKey`; Admins signieren Rotation und Admin-Wechsel mit ihrem abgeleiteten Admin Key (siehe [Sync 009](009-gruppen.md#admin-key-ableitung)).
 
 ### Capability-Format
 
@@ -259,7 +173,7 @@ Eine Capability ist ein JWS, signiert mit dem **Space Capability Signing Key**:
 | `spaceId` | UUID | Ja | Für welchen Space die Capability gilt |
 | `audience` | DID | Ja | Für welchen User die Capability gilt |
 | `permissions` | Array | Ja | Erlaubte Operationen (`read`, `write`) |
-| `generation` | Integer | Ja | Space-Keypair-Generation zu der die Capability gehört |
+| `generation` | Integer | Ja | Space Capability Key Pair Generation zu der die Capability gehört |
 | `issuedAt` | ISO 8601 | Ja | Erstellungszeitpunkt |
 | `validUntil` | ISO 8601 | Ja | Ablaufzeitpunkt — nach diesem Moment ist die Capability ungültig |
 
@@ -273,7 +187,7 @@ Der JWS wird mit dem Space Capability Signing Key signiert. Der `kid` im JWS-Hea
 
 ### Capability-Verteilung
 
-Capabilities werden zusammen mit dem Space Key verteilt:
+Capabilities werden zusammen mit den Space-Schluesseln verteilt:
 
 - **Bei Einladung:** Der Einladende signiert eine Capability mit dem `spaceCapabilitySigningKey` für den Eingeladenen. Die `space-invite` Inbox-Nachricht enthält Space Content Key, Capability Signing Key und Capability ([Sync 009](009-gruppen.md)).
 - **Bei Key-Rotation (Member-Entfernung):** Der Admin generiert einen neuen Space Content Key und ein neues Capability Key Pair. Alle verbleibenden Members bekommen neuen Content Key + neuen Capability Signing Key + neue Capability.
@@ -292,11 +206,7 @@ Wenn ein Client ein Dokument syncen will:
    - `now < validUntil`? (nicht abgelaufen)
 3. OK → Sync erlaubt
 
-### Warum Capability-Ablauf nötig ist
-
-Ohne `validUntil` sind Capabilities unbegrenzt gültig — bis zur nächsten Key-Rotation. Das erzeugt das "Left but never removed"-Problem: ein Member der den Space freiwillig verlässt behält theoretisch Zugriff bis ein Admin eine Rotation auslöst (was vielleicht nie passiert, weil kein offensichtlicher Anlass besteht).
-
-Mit `validUntil` läuft die Berechtigung automatisch ab. Aktive Members bekommen rechtzeitig eine erneuerte Capability. Inaktive Members verlieren den Zugriff ohne dass jemand aktiv handeln muss.
+`validUntil` begrenzt Zugriffsrechte ohne explizite Rotation. Aktive Members bekommen rechtzeitig eine erneuerte Capability; inaktive Members verlieren den Broker-Zugriff automatisch.
 
 ### Capability-Widerruf über Rotation
 
@@ -343,37 +253,12 @@ Für das persönliche Dokument (Identität, Keys) stellt der User sich seine eig
 
 **Unterschied zum Space-Capability-Modell:** Bei Spaces signiert der geteilte `spaceCapabilitySigningKey`, bei Personal Docs signiert der persönliche Identity Key (DID). Das ist eine bewusste Vereinfachung — ein Personal Doc hat genau einen Eigentümer, kein Gruppen-Key-Management nötig. Die Capability-Felder (`spaceId`, `generation`, `validUntil`) werden analog verwendet, aber `spaceId` wird durch die deterministische Personal-Doc-ID ersetzt (siehe [Sync 010](010-personal-doc.md)).
 
-## Zwei Kanäle
+## Broker-Kanäle
 
-Der Broker bietet zwei Kommunikationskanäle:
+Der Broker bietet zwei Kanaele:
 
-### Kanal 1: Log-Sync
-
-Für die Synchronisation von Dokumenten (Spaces, Identity, Keys):
-
-```
-Client → Broker: "Hier ist ein neuer Log-Eintrag für Dokument X"
-Broker → Client: "Dokument X hat neue Einträge seit deinem letzten Stand"
-```
-
-Pull-basiert: der Client fragt aktiv nach fehlenden Einträgen. Der Broker notifiziert verbundene Clients wenn neue Einträge eingehen.
-
-### Kanal 2: Inbox
-
-Für direkte Nachrichten die nicht über den Log laufen:
-
-```
-Alice → Broker: "Speichere diese verschlüsselte Nachricht für Bob"
-Bob (Handy)  → Broker: "Habe ich neue Nachrichten?"
-Broker → Bob (Handy):  "Ja, hier ist eine von Alice"
-Bob (Handy)  → Broker: "Empfangen" (ACK)
-Bob (Laptop) → Broker: "Habe ich neue Nachrichten?"
-Broker → Bob (Laptop): "Ja, hier ist eine von Alice"
-Bob (Laptop) → Broker: "Empfangen" (ACK)
-Broker: Alle Geräte haben bestätigt → Nachricht löschen
-```
-
-**Store-and-Forward pro Device:** Der Broker kennt die Device-IDs jedes Users (über die Authentisierung). Inbox-Nachrichten werden für **jedes registrierte Gerät** vorgehalten und erst gelöscht wenn **alle Geräte** ACK gesendet haben. Damit ist garantiert dass kein Gerät eine kritische Nachricht verpasst (Space Content Key, Capability, Key-Rotation).
+- **Log-Sync:** Pull-basierter Austausch von Log-Eintraegen fuer Dokumente. Der Broker kann verbundene Clients ueber neue Eintraege informieren.
+- **Inbox:** Store-and-Forward fuer direkte verschluesselte Nachrichten. Inbox-Nachrichten werden pro aktivem Device vorgehalten und erst nach ACK des jeweiligen Devices geloescht.
 
 ## Message Envelope (DIDComm-kompatibel)
 
@@ -648,110 +533,25 @@ Das Nachrichtenformat ist **DIDComm v2.1 konform** auf Envelope-Ebene: `id`, `ty
 
 Für die Hintergründe dieser Entscheidung siehe [Research: Interop und Zielgruppe](../research/interop-und-zielgruppe.md).
 
-## Broker-Zuordnung
+## Broker-Zuordnung und Multi-Broker
 
-### Persönlicher Broker
+Persoenliche Dokumente werden auf alle Broker repliziert, bei denen der User registriert ist. Space-Dokumente werden auf den Heim-Broker(n) des Space repliziert; die Broker-URL(s) sind Teil der Space-Metadata und werden in Space-Einladungen transportiert.
 
-Jeder User hat einen persönlichen Broker für seine privaten Dokumente (Identität, Keys, Kontakte). Das ist typischerweise der Broker der Community über die er eingeladen wurde.
+Broker kommunizieren NICHT untereinander. Clients synchronisieren mit allen relevanten Brokern und fuehren Konvergenz lokal ueber das Sync-Protokoll und den CRDT-Merge herbei. Ein Space DARF mehrere Heim-Broker haben; alle Members eines Space MÜSSEN bei mindestens einem gemeinsamen Heim-Broker registriert sein.
 
-Das persönliche Dokument wird automatisch auf **allen Brokern** repliziert bei denen der User registriert ist — für Redundanz. Wenn ein Broker ausfällt, haben die anderen noch alles.
-
-### Space-Broker (Heim-Broker)
-
-Jeder Space hat einen oder mehrere **Heim-Broker**. Beim Erstellen eines Space wird der Broker des Erstellers zum Heim-Broker. Die Broker-URL ist Teil der Space-Metadata.
-
-Beim Einladen in einen Space wird die Broker-URL mitgeschickt. Der eingeladene User verbindet sich automatisch mit diesem Broker für diesen Space.
-
-Ein Space DARF mehrere Heim-Broker haben — für Redundanz. Clients syncen mit allen verfügbaren Brokern. Log-Einträge konvergieren automatisch (selbes Sync-Protokoll, CRDT-Merge).
-
-### Community-Einladung
-
-Wenn ein User über eine Community eingeladen wird, enthält die Einladung:
-
-```
-Community-Einladung:
-  Space-ID + Group Key (verschlüsselt)
-  Broker-URL der Community
-  Profil des Einladenden
-```
-
-Der Community-Broker wird automatisch zum persönlichen Broker und zum Space-Broker. Der neue User ist sofort vernetzt — ein Schritt.
-
-### Standard-Broker
-
-Die App wird mit einem Standard-Broker ausgeliefert als Fallback für User die ohne Einladung starten. Sobald der User einer Community beitritt, kann er zu deren Broker wechseln.
-
-### Broker-Verbindungen eines Users
-
-```
-Alice's App verbindet sich mit:
-  → Broker A (persönlicher Broker + Space 1 + Space 2)
-  → Broker B (Space 3 Heim-Broker)
-  
-Persönliches Dokument: repliziert auf BEIDEN Brokern
-Space 1 + 2: nur auf Broker A
-Space 3: nur auf Broker B
-```
-
-## Multi-Broker
-
-Broker kommunizieren NICHT untereinander. Es gibt kein Federation-Protokoll. Stattdessen:
-
-- **Persönliche Dokumente** werden auf alle Broker repliziert (automatisch, für Redundanz)
-- **Space-Dokumente** werden auf die Heim-Broker des Space repliziert
-- Alle Members eines Space müssen bei mindestens einem gemeinsamen Heim-Broker registriert sein
-- Der Client löst alles — die Broker sind nur Speicher
-
-### Broker-Wechsel
-
-Ein Space-Admin kann den Heim-Broker ändern (z.B. wenn der alte Broker eingestellt wird). Die neue Broker-URL wird in der Space-Metadata aktualisiert. Members migrieren automatisch beim nächsten Sync.
-
-### Broker-Ausfall
-
-Wenn ein Broker offline geht:
-- Lokale Daten bleiben verfügbar (CompactStore)
-- Persönliche Dokumente sind auf anderen Brokern repliziert
-- Spaces die nur diesen Broker haben können nicht syncen bis er wieder da ist oder ein neuer Heim-Broker gesetzt wird
+Ein Space-Admin DARF Heim-Broker in der Space-Metadata aendern. Clients migrieren beim naechsten Sync.
 
 ## Push-Notifications
 
-Wenn ein Peer offline ist und eine neue Nachricht oder ein neuer Log-Eintrag für ihn eingeht:
-
-```
-Broker prüft: ist der Empfänger online?
-  → Ja: direkt zustellen via WebSocket
-  → Nein: Push-Notification senden (UnifiedPush/ntfy)
-    → Peer wacht auf
-    → Peer verbindet sich mit Broker
-    → Peer holt fehlende Daten
-```
-
-Push enthält keinen Inhalt — nur ein Signal: "Es gibt was Neues." Der Peer holt die Daten selbst.
-
-Siehe auch RFC-0004 (Push Notifications mit UnifiedPush) für Implementierungsdetails.
+Broker DÜRFEN Push-Signale senden, wenn fuer ein offline Device neue Inbox-Nachrichten oder Log-Eintraege vorliegen. Push-Payloads DÜRFEN keinen Klartext und keine verschluesselten WoT-Payloads enthalten; sie signalisieren nur, dass der Client den Broker erneut abfragen soll.
 
 ## Transport-Agnostik
 
-Das Sync-Protokoll funktioniert über verschiedene Transportwege:
-
-| Transport | Wann | Status |
-|-----------|------|--------|
-| **WebSocket** | Primär, Browser-kompatibel | Implementiert |
-| **QUIC** (via Iroh) | Effizienter, NAT Traversal | Zukunft |
-| **Bluetooth / WiFi Direct** | Lokales Mesh ohne Internet | Zukunft |
-| **Sneakernet** | USB-Stick, QR-Code, E-Mail | Zukunft |
-
-Das Envelope-Format und das Sync-Protokoll (007) sind transportunabhängig. Nur der Verbindungsaufbau unterscheidet sich.
+Das Envelope-Format und die Body-Formate sind transportunabhaengig. WebSocket ist der primaere Phase-1-Transport; andere Transports koennen dieselben Payloads mit transport-spezifischem Framing verwenden.
 
 ## Direkter P2P-Sync
 
 Wenn zwei Peers direkt kommunizieren (Bluetooth, WiFi Direct, LAN ohne Broker), fällt die Broker-Schicht weg. Authentisierung, Autorisierung und Message-Routing laufen direkt zwischen den Peers.
-
-### Anwendungsszenarien
-
-- Zwei Smartphones auf einem Festival ohne Internet
-- Zwei Devices desselben Users im lokalen WLAN (schneller als via Broker)
-- Cross-Device-Sync ohne Broker-Abhängigkeit
 
 ### Mutual Challenge-Response
 
@@ -785,13 +585,7 @@ Im P2P-Modus gibt es keinen "Server" — beide Peers müssen sich gegenseitig au
 9. Beide authentifiziert → Sync kann beginnen
 ```
 
-**Wichtige Eigenschaften:**
-
-- **Initiator/Responder-Rolle** wird am Anfang der Verbindung eindeutig festgelegt (z.B. wer zuerst `p2p-hello` sendet ist Initiator). Die Rolle wird in die Signatur mit einbezogen, damit ein Angreifer die Signatur des einen nicht als die des anderen ausgeben kann.
-- **Alle Handshake-Parameter** (DIDs, Device-IDs, beide Nonces) sind Teil des signierten Transcripts. Ein Angreifer, der nur Nonces spiegelt oder DIDs manipuliert, kann keine gültige Signatur produzieren, ohne den tatsächlichen Identity Key zu besitzen.
-- **Reflection-Schutz:** Weil die Signatur rollen-spezifisch ist (`"role:initiator"` vs `"role:responder"`) und die DIDs explizit im Transcript stehen, kann ein Angreifer nicht seine eigene Signatur aus einer anderen Session als die einer anderen Partei ausgeben.
-
-Nach dem Handshake kennt jeder Peer die **DID + deviceId** des anderen (authentisch verifiziert) und kann damit den normalen Sync-Protokoll-Flow (`sync-request`, `sync-response`) anstoßen.
+Die Initiator/Responder-Rolle MUSS vor der Signatur eindeutig festgelegt und in den signierten Input aufgenommen werden. Alle DIDs, Device-IDs und Nonces MÜSSEN Teil des Transcripts sein. Nach erfolgreicher Verifikation kennt jeder Peer die authentische DID und `deviceId` des Gegenuebers.
 
 ### Nonce-Anforderungen
 
@@ -814,24 +608,9 @@ Im P2P-Modus gibt es keinen Broker, der Capabilities prüft. Stattdessen prüft 
 
 Nur erlaubt zwischen Devices desselben Users (gleiche DID im Handshake).
 
-### Bewusste Limitation: Entfernte Members im P2P-Modus
+### Entfernte Members im P2P-Modus
 
-Nach einer Space-Key-Rotation haben entfernte Members den alten Space Content Key und den alten Space Capability Signing Key noch. Am **Broker** scheitern sie sofort — der alte Capability Verification Key ist ungültig. Im **P2P-Modus** (offline, ohne Broker) gibt es keinen autoritativen Membership-Check. Das ist eine **inhärente Limitation des Offline-Betriebs**, nicht ein Protokoll-Fehler.
-
-**Bestmögliche Heuristik:** Verbleibende Members schreiben Einträge mit der aktuellen (höchsten) `keyGeneration`. Ein Peer der nur Einträge mit einer älteren `keyGeneration` produzieren kann, ist wahrscheinlich entfernt worden. Clients SOLLEN solche Peers als **verdächtig** markieren und empfangene Daten nicht in den lokalen CRDT-State mergen, bis der Membership-Status über eine vertrauenswürdige Quelle (Broker, anderer Member) bestätigt wurde.
-
-**Was das bedeutet:** Im reinen Offline-P2P-Modus kann ein entfernter Member kurzfristig Daten empfangen die er nicht mehr sehen sollte (mit dem alten Key verschlüsselt). Er kann keine neuen Daten produzieren die von aktiven Members als aktuell akzeptiert werden (falsche keyGeneration). Sobald ein Broker erreichbar ist, wird der Zustand korrigiert.
-
-### Sync-Ablauf nach Handshake
-
-Nach erfolgreicher gegenseitiger Authentisierung läuft das normale Sync-Protokoll:
-
-```
-1. Alice: { type: "sync-request", docId, heads }
-2. Bob:   { type: "sync-response", docId, entries, heads }
-3. Alice verifiziert jeden empfangenen Log-Eintrag (JWS-Signatur, Space-Key-Entschlüsselung)
-4. Alice: weitere sync-requests für andere gemeinsame Dokumente
-```
+Im Offline-P2P-Modus gibt es keinen autoritativen Broker-Check fuer aktuelle Membership. Clients SOLLEN Peers als verdaechtig markieren, wenn diese nur Log-Eintraege mit alter `keyGeneration` liefern, und solche Daten nicht mergen, bis Membership ueber eine vertraute Quelle bestaetigt wurde.
 
 ### Transport-Framing
 
@@ -848,29 +627,6 @@ Der normative Payload ist jeweils derselbe: eine DIDComm-kompatible Message mit 
 ### Inbox im P2P-Modus
 
 P2P-Verbindungen sind typischerweise kurz. Eine "Inbox" im Sinne von Store-and-Forward existiert nicht — Nachrichten werden direkt zugestellt oder gehen verloren. Für garantierte Zustellung SOLLEN Clients den Broker-Pfad nutzen, nicht P2P.
-
-## App-Start-Reihenfolge
-
-Beim Starten der App:
-
-```
-Phase 1: Lokal (offline-fähig)
-  1. Lokalen Speicher öffnen (CompactStore / IndexedDB)
-  2. Dokumente aus lokalem Speicher laden
-  3. App ist offline benutzbar
-
-Phase 2: Netzwerk
-  4. Mit Broker verbinden (WebSocket + Challenge-Response)
-  5. Capabilities für eigene Dokumente vorlegen
-  6. Falls lokaler Speicher leer: Daten vom Broker holen
-
-Phase 3: Sync
-  7. Fehlende Log-Einträge austauschen (Catch-Up)
-  8. Live-Sync aktivieren (neue Einträge sofort senden/empfangen)
-  9. Inbox-Nachrichten abholen (pro Device)
-```
-
-Die App ist nach Phase 1 benutzbar. Phase 2 und 3 laufen im Hintergrund.
 
 ## Architektur-Grundlage
 
