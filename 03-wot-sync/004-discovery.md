@@ -1,19 +1,19 @@
-# WoT Sync 008: Discovery
+# WoT Sync 004: Discovery
 
 - **Status:** Entwurf
 - **Autoren:** Anton Tranelis
 - **Datum:** 2026-04-22
 - **Scope:** Broker-Discovery, Profil-Service und Auffindbarkeit von Sync-Endpunkten
-- **Depends on:** Core 005, Sync 007
+- **Depends on:** Identity 003, Sync 003
 - **Conformance profile:** `wot-sync@0.1`
 
 ## Zusammenfassung
 
-Dieses Dokument spezifiziert wie Clients Broker und Daten im Netzwerk finden. Die Verifikation von Personen (QR-Code, Challenge-Response) ist in [Core 004](../01-wot-core/004-verifikation.md) spezifiziert.
+Dieses Dokument spezifiziert wie Clients Broker und Daten im Netzwerk finden. Die Verifikation von Personen (QR-Code, Challenge-Response) ist in [Trust 002](../02-wot-trust/002-verifikation.md) spezifiziert.
 
 ## Broker-Discovery
 
-Clients erhalten Broker-URLs über App-Defaults, manuelle Konfiguration, Space-Einladungen oder öffentliche Profile. Für Space-Dokumente sind Broker-URLs Teil der Space-Metadata (siehe [Sync 007](007-transport-und-broker.md#broker-zuordnung-und-multi-broker)). Für Inbox-Erreichbarkeit stehen Broker-URLs im DID-Dokument als Service-Endpoint.
+Clients erhalten Broker-URLs über App-Defaults, manuelle Konfiguration, Space-Einladungen oder öffentliche Profile. Für Space-Dokumente sind Broker-URLs Teil der Space-Metadata (siehe [Sync 003](003-transport-und-broker.md#broker-zuordnung-und-multi-broker)). Für Inbox-Erreichbarkeit stehen Broker-URLs im DID-Dokument als Service-Endpoint.
 
 ## Profil-Service
 
@@ -53,11 +53,11 @@ Die DID im Pfad MUSS URL-encoded sein (`did:key:z6Mk...` → `did%3Akey%3Az6Mk..
 
 ### JWS-Payload-Struktur
 
-Jede der drei Ressourcen ist ein JWS (siehe [Core 002](../01-wot-core/002-signaturen-und-verifikation.md)). Der Payload ist ein JSON-Objekt:
+Jede der drei Ressourcen ist ein JWS (siehe [Identity 002](../01-wot-identity/002-signaturen-und-verifikation.md)). Der Payload ist ein JSON-Objekt:
 
 **Profil (`/p/{did}`):**
 
-Das Profil enthält das DID-Dokument und soziale Profil-Daten in einem signierten JWS. Siehe [Core 005](../01-wot-core/005-did-resolution.md#profil-service-als-did-dokument-quelle).
+Das Profil enthält das DID-Dokument und soziale Profil-Daten in einem signierten JWS. Siehe [Identity 003](../01-wot-identity/003-did-resolution.md#profil-service-als-did-dokument-quelle).
 
 ```json
 {
@@ -131,13 +131,13 @@ Jede Ressource hat ihre eigene `version` (monoton, unabhängig von der Profil-Ve
 |------|-----|---------|-------------|
 | `did` | DID | Ja | Die DID des Users (MUSS mit dem URL-Pfad übereinstimmen) |
 | `version` | Integer | Ja | Monoton aufsteigende Versionsnummer. Schützt gegen Rollback-Attacken. |
-| `didDocument` | Object | Ja | DID-Dokument gemäß [Core 005](../01-wot-core/005-did-resolution.md) |
+| `didDocument` | Object | Ja | DID-Dokument gemäß [Identity 003](../01-wot-identity/003-did-resolution.md) |
 | `profile` | Object | Ja | Soziale Profil-Informationen (Name, Bio, Avatar, Protocols). |
 | `updatedAt` | ISO 8601 | Ja | Zeitstempel der letzten Änderung (informativ). |
 
 **Listen-Ressourcen (`/p/{did}/v`, `/p/{did}/a`):** `did`, `version`, `updatedAt` und genau eines von `verifications` oder `attestations`.
 
-**Innerhalb `didDocument`:** Siehe [Core 005 DID-Dokument-Struktur](../01-wot-core/005-did-resolution.md#did-dokument-struktur) für Pflichtfelder.
+**Innerhalb `didDocument`:** Siehe [Identity 003 DID-Dokument-Struktur](../01-wot-identity/003-did-resolution.md#did-dokument-struktur) für Pflichtfelder.
 
 **Innerhalb `profile`:**
 
@@ -154,7 +154,7 @@ Keys und Broker-URLs stehen ausschließlich im `didDocument` (`keyAgreement` und
 
 Der Server MUSS beim PUT:
 
-1. JWS-Signatur mit dem Ed25519-Key aus der DID verifizieren (inklusive `alg=EdDSA`-Whitelist, siehe [Core 002](../01-wot-core/002-signaturen-und-verifikation.md))
+1. JWS-Signatur mit dem Ed25519-Key aus der DID verifizieren (inklusive `alg=EdDSA`-Whitelist, siehe [Identity 002](../01-wot-identity/002-signaturen-und-verifikation.md))
 2. Den `did`-Wert im Payload extrahieren und mit der DID im URL-Pfad vergleichen — bei Mismatch: **403 Forbidden**
 3. Bei ungültiger Signatur: **400 Bad Request**
 4. **Versions-Monotonie prüfen:** `version` im neuen Payload MUSS strikt größer sein als der `version`-Wert der bereits gespeicherten Ressource (falls vorhanden). Andernfalls: **409 Conflict** mit dem aktuellen `version`-Wert im Fehler-Body.
@@ -200,4 +200,4 @@ Fehler-Bodies sollten `Content-Type: text/plain` sein mit einer lesbaren Fehlerm
 
 ## Daten-Discovery
 
-Ein neues Gerät findet Personal Doc und Space-Dokumente über bekannte Broker oder über Multi-Device-Sync mit einem bestehenden Gerät. Der Broker liefert Dokument-IDs für die authentifizierte DID; die konkreten Sync-Formate sind in [Sync 006](006-sync-protokoll.md) und [Sync 007](007-transport-und-broker.md) spezifiziert.
+Ein neues Gerät findet Personal Doc und Space-Dokumente über bekannte Broker oder über Multi-Device-Sync mit einem bestehenden Gerät. Der Broker liefert Dokument-IDs für die authentifizierte DID; die konkreten Sync-Formate sind in [Sync 002](002-sync-protokoll.md) und [Sync 003](003-transport-und-broker.md) spezifiziert.

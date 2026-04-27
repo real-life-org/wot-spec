@@ -8,7 +8,7 @@
 
 ## Zusammenfassung
 
-Dieses Dokument beschreibt wie eine WoT-Identität migriert werden kann — sei es wegen Schlüsselkompromittierung, Algorithmus-Upgrade oder DID-Methoden-Wechsel. Die Migration funktioniert unterschiedlich je nach DID-Methode, aber das Protokoll ist durch die `resolve()`-Abstraktion ([Core 005](../01-wot-core/005-did-resolution.md)) DID-Methoden-agnostisch: der Migrationsmechanismus ändert sich, das Protokoll darüber nicht.
+Dieses Dokument beschreibt wie eine WoT-Identität migriert werden kann — sei es wegen Schlüsselkompromittierung, Algorithmus-Upgrade oder DID-Methoden-Wechsel. Die Migration funktioniert unterschiedlich je nach DID-Methode, aber das Protokoll ist durch die `resolve()`-Abstraktion ([Identity 003](../01-wot-identity/003-did-resolution.md)) DID-Methoden-agnostisch: der Migrationsmechanismus ändert sich, das Protokoll darüber nicht.
 
 ## Wann wird Migration gebraucht?
 
@@ -36,7 +36,7 @@ Bei did:key IST die DID der Public Key. Jede Key-Änderung erzeugt eine neue DID
 }
 ```
 
-Signiert als JWS mit dem **alten** Ed25519-Key (siehe [Core 002](../01-wot-core/002-signaturen-und-verifikation.md)). Die Signatur beweist: der Besitzer der alten Identität autorisiert den Wechsel.
+Signiert als JWS mit dem **alten** Ed25519-Key (siehe [Identity 002](../01-wot-identity/002-signaturen-und-verifikation.md)). Die Signatur beweist: der Besitzer der alten Identität autorisiert den Wechsel.
 
 **Propagation:**
 
@@ -137,7 +137,7 @@ Bei Seed-Kompromittierung ist die Migration dringlich — der Angreifer kann die
 1. Sofort neuen Seed generieren → neue DID
 2. Migrations-Nachricht signieren (mit dem alten Key, der ja noch kontrolliert wird)
 3. An alle Kontakte propagieren
-4. Alle Space Keys rotieren (siehe [Sync 009](../02-wot-sync/009-gruppen.md))
+4. Alle Space Keys rotieren (siehe [Sync 005](../03-wot-sync/005-gruppen.md))
 
 **Race-Condition:** Wenn der Angreifer schneller ist und seinerseits eine Migrations-Nachricht sendet (auf eine von ihm kontrollierte DID), gibt es einen Konflikt. Kontakte sehen zwei konkurrierende Migrationen für dieselbe alte DID. **Auflösung:** Die zeitlich erste Migrations-Nachricht gewinnt — daher die Dringlichkeit. Kontakte SOLLTEN bei widersprüchlichen Migrationen den User über einen unabhängigen Kanal (persönlich, Telefon) kontaktieren.
 

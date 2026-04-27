@@ -14,7 +14,7 @@ Die Grundfrage: **Müssen wir bei 12-Wörter-BIP39-Mnemonics bleiben, oder gibt 
 
 ## Ausgangspunkt: Was wir aktuell haben
 
-Siehe [Core 001](../01-wot-core/001-identitaet-und-schluesselableitung.md) für die aktuelle Spec.
+Siehe [Identity 001](../01-wot-identity/001-identitaet-und-schluesselableitung.md) für die aktuelle Spec.
 
 ```
 BIP39 Mnemonic (12+ Wörter)
@@ -392,7 +392,7 @@ did:key bleibt. Rotation = neue DID erzeugen. Ein formalisiertes Migrations-Prot
 - Externe Referenzen werden "stale", aber ein Resolver-Protokoll könnte Migrations-Ketten verfolgen
 
 **Was wir dafür bauen müssten:**
-- Migration-Attestation-Format (neuer Signatur-Typ in Core 003)
+- Migration-Attestation-Format (neuer Signatur-Typ in Trust 001)
 - Guardian-Quorum-Protokoll
 - Time-Lock-Mechanismus gegen Race-Conditions mit Angreifer
 - Migration-Propagation über DIDComm-Inbox
@@ -570,7 +570,7 @@ Drei Strategien, die sich ergänzen:
 
 **1. DID-Document wird beim ersten Kontakt ausgetauscht und lokal gecached**
 
-Bei der In-Person-Verifikation (Core 004) werden DID-Documents mit ausgetauscht. Jeder Peer cached die DID-Documents seiner Kontakte lokal. Offline-Verifikation nutzt den Cache.
+Bei der In-Person-Verifikation (Trust 002) werden DID-Documents mit ausgetauscht. Jeder Peer cached die DID-Documents seiner Kontakte lokal. Offline-Verifikation nutzt den Cache.
 
 Konsistent mit unserem "Peer = Peer"-Modell: wenn zwei Peers sich direkt kennen, müssen sie nicht über einen Dritten resolven.
 
@@ -588,7 +588,7 @@ Das würde Attestations um einige KB vergrößern, ist aber für wichtige, langl
 
 ### Konkrete Offline-Szenarien
 
-**Szenario 1: In-Person-QR-Code-Verifikation (Core 004), beide offline**
+**Szenario 1: In-Person-QR-Code-Verifikation (Trust 002), beide offline**
 
 - Alice und Bob zeigen QR-Codes mit ihren DIDs
 - Die DIDs sind did:peer:4 short-form — Verifikation erfordert DID-Document
@@ -625,7 +625,7 @@ Für den ersten Verifikations-Schritt reicht das initiale DID-Document. Spätere
 
 ### Implikationen für die Spec
 
-Wir brauchen zusätzlich zu Core 001-002:
+Wir brauchen zusätzlich zu Identity 001-002:
 
 1. **DID-Document-Update-Attestation-Format** — wer darf was signieren (Master, Guardian-Quorum, Device-Keys mit begrenzten Rechten)
 2. **DID-Document-Distribution-Protokoll** — Updates im eigenen Log + Gossip an Kontakte + abrufbar vom wot-profiles-Service
@@ -645,7 +645,7 @@ Das ist substantiell. Jeder dieser Punkte ist konzeptionell geklärt (andere Pro
 | Key-Rotation | Nicht möglich (DID wechselt) | Standard-Operation, DID bleibt |
 | Multi-Device | Nicht sauber (alle teilen einen Key) | First-Class (Device-Keys separiert) |
 | QR-Code-Handshake | DID reicht | DID + DID-Document (long-form oder zusätzlich) |
-| Spec-Umfang | Core 001-002 (einfach) | Core 001-002 + DID-Document-Update + Distribution + Versioning |
+| Spec-Umfang | Identity 001-002 (einfach) | Identity 001-002 + DID-Document-Update + Distribution + Versioning |
 
 ### Nebeneffekt: Mnemonic verliert an Alleinstellung
 
@@ -777,6 +777,6 @@ Basierend auf der bisherigen Exploration, hier ein konsistentes Gesamt-Modell �
 
 ### Unsere zugehörigen Dokumente
 
-- [Core 001: Identität und Schlüsselableitung](../01-wot-core/001-identitaet-und-schluesselableitung.md) — aktueller Stand
+- [Identity 001: Identität und Schlüsselableitung](../01-wot-identity/001-identitaet-und-schluesselableitung.md) — aktueller Stand
 - [Identity Migration](identity-migration.md) — Schlüsselrotation
 - [Security Analysis](security-analysis.md) — M6 Device-Revokation

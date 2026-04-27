@@ -4,7 +4,7 @@
 - **Autoren:** Sebastian Galek, Anton Tranelis
 - **Datum:** 2026-04-16
 - **Scope:** HMC Gossip-Protokoll fuer Trust-Listen und Transaktionsdaten
-- **Depends on:** H01, H02, Sync 006, Sync 007
+- **Depends on:** H01, H02, Sync 002, Sync 003
 - **Conformance profile:** `wot-hmc@0.1`
 
 ## Zusammenfassung
@@ -13,7 +13,7 @@ Spezifiziert wie Trust Lists über die bestehende WoT Sync Infrastruktur (Inbox,
 
 ## Grundprinzip
 
-Die Gossip-Propagation nutzt den **Inbox-Kanal** (siehe [Sync 007](../02-wot-sync/007-transport-und-broker.md)), verschlüsselt mit ECIES (siehe [Sync 005](../02-wot-sync/005-verschluesselung.md)), als Transportweg. Der Broker braucht keine Änderungen — er sieht nur verschlüsselte Inbox-Nachrichten wie immer.
+Die Gossip-Propagation nutzt den **Inbox-Kanal** (siehe [Sync 003](../03-wot-sync/003-transport-und-broker.md)), verschlüsselt mit ECIES (siehe [Sync 001](../03-wot-sync/001-verschluesselung.md)), als Transportweg. Der Broker braucht keine Änderungen — er sieht nur verschlüsselte Inbox-Nachrichten wie immer.
 
 ```
 Alice aktualisiert ihre Trust List
@@ -33,7 +33,7 @@ Broker sieht: verschlüsselte Inbox-Nachrichten
 
 ## Nachrichtentyp: `trust-list-delta`
 
-Im Message Envelope (siehe [Sync 007](../02-wot-sync/007-transport-und-broker.md#message-envelope-didcomm-kompatibel)) wird ein neuer Typ definiert, verschlüsselt mit ECIES:
+Im Message Envelope (siehe [Sync 003](../03-wot-sync/003-transport-und-broker.md#message-envelope-didcomm-kompatibel)) wird ein neuer Typ definiert, verschlüsselt mit ECIES:
 
 ```json
 {
@@ -124,8 +124,11 @@ Trust Lists brauchen gezielte Zustellung (jeder Empfänger sieht andere Einträg
 │  Inbox, Broker, Store-and-Forward, E2EE,     │
 │  Message Envelope, Push Notifications        │
 ├──────────────────────────────────────────────┤
-│  WoT Core (001-004)                          │
-│  DID, Ed25519, Signaturen, Verifikation      │
+│  WoT Trust (003-004)                         │
+│  Attestations, Verifikation                  │
+├──────────────────────────────────────────────┤
+│  WoT Identity (001, 002, 005)                │
+│  DID, Ed25519, Signaturen, Resolution        │
 └──────────────────────────────────────────────┘
 ```
 
@@ -133,6 +136,6 @@ WoT Sync liefert die Rohre. HMC Extension definiert was durchfließt. Keine der 
 
 ## Referenzen
 
-- [Sync 007: Transport und Broker](../02-wot-sync/007-transport-und-broker.md) — Inbox-Kanal, Message Envelope
+- [Sync 003: Transport und Broker](../03-wot-sync/003-transport-und-broker.md) — Inbox-Kanal, Message Envelope
 - [H01: Trust-Scores](H01-trust-scores.md) — Trust-Levels, Trust Lists, SD-JWT
 - Sebastians ADR-06 — Gossip-Propagation (Originalentwurf)

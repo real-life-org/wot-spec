@@ -1,17 +1,17 @@
-# WoT Spec 003: Attestations
+# WoT Trust 001: Attestations
 
 - **Status:** Entwurf
 - **Autoren:** Anton Tranelis, Sebastian Galek
 - **Datum:** 2026-04-21
 - **Scope:** WoT Attestations als W3C VC 2.0 mit VC-JOSE-COSE/JWS
-- **Depends on:** Core 001, Core 002, Core 005, W3C VC 2.0, VC-JOSE-COSE
-- **Conformance profile:** `wot-core@0.1`
+- **Depends on:** Identity 001, Identity 002, Identity 003, W3C VC 2.0, VC-JOSE-COSE
+- **Conformance profile:** `wot-trust@0.1`
 
 ## Zusammenfassung
 
 Attestations sind das Herzstück des Web of Trust. Eine Attestation ist eine signierte, kryptografisch verifizierbare Aussage einer Person über eine andere Person, ein Projekt, einen Ort oder ein Ereignis.
 
-Attestations im Web of Trust sind **W3C Verifiable Credentials 2.0** — sie folgen dem offenen Standard und sind damit interoperabel mit anderen Systemen. Als Proof-Format verwenden wir das **VC-JOSE-COSE Profil** (W3C) — die Attestation wird als JWS Compact Serialization transportiert, konsistent mit [Core 002](002-signaturen-und-verifikation.md).
+Attestations im Web of Trust sind **W3C Verifiable Credentials 2.0** — sie folgen dem offenen Standard und sind damit interoperabel mit anderen Systemen. Als Proof-Format verwenden wir das **VC-JOSE-COSE Profil** (W3C) — die Attestation wird als JWS Compact Serialization transportiert, konsistent mit [Identity 002](../01-wot-identity/002-signaturen-und-verifikation.md).
 
 ## Referenzierte Standards
 
@@ -20,7 +20,7 @@ Attestations im Web of Trust sind **W3C Verifiable Credentials 2.0** — sie fol
 - **JWS** (RFC 7515) — JSON Web Signature
 - **DID Core** (W3C Recommendation) — Identifiers für Issuer und Subject
 - **Ed25519** (RFC 8032) — Signaturalgorithmus
-- **JCS** (RFC 8785) — Kanonisierung (siehe [Core 002](002-signaturen-und-verifikation.md))
+- **JCS** (RFC 8785) — Kanonisierung (siehe [Identity 002](../01-wot-identity/002-signaturen-und-verifikation.md))
 
 ## Grundprinzip
 
@@ -84,9 +84,9 @@ eyJhbGciOiJFZERTQSIsInR5cCI6InZjK2p3dCJ9.eyJAY29udGV4dCI6WyJodHRwcz...fQ.signatu
 { "alg": "EdDSA", "typ": "vc+jwt", "kid": "did:key:z6Mk...alice#sig-0" }
 ```
 
-- `alg`: MUSS `"EdDSA"` sein (siehe [Core 002](002-signaturen-und-verifikation.md), Algorithmus-Validierung)
+- `alg`: MUSS `"EdDSA"` sein (siehe [Identity 002](../01-wot-identity/002-signaturen-und-verifikation.md), Algorithmus-Validierung)
 - `typ`: MUSS `"vc+jwt"` sein — W3C VC-JOSE-COSE Standard Media Type
-- `kid`: Verification Method ID aus dem DID-Dokument des Issuers (siehe [Core 005](005-did-resolution.md)). Ermöglicht Key-Auflösung ohne den Payload zu parsen.
+- `kid`: Verification Method ID aus dem DID-Dokument des Issuers (siehe [Identity 003](../01-wot-identity/003-did-resolution.md)). Ermöglicht Key-Auflösung ohne den Payload zu parsen.
 
 **JWS Payload:** Der VC-Payload (oben, inkl. JWT Claims), kanonisiert mit JCS (RFC 8785), dann Base64URL-kodiert.
 
@@ -113,15 +113,15 @@ Es gibt kein eingebettetes `proof`-Objekt. Die Signatur ist der JWS selbst. Ein 
 | `id` | URI | Eindeutige ID der Attestation (z.B. `urn:uuid:...`) |
 | `credentialStatus` | Object | Widerrufs-Mechanismus (siehe Unveränderlichkeit) |
 
-Das ist der vollständige WoT Core. Keine weiteren Pflichtfelder. Extensions fügen Felder über eigene Contexts hinzu (siehe [Erweiterbarkeit](#erweiterbarkeit)).
+Das ist der vollständige WoT-Trust-Kern. Keine weiteren Pflichtfelder. Extensions fügen Felder über eigene Contexts hinzu (siehe [Erweiterbarkeit](#erweiterbarkeit)).
 
 ## Erweiterbarkeit
 
 Jede Implementierung MUSS den VC-Payload aus dem Abschnitt [Format](#format) verstehen: `@context`, `type`, `issuer`, `credentialSubject.claim`, `validFrom` + die JWT Claims (`iss`, `sub`, `nbf`). Extensions DÜRFEN eigene Context-URIs, `type`-Werte und Felder ergänzen.
 
-Unbekannte Extension-Felder MÜSSEN ignoriert werden, solange JWS-Signatur und Core-Pflichtfelder gültig sind. Die JWS-Signatur ist über den gesamten Payload verifizierbar, unabhängig davon ob eine Implementierung alle Extension-Felder semantisch versteht.
+Unbekannte Extension-Felder MÜSSEN ignoriert werden, solange JWS-Signatur und Trust-Pflichtfelder gültig sind. Die JWS-Signatur ist über den gesamten Payload verifizierbar, unabhängig davon ob eine Implementierung alle Extension-Felder semantisch versteht.
 
-SD-JWT VC, Trust-Listen, visuelle Darstellung oder Event-Bezüge sind Extensions und nicht Teil des WoT Core. Für Phase 1 funktioniert `https://web-of-trust.de/vocab/v1` als Type-Identifier; ein auflösbares JSON-LD-Context-Dokument kann später ergänzt werden.
+SD-JWT VC, Trust-Listen, visuelle Darstellung oder Event-Bezüge sind Extensions und nicht Teil von WoT Trust. Für Phase 1 funktioniert `https://web-of-trust.de/vocab/v1` als Type-Identifier; ein auflösbares JSON-LD-Context-Dokument kann später ergänzt werden.
 
 ## Empfängerprinzip
 
@@ -148,11 +148,11 @@ Januar:  Alice → Bob: "ist zuverlässig"
 Juni:    Alice → Bob: "hat mich enttäuscht"
 ```
 
-Beide Aussagen existieren. Beide sind signiert und wahr — zum jeweiligen Zeitpunkt. Die Trust-Propagation (siehe [Human Money Extension: Trust-Scores](../04-hmc-extensions/H01-trust-scores.md)) berücksichtigt beides — neuere Aussagen wiegen schwerer.
+Beide Aussagen existieren. Beide sind signiert und wahr — zum jeweiligen Zeitpunkt. Die Trust-Propagation (siehe [Human Money Extension: Trust-Scores](../05-hmc-extensions/H01-trust-scores.md)) berücksichtigt beides — neuere Aussagen wiegen schwerer.
 
 ### Widerruf (Credential Status)
 
-Im WoT-Core werden Attestations nicht formal widerrufen — stattdessen überschreibt eine neuere Attestation die ältere (siehe oben). Für Extensions die formalen Widerruf brauchen (z.B. HMC Trust-Scores, Transaktionen) DARF der W3C **StatusList2021** Mechanismus über das optionale `credentialStatus`-Feld genutzt werden. Details werden in den jeweiligen Extensions spezifiziert (siehe [H01](../04-hmc-extensions/H01-trust-scores.md), [H02](../04-hmc-extensions/H02-transactions.md)).
+In WoT Trust werden Attestations nicht formal widerrufen — stattdessen überschreibt eine neuere Attestation die ältere (siehe oben). Für Extensions die formalen Widerruf brauchen (z.B. HMC Trust-Scores, Transaktionen) DARF der W3C **StatusList2021** Mechanismus über das optionale `credentialStatus`-Feld genutzt werden. Details werden in den jeweiligen Extensions spezifiziert (siehe [H01](../05-hmc-extensions/H01-trust-scores.md), [H02](../05-hmc-extensions/H02-transactions.md)).
 
 ### Zukünftige Erweiterung: Verifiable Presentations (VP)
 
@@ -164,8 +164,8 @@ Für **externe Interop** (z.B. wenn ein externer Verifier WoT-Attestations prüf
 
 Um eine Attestation zu verifizieren:
 
-1. JWS-Header dekodieren und `alg` prüfen — MUSS `"EdDSA"` sein (siehe [Core 002](002-signaturen-und-verifikation.md))
-2. `kid` aus dem Header extrahieren → DID-Dokument via `resolve()` auflösen ([Core 005](005-did-resolution.md)) → Ed25519 Public Key aus `verificationMethod` / `assertionMethod`
+1. JWS-Header dekodieren und `alg` prüfen — MUSS `"EdDSA"` sein (siehe [Identity 002](../01-wot-identity/002-signaturen-und-verifikation.md))
+2. `kid` aus dem Header extrahieren → DID-Dokument via `resolve()` auflösen ([Identity 003](../01-wot-identity/003-did-resolution.md)) → Ed25519 Public Key aus `verificationMethod` / `assertionMethod`
 3. JWS-Signatur verifizieren gegen die exakt empfangenen Bytes `BASE64URL(header) + "." + BASE64URL(payload)` (keine Re-Kanonisierung)
 4. Payload dekodieren und parsen
 5. `@context` und `type` prüfen — enthält es `"WotAttestation"`?

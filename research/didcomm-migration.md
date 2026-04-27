@@ -77,14 +77,14 @@ Wir verfolgen **selektive DIDComm-Compliance** auf Envelope- und Utility-Ebene, 
 
 | Schicht | Status | Details |
 |---|---|---|
-| Plaintext Message Format | Library-validiert kompatibel | `id`, `typ`, `type` (URI), `from`, `to`, `created_time`, `body` ([Sync 007](../02-wot-sync/007-transport-und-broker.md#message-envelope-didcomm-kompatibel)); validiert mit `didcomm-node` und `@veramo/did-comm` |
+| Plaintext Message Format | Library-validiert kompatibel | `id`, `typ`, `type` (URI), `from`, `to`, `created_time`, `body` ([Sync 003](../03-wot-sync/003-transport-und-broker.md#message-envelope-didcomm-kompatibel)); validiert mit `didcomm-node` und `@veramo/did-comm` |
 | JWS Signaturen | WoT-Profil | JWS Compact für persistente WoT-Daten. Signierte WoT-Envelopes sind strukturell an DIDComm angelehnt, aber noch nicht als DIDComm Signed Messages library-validiert. |
 | Krypto-Primitive | Kompatibel | X25519, AES-256-GCM, Ed25519 |
-| Verschlüsselung | Eigenes Profil (ECIES) | ECIES statt DIDComm Authcrypt (ECDH-1PU). Begründung: siehe [Sync 005](../02-wot-sync/005-verschluesselung.md#didcomm-abgrenzung) |
+| Verschlüsselung | Eigenes Profil (ECIES) | ECIES statt DIDComm Authcrypt (ECDH-1PU). Begründung: siehe [Sync 001](../03-wot-sync/001-verschluesselung.md#didcomm-abgrenzung) |
 | Type-URIs | Kompatibel | `https://web-of-trust.de/protocols/.../1.0` |
-| Message Threading | **Spezifiziert (2026-04-19)** | `thid` und `pthid` optional im Envelope ([Sync 007](../02-wot-sync/007-transport-und-broker.md#threading)) |
+| Message Threading | **Spezifiziert (2026-04-19)** | `thid` und `pthid` optional im Envelope ([Sync 003](../03-wot-sync/003-transport-und-broker.md#threading)) |
 | Trust Ping | Entfernt (2026-04-22) | Presence-Abfrage über Broker, nicht per Peer-Ping |
-| Discover Features | Entfernt (2026-04-22) | Feature-Discovery über `protocols`-Feld im Profil ([Sync 008](../02-wot-sync/008-discovery.md)) |
+| Discover Features | Entfernt (2026-04-22) | Feature-Discovery über `protocols`-Feld im Profil ([Sync 004](../03-wot-sync/004-discovery.md)) |
 
 ### Was wir bewusst NICHT verfolgen
 
@@ -103,7 +103,7 @@ Wir verfolgen **selektive DIDComm-Compliance** auf Envelope- und Utility-Ebene, 
 | DID-Dokumente mit Service-Endpoints | Offen — relevant wenn wir externe DIDComm-Agenten erreichen wollen |
 | Interop-Test gegen SICPA `didcomm-rust` | Offen — praktische Verifikation |
 | Problem Report 2.0 | Offen — strukturierte Fehler, würde unsere Ad-hoc-Errors ersetzen |
-| Out-of-Band 2.0 | Offen — standardisiertes QR-Code-Invitation-Format (potentiell relevant für Core 004) |
+| Out-of-Band 2.0 | Offen — standardisiertes QR-Code-Invitation-Format (potentiell relevant für Trust 002) |
 
 ## Was jeder fehlende Teil konkret bedeutet
 
@@ -155,9 +155,9 @@ DIDComm braucht ein DID-Dokument das sagt wo der Mediator (Broker) erreichbar is
 ```
 
 Bei `did:key` werden die Key-Sektionen synthetisch aus dem Key generiert. Der Service-Endpoint kommt aus:
-- Dem Profil-Service (Sync 008)
+- Dem Profil-Service (Sync 004)
 - Der Space-Einladung (bei erstmaligem Kontakt)
-- Dem QR-Code bei In-Person-Verifikation (Core 004)
+- Dem QR-Code bei In-Person-Verifikation (Trust 002)
 
 ### Message Threading
 
@@ -271,7 +271,7 @@ Für uns relevant: die Schwächen betreffen hauptsächlich den Forward/Routing-F
 - Trust Ping / Discover Features — durch Broker-Presence und Profil-`protocols` ersetzt
 
 **Phase 2 (optional, nicht blockierend):**
-- Out-of-Band 2.0 als QR-Code-Format in Core 004 (Interop-Baustein, klein)
+- Out-of-Band 2.0 als QR-Code-Format in Trust 002 (Interop-Baustein, klein)
 - Problem Report 2.0 (strukturierte Fehler)
 - Library-validierte Signed-Envelope-Testvektoren, falls wir DIDComm-Signed-Kompatibilitaet beanspruchen wollen
 - DID-Dokumente mit Service-Endpoints (falls externe DIDComm-Agenten adressiert werden sollen)

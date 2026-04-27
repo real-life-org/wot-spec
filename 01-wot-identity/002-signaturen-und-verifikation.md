@@ -1,11 +1,11 @@
-# WoT Spec 002: Signaturen und Verifikation
+# WoT Identity 002: Signaturen und Verifikation
 
 - **Status:** Entwurf
 - **Autoren:** Anton Tranelis, Sebastian Galek
 - **Datum:** 2026-04-13
 - **Scope:** Signaturformate, JWS/JCS-Verifikation und Algorithmus-Validierung
-- **Depends on:** Core 001, Core 005, JWS, JCS, Ed25519
-- **Conformance profile:** `wot-core@0.1`
+- **Depends on:** Identity 001, Identity 003, JWS, JCS, Ed25519
+- **Conformance profile:** `wot-identity@0.1`
 
 ## Zusammenfassung
 
@@ -29,12 +29,12 @@ Dieses Dokument spezifiziert wie Daten im Web of Trust signiert und verifiziert 
 ## Signaturalgorithmus
 
 - **Algorithmus:** Ed25519 (RFC 8032)
-- **Schlüssel:** Abgeleitet wie in [Core 001](001-identitaet-und-schluesselableitung.md) spezifiziert
+- **Schlüssel:** Abgeleitet wie in [Identity 001](001-identitaet-und-schluesselableitung.md) spezifiziert
 - **Signaturgröße:** 64 Bytes
 
 ## Signaturformat: JWS Compact Serialization (RFC 7515)
 
-Das Core-Protokoll verwendet JWS (JSON Web Signature) als Signaturformat. JWS ist ein W3C-/IETF-Standard und wird auch von Verifiable Credentials verwendet.
+WoT Identity verwendet JWS (JSON Web Signature) als Signaturformat. JWS ist ein W3C-/IETF-Standard und wird auch von Verifiable Credentials verwendet.
 
 ```
 BASE64URL(header) . BASE64URL(payload) . BASE64URL(signature)
@@ -46,7 +46,7 @@ BASE64URL(header) . BASE64URL(payload) . BASE64URL(signature)
 { "alg": "EdDSA", "typ": "<kontextspezifisch>", "kid": "<DID-URL>" }
 ```
 
-`kid` (Key Identifier) ist **PFLICHT** in jedem WoT-JWS. Es identifiziert welcher konkrete Key die Signatur erzeugt hat. Für DID-gebundene Signaturen ist `kid` eine DID-URL mit Fragment (z.B. `did:key:z6Mk...#sig-0`). Der Verifier nutzt `kid` um über `resolve()` ([Core 005](005-did-resolution.md)) den richtigen Public Key zu finden. In Phase 1 ist das Fragment immer `#sig-0` (einziger Key). In Phase 2 (Per-Device-Keys) zeigt es auf den spezifischen Device-Key.
+`kid` (Key Identifier) ist **PFLICHT** in jedem WoT-JWS. Es identifiziert welcher konkrete Key die Signatur erzeugt hat. Für DID-gebundene Signaturen ist `kid` eine DID-URL mit Fragment (z.B. `did:key:z6Mk...#sig-0`). Der Verifier nutzt `kid` um über `resolve()` ([Identity 003](003-did-resolution.md)) den richtigen Public Key zu finden. In Phase 1 ist das Fragment immer `#sig-0` (einziger Key). In Phase 2 (Per-Device-Keys) zeigt es auf den spezifischen Device-Key.
 
 Für nicht-DID-gebundene Signaturen DARF `kid` ein kontextspezifischer Key-Identifier sein. Beispiel: Space-Capabilities werden mit dem `spaceCapabilitySigningKey` signiert; ihr `kid` ist `wot:space:<spaceId>#cap-<generation>` und wird gegen den beim Broker registrierten Space Capability Verification Key geprüft, nicht über DID-Resolution.
 
@@ -60,7 +60,7 @@ Das `typ`-Feld identifiziert den Inhalt des JWS. Kontextspezifische Werte:
 | WoT Envelope-JWS | `"wot-envelope+jwt"` | WoT-spezifischer signierter Envelope, strukturell an DIDComm angelehnt |
 | Log-Eintrag, interne Nachricht | `typ` kann weggelassen werden | Protokoll-intern |
 
-**Attestations verwenden `vc+jwt`** und enthalten sowohl W3C VC 2.0 Felder als auch JWT Registered Claims (siehe [Core 003](003-attestations.md)). Die JWT Claims sind redundant zu den VC-Feldern, stellen aber sicher dass Standard-JWT-Bibliotheken und externe VC-Verifier die Attestations korrekt parsen können.
+**Attestations verwenden `vc+jwt`** und enthalten sowohl W3C VC 2.0 Felder als auch JWT Registered Claims (siehe [Trust 001](../02-wot-trust/001-attestations.md)). Die JWT Claims sind redundant zu den VC-Feldern, stellen aber sicher dass Standard-JWT-Bibliotheken und externe VC-Verifier die Attestations korrekt parsen können.
 
 Empfänger prüfen das `typ`-Feld optional für Plausibilität. Die Sicherheit hängt nicht vom `typ` ab — die Algorithmus-Whitelist (siehe unten) ist die normative Verteidigung.
 
@@ -160,7 +160,7 @@ Verifier MÜSSEN das `alg`-Feld im JWS-Header prüfen **bevor** die Signatur ver
 
 **Warum diese Strenge:** Eine klassische JWS-Sicherheitslücke ist die Algorithmus-Konfusion. Wenn ein Verifier `alg=HS256` akzeptiert, könnte ein Angreifer den Public Key (der öffentlich aus der DID verfügbar ist) als HMAC-Secret nutzen und beliebige Nachrichten "signieren". Die Validierung gegen eine Whitelist ist die einzige Verteidigung.
 
-**Erweiterbarkeit:** Zukünftige Signaturtypen (z.B. BBS für Zero-Knowledge-Beweise) werden als Extension spezifiziert und erweitern die Algorithmus-Whitelist. Die Architektur ist darauf vorbereitet — das DID-Dokument ([Core 005](005-did-resolution.md)) kann mehrere `verificationMethod`-Einträge mit verschiedenen Key-Typen enthalten. Der Verifier prüft dann: ist der `alg` im JWS-Header in meiner Whitelist, und hat die aufgelöste DID einen passenden Key? Die Whitelist wird pro Implementierung konfiguriert — eine App die nur Ed25519 unterstützt, akzeptiert nur `"EdDSA"`. Eine App die BBS+ unterstützt, akzeptiert auch `"BBS"`.
+**Erweiterbarkeit:** Zukünftige Signaturtypen (z.B. BBS für Zero-Knowledge-Beweise) werden als Extension spezifiziert und erweitern die Algorithmus-Whitelist. Die Architektur ist darauf vorbereitet — das DID-Dokument ([Identity 003](003-did-resolution.md)) kann mehrere `verificationMethod`-Einträge mit verschiedenen Key-Typen enthalten. Der Verifier prüft dann: ist der `alg` im JWS-Header in meiner Whitelist, und hat die aufgelöste DID einen passenden Key? Die Whitelist wird pro Implementierung konfiguriert — eine App die nur Ed25519 unterstützt, akzeptiert nur `"EdDSA"`. Eine App die BBS+ unterstützt, akzeptiert auch `"BBS"`.
 
 ```typescript
 function verifyJws(jws: string, did: string): boolean {
@@ -188,4 +188,4 @@ Eine konforme Implementierung MUSS alle drei Test-Vektoren reproduzieren können
 
 **Wichtig:** Ed25519 signiert direkt die Bytes des Signing Input — kein SHA-256 Hash dazwischen. Ed25519 hasht intern mit SHA-512. SHA-256 wird nur für andere Zwecke im Protokoll verwendet (z.B. Content-Adressierung), nicht für die JWS-Signatur selbst.
 
-Das Message Envelope Format wird in [Sync 007](../02-wot-sync/007-transport-und-broker.md) spezifiziert.
+Das Message Envelope Format wird in [Sync 003](../03-wot-sync/003-transport-und-broker.md) spezifiziert.

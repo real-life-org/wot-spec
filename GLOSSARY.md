@@ -13,7 +13,17 @@ Die Spezifikation verwendet die folgenden Begriffe im Sinne von RFC 2119/RFC 817
 | **SOLLTE** | Starke Empfehlung. Abweichungen brauchen einen dokumentierten Grund. |
 | **DARF** | Erlaubnis oder optionale Fähigkeit. |
 
-Nicht-normative Abschnitte (z.B. `research/`) koennen bewusst freier formulieren. Normative Anforderungen stehen in `01-wot-core/`, `02-wot-sync/`, `03-rls-extensions/`, `04-hmc-extensions/`, `CONFORMANCE.md`, `schemas/` und `test-vectors/`.
+Nicht-normative Abschnitte (z.B. `research/`) koennen bewusst freier formulieren. Normative Anforderungen stehen in `01-wot-identity/`, `02-wot-trust/`, `03-wot-sync/`, `04-rls-extensions/`, `05-hmc-extensions/`, `CONFORMANCE.md`, `schemas/` und `test-vectors/`.
+
+## Profile und Schichten
+
+| Begriff | Definition |
+|---|---|
+| **WoT Identity** | Kryptographische Basisschicht: Seed/Key-Derivation, DID, JWS/JCS, `kid` und DID-Resolution. Konformitaetsprofil: `wot-identity@0.1`. |
+| **WoT Trust** | Vertrauenssemantik auf WoT Identity: Attestations, Verification-Attestations und reale Verifikation. Konformitaetsprofil: `wot-trust@0.1`. |
+| **WoT Sync** | Infrastruktur fuer verschluesselte Replikation, Broker, Inbox, Gruppen und Personal Doc. Baut auf WoT Identity auf, aber nicht zwingend auf WoT Trust. Konformitaetsprofil: `wot-sync@0.1`. |
+| **Persistentes WoT-Objekt** | Dauerhaft verifizierbares oder gespeichertes Objekt wie Attestation-JWS, Capability-JWS oder Log-Eintrag-JWS. Die Autoritaet liegt im Objekt selbst, nicht im Transport-Envelope. |
+| **Transport Envelope** | Ephemeres Framing fuer Uebertragung und Routing. Ein Transport Envelope DARF persistente WoT-Objekte im Body tragen, ist aber nicht selbst deren Autoritaetsanker. |
 
 ## Identitaet und Keys
 
@@ -45,7 +55,7 @@ Nicht-normative Abschnitte (z.B. `research/`) koennen bewusst freier formulieren
 | **Broker** | Immer-online Peer fuer Store-and-Forward, Inbox, Log-Sync und Push-Notifications. Kein vertrauenswuerdiger Klartext-Server. |
 | **Inbox-Broker** | Broker fuer direkte 1:1-Nachrichten an eine DID. Kann im DID-Dokument oder Profil-Service veroeffentlicht werden. |
 | **Space-Broker** | Broker fuer ein bestimmtes Space-Dokument. Wird in Space-Einladungen transportiert und nicht oeffentlich im DID-Dokument veroeffentlicht. |
-| **DIDComm Plaintext Envelope** | DIDComm-v2-kompatible Plaintext Message mit `typ: "application/didcomm-plain+json"`. Der Anspruch gilt auf Envelope-Ebene, nicht fuer DIDComm-JWE/Authcrypt. |
+| **DIDComm Plaintext Envelope** | DIDComm-v2-kompatible Plaintext Message mit `typ: "application/didcomm-plain+json"`. Der Anspruch gilt nur auf ephemerer Envelope-Ebene, nicht fuer persistente WoT-Objekte und nicht fuer DIDComm-JWE/Authcrypt. |
 | **WoT Envelope-JWS** | WoT-spezifisch signierter Envelope. Strukturell an DIDComm Signed Messages angelehnt, aber nicht als library-validierte DIDComm Signed Message beansprucht. |
 | **ECIES** | WoT-Verschluesselung fuer 1:1-Inbox-Nachrichten: X25519 + HKDF-SHA256 + AES-256-GCM. |
 | **Log-Eintrag** | JWS-signierter Datensatz im Append-only Log eines Dokuments. Enthaelt u.a. `seq`, `deviceId`, `docId`, `authorKid`, `keyGeneration`, `data`. |

@@ -1,11 +1,11 @@
-# WoT Spec 004: Verifikation
+# WoT Trust 002: Verifikation
 
 - **Status:** Entwurf
 - **Autoren:** Anton Tranelis
 - **Datum:** 2026-04-22
 - **Scope:** In-person Verification, QR-Challenges, Nonce-History und Verification-Attestations
-- **Depends on:** Core 001, Core 002, Core 003, Core 005
-- **Conformance profile:** `wot-core@0.1`
+- **Depends on:** Identity 001, Identity 002, Trust 001, Identity 003
+- **Conformance profile:** `wot-trust@0.1`
 
 ## Zusammenfassung
 
@@ -13,10 +13,10 @@ Dieses Dokument spezifiziert wie zwei Menschen einander ihre Identität beweisen
 
 ## Referenzierte Dokumente
 
-- [Core 001: Identität](001-identitaet-und-schluesselableitung.md) — DID, Ed25519 Public Key
-- [Core 002: Signaturen](002-signaturen-und-verifikation.md) — JWS, Ed25519
-- [Core 003: Attestations](003-attestations.md) — Verifiable Credentials
-- [Sync 005: Verschlüsselung](../02-wot-sync/005-verschluesselung.md) — X25519 Encryption Key
+- [Identity 001: Identität](../01-wot-identity/001-identitaet-und-schluesselableitung.md) — DID, Ed25519 Public Key
+- [Identity 002: Signaturen](../01-wot-identity/002-signaturen-und-verifikation.md) — JWS, Ed25519
+- [Trust 001: Attestations](001-attestations.md) — Verifiable Credentials
+- [Sync 001: Verschlüsselung](../03-wot-sync/001-verschluesselung.md) — X25519 Encryption Key
 
 ## Grundprinzip
 
@@ -58,7 +58,7 @@ Der QR-Code enthält den JSON-String direkt (kein URL-Encoding, keine externe UR
 
 **Warum kein separater Ed25519 Public Key?** Der Signing Key ist in der `did:key` kodiert — er muss nicht zusätzlich übertragen werden.
 
-**Warum `enc`?** Der X25519 Encryption Key wird über einen separaten HKDF-Pfad abgeleitet (siehe [Sync 005](../02-wot-sync/005-verschluesselung.md)) und ist nicht aus der DID ableitbar. Damit hat der Gegenüber nach dem Scan sofort alles was er für verschlüsselte Kommunikation braucht.
+**Warum `enc`?** Der X25519 Encryption Key wird über einen separaten HKDF-Pfad abgeleitet (siehe [Sync 001](../03-wot-sync/001-verschluesselung.md)) und ist nicht aus der DID ableitbar. Damit hat der Gegenüber nach dem Scan sofort alles was er für verschlüsselte Kommunikation braucht.
 
 ### QR-Code-Regenerierung
 
@@ -117,7 +117,7 @@ Die Sicherheitsgarantie der Online-Verifikation ist deshalb bewusst enger defini
 
 Der Empfänger einer Verification-Attestation prüft:
 
-1. Ist die JWS-Signatur gültig für den `issuer`? (inklusive `alg=EdDSA` Whitelist, siehe [Core 002](002-signaturen-und-verifikation.md#algorithmus-validierung-muss))
+1. Ist die JWS-Signatur gültig für den `issuer`? (inklusive `alg=EdDSA` Whitelist, siehe [Identity 002](../01-wot-identity/002-signaturen-und-verifikation.md#algorithmus-validierung-muss))
 2. Enthält die Attestation-ID die aktive Challenge-Nonce?
 3. Ist der `ts` aus der Challenge aktuell (nicht älter als 5 Minuten)?
 
@@ -170,7 +170,7 @@ Die Offline-Verifikation ist etwas schwächer — sie hat keinen kryptographisch
 
 ## Verification-Attestation
 
-Jede Partei erstellt eine Verification-Attestation für die andere — als JWS-signiertes W3C Verifiable Credential 2.0 (VC-JOSE-COSE Profil, siehe [Core 003](003-attestations.md)):
+Jede Partei erstellt eine Verification-Attestation für die andere — als JWS-signiertes W3C Verifiable Credential 2.0 (VC-JOSE-COSE Profil, siehe [Trust 001](001-attestations.md)):
 
 **JWS-Payload:**
 
@@ -197,7 +197,7 @@ Jede Partei erstellt eine Verification-Attestation für die andere — als JWS-s
 
 Die `jti` (Attestation-ID) enthält die Nonce aus dem QR-Code, damit der Empfänger sie seiner aktiven Challenge zuordnen kann.
 
-Die Verification-Attestation sagt: **"Ich habe diese Person getroffen und ihre Identität verifiziert."** Sie wird wie jede andere Attestation behandelt — der Empfänger besitzt sie und entscheidet ob er sie akzeptiert und zeigt (Empfängerprinzip, siehe [Core 003](003-attestations.md)).
+Die Verification-Attestation sagt: **"Ich habe diese Person getroffen und ihre Identität verifiziert."** Sie wird wie jede andere Attestation behandelt — der Empfänger besitzt sie und entscheidet ob er sie akzeptiert und zeigt (Empfängerprinzip, siehe [Trust 001](001-attestations.md)).
 
 ### Zustellung
 
@@ -214,7 +214,7 @@ Der X25519 Encryption Public Key erreicht andere Teilnehmer auf zwei Wegen:
 1. **QR-Code (In-Person):** Das `enc`-Feld im QR-Code — sofort verfügbar, auch offline
 2. **Profil-Service (Online):** Veröffentlicht im Nutzerprofil unter `encryptionPublicKey` — für Kontakte die nicht per QR-Code ausgetauscht wurden (z.B. Space-Einladungen über Dritte)
 
-Siehe [Sync 005: Encryption Key Discovery](../02-wot-sync/005-verschluesselung.md#encryption-key-discovery) für Details.
+Siehe [Sync 001: Encryption Key Discovery](../03-wot-sync/001-verschluesselung.md#encryption-key-discovery) für Details.
 
 ## Verifikation ohne physisches Treffen
 

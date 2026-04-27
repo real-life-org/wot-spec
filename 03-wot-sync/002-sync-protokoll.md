@@ -1,10 +1,10 @@
-# WoT Sync 006: Sync-Protokoll
+# WoT Sync 002: Sync-Protokoll
 
 - **Status:** Entwurf
 - **Autoren:** Anton Tranelis
 - **Datum:** 2026-04-13
 - **Scope:** Append-only Logs, Sequenzen, Konflikterkennung und Sync-Ablauf
-- **Depends on:** Core 002, Sync 005
+- **Depends on:** Identity 002, Sync 001
 - **Conformance profile:** `wot-sync@0.1`
 
 ## Zusammenfassung
@@ -14,7 +14,7 @@ Dieses Dokument spezifiziert wie Daten zwischen Peers synchronisiert werden — 
 ## Referenzierte Standards
 
 - **Ed25519** (RFC 8032) — Signatur der Log-Einträge
-- **AES-256-GCM** (NIST SP 800-38D) — Verschlüsselung der Payloads (siehe [Sync 005](005-verschluesselung.md))
+- **AES-256-GCM** (NIST SP 800-38D) — Verschlüsselung der Payloads (siehe [Sync 001](001-verschluesselung.md))
 
 ## Grundprinzip
 
@@ -36,7 +36,7 @@ Jeder Peer führt einen Append-only Log pro Dokument. Jeder Eintrag ist ein vers
 
 ### Log-Eintrag
 
-Ein Log-Eintrag ist ein **JWS-signierter Datensatz**. Er wird als opaker JWS Compact String in einer `log-entry`-Nachricht transportiert (siehe [Sync 007](007-transport-und-broker.md#wire-formate-der-sync-nachrichten)) und im Append-only Log persistiert.
+Ein Log-Eintrag ist ein **persistentes WoT-Objekt**: ein JWS-signierter Datensatz, der im Append-only Log gespeichert wird. Er ist selbst keine DIDComm Message. Er DARF als opaker JWS Compact String in einer `log-entry`-Nachricht oder `sync-response` transportiert werden (siehe [Sync 003](003-transport-und-broker.md#wire-formate-der-sync-nachrichten)).
 
 **JWS-Payload:**
 
@@ -58,13 +58,13 @@ Ein Log-Eintrag ist ein **JWS-signierter Datensatz**. Er wird als opaker JWS Com
 | `deviceId` | UUID v4 | Ja | Welches Gerät hat den Eintrag erzeugt |
 | `docId` | UUID v4 | Ja | Zu welchem Dokument gehört der Eintrag |
 | `authorKid` | DID-URL | Ja | Verification Method ID des Signierenden (z.B. `did:key:z6Mk...#sig-0`). DID wird aus dem Teil vor `#` extrahiert. In Phase 1 ist das Fragment immer `#sig-0` (einziger Key). In Phase 2 identifiziert es einen spezifischen Device-Key. |
-| `keyGeneration` | Integer | Ja | Generation des Space Content Keys der zur Verschlüsselung verwendet wurde (siehe [Sync 005](005-verschluesselung.md)) |
-| `data` | String | Ja | Base64URL-kodierter AES-256-GCM Ciphertext (Nonce + Ciphertext + Auth Tag, siehe [Sync 005](005-verschluesselung.md)) |
+| `keyGeneration` | Integer | Ja | Generation des Space Content Keys der zur Verschlüsselung verwendet wurde (siehe [Sync 001](001-verschluesselung.md)) |
+| `data` | String | Ja | Base64URL-kodierter AES-256-GCM Ciphertext (Nonce + Ciphertext + Auth Tag, siehe [Sync 001](001-verschluesselung.md)) |
 | `timestamp` | ISO 8601 | Ja | Erstellungszeitpunkt (UTC) |
 
 ### seq-Konsistenz (MUSS)
 
-Der `seq`-Wert ist sicherheitskritisch, weil er in die AES-256-GCM-Nonce-Konstruktion einfließt (siehe [Sync 005](005-verschluesselung.md#nonce-konstruktion)). Ein Wiederverwenden von `seq` durch dasselbe Device führt zu Nonce-Reuse.
+Der `seq`-Wert ist sicherheitskritisch, weil er in die AES-256-GCM-Nonce-Konstruktion einfließt (siehe [Sync 001](001-verschluesselung.md#nonce-konstruktion)). Ein Wiederverwenden von `seq` durch dasselbe Device führt zu Nonce-Reuse.
 
 **Anforderungen:**
 
@@ -77,19 +77,19 @@ Der `seq`-Wert ist sicherheitskritisch, weil er in die AES-256-GCM-Nonce-Konstru
 
 - Der Client MUSS lokale Persistenz vor Übermittlung an den Broker durchführen.
 - Beim App-Start oder Reconnect MUSS der Client für jede aktive `(deviceId, docId)`-Kombination `broker_seq` und lokalen persistierten `local_seq` vergleichen.
-- Falls `broker_seq > local_seq`, MUSS der Client Restore/Clone annehmen, eine neue zufällige `deviceId` generieren, die alte `deviceId` per signierter `device-revoke`-Nachricht deaktivieren (siehe [Sync 007](007-transport-und-broker.md#device-deaktivierung)) und neue Einträge unter der neuen `deviceId` ab `seq=0` schreiben.
-- Extensions MÜSSEN über den `deviceId`-Wechsel informiert werden, wenn sie device-spezifische Felder führen (siehe [Sync 010](010-personal-doc.md)).
+- Falls `broker_seq > local_seq`, MUSS der Client Restore/Clone annehmen, eine neue zufällige `deviceId` generieren, die alte `deviceId` per signierter `device-revoke`-Nachricht deaktivieren (siehe [Sync 003](003-transport-und-broker.md#device-deaktivierung)) und neue Einträge unter der neuen `deviceId` ab `seq=0` schreiben.
+- Extensions MÜSSEN über den `deviceId`-Wechsel informiert werden, wenn sie device-spezifische Felder führen (siehe [Sync 006](006-personal-doc.md)).
 - Bei parallelen Schreibvorgängen MUSS `seq`-Allocation atomar über `(deviceId, docId, keyGeneration)` erfolgen. Browser-Implementierungen SOLLEN Cross-Tab-Koordination verwenden.
 
 ### Signatur des Log-Eintrags
 
-Der Log-Eintrag wird als JWS Compact Serialization signiert, gemäß [Core 002](../01-wot-core/002-signaturen-und-verifikation.md): Payload mit JCS kanonisieren, Base64URL-kodieren, Ed25519-Signatur über den JWS Signing Input erzeugen.
+Der Log-Eintrag wird als JWS Compact Serialization signiert, gemäß [Identity 002](../01-wot-identity/002-signaturen-und-verifikation.md): Payload mit JCS kanonisieren, Base64URL-kodieren, Ed25519-Signatur über den JWS Signing Input erzeugen.
 
-Ein Empfänger verifiziert die Signatur indem er die DID aus `authorKid` extrahiert (Teil vor `#`), das DID-Dokument via `resolve()` auflöst ([Core 005](../01-wot-core/005-did-resolution.md)), die `verificationMethod` mit der passenden `id` findet und den Public Key daraus extrahiert.
+Ein Empfänger verifiziert die Signatur indem er die DID aus `authorKid` extrahiert (Teil vor `#`), das DID-Dokument via `resolve()` auflöst ([Identity 003](../01-wot-identity/003-did-resolution.md)), die `verificationMethod` mit der passenden `id` findet und den Public Key daraus extrahiert.
 
-### Transport über DIDComm
+### Transport-Framing
 
-Ein Log-Eintrag wird als `entry` im `body` einer DIDComm-Plaintext-Nachricht transportiert:
+Ein einzelner Log-Eintrag KANN als `entry` im `body` einer DIDComm-Plaintext-Nachricht transportiert werden:
 
 ```json
 {
@@ -106,6 +106,8 @@ Ein Log-Eintrag wird als `entry` im `body` einer DIDComm-Plaintext-Nachricht tra
 ```
 
 Der Log-Eintrag ist bereits mit dem Space Content Key verschlüsselt und JWS-signiert. Die DIDComm-Nachricht transportiert ihn nur; zusätzliche ECIES-Verschlüsselung ist nicht nötig.
+
+Der DIDComm-Envelope ist **kein Autoritätsanker** für den Log-Eintrag. Empfänger MÜSSEN die Autorenschaft über `authorKid` im Log-Entry-JWS prüfen und DÜRFEN sich dafür nicht auf `from` im Envelope verlassen. Bei Bulk-Sync SOLLEN mehrere Log-Einträge als JWS-Strings in einer `sync-response` transportiert werden, statt jeden Eintrag einzeln zu wrappen.
 
 ### Verschlüsselter Payload (`data`)
 
@@ -125,7 +127,7 @@ Der entschlüsselte Payload ist opak. Der CRDT-Typ steht in der Space-Metadata, 
 
 ## Sync-Modi
 
-Das Log-Protokoll unterstützt Live-Sync und Catch-Up. Peers tauschen Heads pro `(docId, deviceId)` aus und senden fehlende Einträge. Push-Notifications sind nur ein Wecksignal; der Client holt fehlende Einträge danach über normalen Catch-Up (siehe [Sync 007](007-transport-und-broker.md#push-notifications)).
+Das Log-Protokoll unterstützt Live-Sync und Catch-Up. Peers tauschen Heads pro `(docId, deviceId)` aus und senden fehlende Einträge. Push-Notifications sind nur ein Wecksignal; der Client holt fehlende Einträge danach über normalen Catch-Up (siehe [Sync 003](003-transport-und-broker.md#push-notifications)).
 
 ## Censorship- und Split-Brain-Detection
 
@@ -133,7 +135,7 @@ Das Sync-Protokoll konvergiert, solange Peers dieselben Log-Einträge sehen. Bro
 
 ### Detection durch Multi-Source-Sync
 
-Clients SOLLEN regelmäßig gegen mehrere verfügbare Quellen syncen: mehrere Broker desselben Space (siehe [Sync 007 Multi-Broker](007-transport-und-broker.md#broker-zuordnung-und-multi-broker)) oder direkte P2P-Peers.
+Clients SOLLEN regelmäßig gegen mehrere verfügbare Quellen syncen: mehrere Broker desselben Space (siehe [Sync 003 Multi-Broker](003-transport-und-broker.md#broker-zuordnung-und-multi-broker)) oder direkte P2P-Peers.
 
 Das existierende `sync-request` gibt Heads pro `deviceId` zurück — der Vergleich ist ein einfacher Abgleich der Heads-Vektoren zweier Quellen:
 
@@ -154,14 +156,14 @@ Zwei Dokumentarten verwenden dasselbe Sync-Protokoll:
 
 | Dokument | Synced zwischen | Inhalt | Key-Herkunft | Spezifiziert in |
 |---|---|---|---|---|
-| **Personal Doc** | Eigene Geräte des Users | Profil, Devices, Kontakte, Verifikationen, empfangene Attestations, Space-Mitgliedschaften, Space Content Keys | Deterministisch aus dem Seed abgeleitet | [Sync 010](010-personal-doc.md) |
-| **Space-Dokument (pro Space)** | Alle Members des Space | CRDT-Daten des Spaces, Mitgliederliste | Zufällig generiert, per ECIES verteilt | [Sync 009](009-gruppen.md) |
+| **Personal Doc** | Eigene Geräte des Users | Profil, Devices, Kontakte, Verifikationen, empfangene Attestations, Space-Mitgliedschaften, Space Content Keys | Deterministisch aus dem Seed abgeleitet | [Sync 006](006-personal-doc.md) |
+| **Space-Dokument (pro Space)** | Alle Members des Space | CRDT-Daten des Spaces, Mitgliederliste | Zufällig generiert, per ECIES verteilt | [Sync 005](005-gruppen.md) |
 
 Jedes Dokument hat seinen eigenen Log mit eigener `docId`. Personal-Doc-Sync und Space-Sync sind unabhängig.
 
 ## Direkte Nachrichten (Inbox)
 
-Direkte 1:1-Nachrichten wie Attestations, Space-Einladungen, Verifications und Key-Rotation laufen über die Inbox des Brokers (siehe [Sync 007](007-transport-und-broker.md)), nicht über den Log.
+Direkte 1:1-Nachrichten wie Attestations, Space-Einladungen, Verifications und Key-Rotation laufen über die Inbox des Brokers (siehe [Sync 003](003-transport-und-broker.md)), nicht über den Log.
 
 ## Architektur-Grundlage
 

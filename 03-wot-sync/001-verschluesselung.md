@@ -1,10 +1,10 @@
-# WoT Sync 005: Verschlüsselung
+# WoT Sync 001: Verschlüsselung
 
 - **Status:** Entwurf
 - **Autoren:** Anton Tranelis
 - **Datum:** 2026-04-13
 - **Scope:** ECIES, AES-GCM, Space Keys und Nonce-Konstruktion im Sync Layer
-- **Depends on:** Core 001, Core 002, Core 005
+- **Depends on:** Identity 001, Identity 002, Identity 003
 - **Conformance profile:** `wot-sync@0.1`
 
 ## Zusammenfassung
@@ -36,7 +36,7 @@ Hintergrund: [Security Analysis M1](../research/security-analysis.md#m1-timing-a
 
 ## Verschlüsselungs-Schlüssel
 
-Aus dem BIP39-Seed (siehe [Core 001](../01-wot-core/001-identitaet-und-schluesselableitung.md)):
+Aus dem BIP39-Seed (siehe [Identity 001](../01-wot-identity/001-identitaet-und-schluesselableitung.md)):
 
 ```
 BIP39 Seed
@@ -46,13 +46,13 @@ BIP39 Seed
 
 Der Verschlüsselungs-Schlüssel wird auf einem separaten HKDF-Pfad vom Identitäts-Schlüssel abgeleitet. Beide sind deterministisch aus demselben Seed. Beide sind auf allen Geräten des Users verfügbar.
 
-Die birationale Abbildung (Ed25519 → Curve25519 → X25519) ist NICHT erlaubt — Browser-Implementierungen (Web Crypto API) erzeugen Ed25519-Keys als `non-extractable` und können den rohen Private Key nicht für die Umrechnung auslesen. Der separate HKDF-Pfad ist die einzige normative Methode. Siehe [Core 001](../01-wot-core/001-identitaet-und-schluesselableitung.md#weitere-schlüssel).
+Die birationale Abbildung (Ed25519 → Curve25519 → X25519) ist NICHT erlaubt — Browser-Implementierungen (Web Crypto API) erzeugen Ed25519-Keys als `non-extractable` und können den rohen Private Key nicht für die Umrechnung auslesen. Der separate HKDF-Pfad ist die einzige normative Methode. Siehe [Identity 001](../01-wot-identity/001-identitaet-und-schluesselableitung.md#weitere-schlüssel).
 
 ## Encryption Key Discovery
 
 Der X25519 Encryption Public Key ist **nicht** aus der `did:key` ableitbar — die DID kodiert nur den Ed25519 Signing Key. Der Encryption Key wird über einen separaten HKDF-Pfad abgeleitet und muss explizit transportiert werden.
 
-Der Key wird entweder im `enc`-Feld der QR-Challenge ([Core 004](../01-wot-core/004-verifikation.md)) oder als `keyAgreement` im DID-Dokument/Profil-Service ([Core 005](../01-wot-core/005-did-resolution.md), [Sync 008](008-discovery.md)) transportiert.
+Der Key wird entweder im `enc`-Feld der QR-Challenge ([Trust 002](../02-wot-trust/002-verifikation.md)) oder als `keyAgreement` im DID-Dokument/Profil-Service ([Identity 003](../01-wot-identity/003-did-resolution.md), [Sync 004](004-discovery.md)) transportiert.
 
 Clients MÜSSEN den Encryption Key nach dem ersten Empfang lokal cachen. In JWE-Headern (`kid`, `skid`) wird die DID ohne Fragment verwendet — die Auflösung zum X25519-Key geschieht protokollintern über den lokalen Cache, nicht über did:key-Fragment-Auflösung.
 
@@ -84,13 +84,13 @@ Nonce = SHA-256(deviceId || "|" || seq)[0:12]
 
 Eindeutigkeit folgt aus den Protokoll-Garantien:
 
-- `seq` ist monoton aufsteigend pro `deviceId` pro `docId` (siehe [Sync 006](006-sync-protokoll.md))
+- `seq` ist monoton aufsteigend pro `deviceId` pro `docId` (siehe [Sync 002](002-sync-protokoll.md))
 - `deviceId` ist per UUID v4 eindeutig pro Device
 - Damit ist `(deviceId, seq)` eindeutig innerhalb eines Dokuments
 - **Jeder Space Content Key wird exakt für eine `docId` verwendet** — ein Space hat genau ein Dokument, ein Dokument hat genau einen Key pro Generation. Derselbe Key wird NIEMALS für mehrere docIds verwendet.
 - Folge: `(Space Content Key, Nonce)` kann nicht kollidieren — die Nonce ist pro docId eindeutig und der Key ist pro docId eindeutig
 
-Voraussetzung: der Client MUSS vor jedem Schreibvorgang den aktuellen `seq`-Stand aus dem Sync-Protokoll abrufen, nicht nur auf lokalen State vertrauen. Bei einer Divergenz (z.B. nach Device-Restore) MUSS der höhere Wert verwendet werden. Siehe [Sync 006](006-sync-protokoll.md#seq-konsistenz-muss).
+Voraussetzung: der Client MUSS vor jedem Schreibvorgang den aktuellen `seq`-Stand aus dem Sync-Protokoll abrufen, nicht nur auf lokalen State vertrauen. Bei einer Divergenz (z.B. nach Device-Restore) MUSS der höhere Wert verwendet werden. Siehe [Sync 002](002-sync-protokoll.md#seq-konsistenz-muss).
 
 Deterministische Nonces vermeiden Birthday-Kollisionen zufälliger 96-Bit-Nonces und reduzieren Abhängigkeit von RNG-Qualität.
 
@@ -123,7 +123,7 @@ Für direkte Nachrichten zwischen zwei Parteien (Attestations, Einladungen, Key-
 
 ### Sender-Authentifizierung
 
-ECIES allein beweist nicht, von wem die Nachricht kommt — der Empfänger weiß nur, dass sie für ihn bestimmt war. Die Sender-Identität wird über eine **separate JWS-Signatur** sichergestellt: Jede 1:1-Nachricht wird vor der Verschlüsselung mit dem Ed25519-Key des Senders signiert (siehe [Core 002](../01-wot-core/002-signaturen-und-verifikation.md)). Der Empfänger entschlüsselt zuerst, dann verifiziert er die Signatur.
+ECIES allein beweist nicht, von wem die Nachricht kommt — der Empfänger weiß nur, dass sie für ihn bestimmt war. Die Sender-Identität wird über eine **separate JWS-Signatur** sichergestellt: Jede 1:1-Nachricht wird vor der Verschlüsselung mit dem Ed25519-Key des Senders signiert (siehe [Identity 002](../01-wot-identity/002-signaturen-und-verifikation.md)). Der Empfänger entschlüsselt zuerst, dann verifiziert er die Signatur.
 
 ### Forward Secrecy — bewusste Limitation
 
@@ -134,7 +134,7 @@ ECIES verwendet einen ephemeren Sender-Key und den statischen X25519-Key des Emp
 
 **Mitigations:**
 
-- Der BIP39-Seed MUSS auf dem Gerät stark geschützt werden (siehe [Core 001](../01-wot-core/001-identitaet-und-schluesselableitung.md#seed-schutz-auf-dem-gerät))
+- Der BIP39-Seed MUSS auf dem Gerät stark geschützt werden (siehe [Identity 001](../01-wot-identity/001-identitaet-und-schluesselableitung.md#seed-schutz-auf-dem-gerät))
 - Hochsensitive Nachrichten SOLLTEN eine kurze Lebensdauer in der Inbox haben (nach Zustellung löschen)
 
 ### Verschlüsseltes Nachrichtenformat
@@ -155,11 +155,11 @@ ECIES verwendet einen ephemeren Sender-Key und den statischen X25519-Key des Emp
 
 ### DIDComm-Abgrenzung
 
-WoT nutzt ECIES + inneren JWS statt DIDComm Authcrypt. Interoperabilität mit DIDComm-Clients wird über die Envelope-Ebene hergestellt (siehe [Sync 007](007-transport-und-broker.md)), nicht über die Verschlüsselungsschicht.
+WoT nutzt ECIES + inneren JWS statt DIDComm Authcrypt. Interoperabilität mit DIDComm-Clients wird über die Envelope-Ebene hergestellt (siehe [Sync 003](003-transport-und-broker.md)), nicht über die Verschlüsselungsschicht.
 
 ## Gruppen-Verschlüsselung (Spaces)
 
-Für persistente Gruppen mit geteilten verschlüsselten Daten (CRDT-Dokumente) hat jeder Space drei Arten von Schlüsseln (siehe [Sync 009](009-gruppen.md)):
+Für persistente Gruppen mit geteilten verschlüsselten Daten (CRDT-Dokumente) hat jeder Space drei Arten von Schlüsseln (siehe [Sync 005](005-gruppen.md)):
 
 | Schlüssel | Typ | Zweck | Kurzname in Protokoll-Feldern |
 |---|---|---|---|
@@ -194,7 +194,7 @@ Admin Keys werden space-spezifisch aus dem BIP39-Seed des Users abgeleitet.
 **Normative Ableitung (MUSS):**
 
 ```
-IKM  = 64-Byte BIP39-Seed (siehe Core 001 — volle 64 Bytes, nicht der HKDF-abgeleitete Ed25519-Identity-Seed)
+IKM  = 64-Byte BIP39-Seed (siehe Identity 001 — volle 64 Bytes, nicht der HKDF-abgeleitete Ed25519-Identity-Seed)
 salt = leer (32 Null-Bytes)
 info = ASCII("wot/space-admin/") || canonical-lowercase-uuid(space-id) || ASCII("/v1")
 OKM  = HKDF-SHA256(IKM, salt, info, 32 Bytes)
@@ -204,7 +204,7 @@ admin_did = did:key-Enkodierung des admin_key_pair.public_key
 
 **Präzisierungen:**
 
-- `IKM` ist exakt der 64-Byte BIP39-Seed aus PBKDF2-HMAC-SHA512 (siehe [Core 001](../01-wot-core/001-identitaet-und-schluesselableitung.md#seed)), nicht der HKDF-abgeleitete 32-Byte Ed25519-Identity-Seed.
+- `IKM` ist exakt der 64-Byte BIP39-Seed aus PBKDF2-HMAC-SHA512 (siehe [Identity 001](../01-wot-identity/001-identitaet-und-schluesselableitung.md#seed)), nicht der HKDF-abgeleitete 32-Byte Ed25519-Identity-Seed.
 - `space-id` wird in **kanonischer Form** in den info-String kodiert: UUID v4 als 36-Zeichen ASCII-String, hex-Ziffern in lowercase, Bindestriche an Positionen 8-4-4-4-12 (wie RFC 9562). Beispiel: `"7f3a2b10-4c5d-4e6f-8a7b-9c0d1e2f3a4b"`.
 - Der info-String ist die UTF-8/ASCII-Byte-Folge — keine JSON-Serialisierung, kein Trailing-Null.
 - Ausgabe-Länge ist exakt 32 Bytes; diese Bytes werden direkt als Ed25519 Private Key Seed verwendet.
@@ -213,12 +213,12 @@ Der Admin-Public-Key wird beim Broker registriert. Broker-Management-Nachrichten
 
 ### Schlüsselrotation
 
-Bei Entfernung eines Mitglieds MÜSSEN Space Content Key und Space Capability Key Pair gemeinsam rotiert werden. Der Ablauf ist in [Sync 009](009-gruppen.md#key-rotation-member-entfernung) spezifiziert.
+Bei Entfernung eines Mitglieds MÜSSEN Space Content Key und Space Capability Key Pair gemeinsam rotiert werden. Der Ablauf ist in [Sync 005](005-gruppen.md#key-rotation-member-entfernung) spezifiziert.
 
 ### Encrypt-then-Sync
 
-CRDT-Änderungen werden vor der Synchronisierung mit AES-256-GCM verschlüsselt. Jeder Log-Eintrag enthält verschlüsselten Payload, Nonce und Key-Generation (siehe [Sync 006](006-sync-protokoll.md)). Der Broker sieht niemals Klartext.
+CRDT-Änderungen werden vor der Synchronisierung mit AES-256-GCM verschlüsselt. Jeder Log-Eintrag enthält verschlüsselten Payload, Nonce und Key-Generation (siehe [Sync 002](002-sync-protokoll.md)). Der Broker sieht niemals Klartext.
 
 ## Speicher-Verschlüsselung (At Rest)
 
-Wie Seed und andere sensible Daten auf dem Gerät geschützt werden ist Sache der Implementierung (siehe [Core 001](../01-wot-core/001-identitaet-und-schluesselableitung.md), Abschnitt "Seed-Schutz auf dem Gerät").
+Wie Seed und andere sensible Daten auf dem Gerät geschützt werden ist Sache der Implementierung (siehe [Identity 001](../01-wot-identity/001-identitaet-und-schluesselableitung.md), Abschnitt "Seed-Schutz auf dem Gerät").

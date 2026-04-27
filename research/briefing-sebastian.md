@@ -102,7 +102,7 @@ Beides auf demselben Identitäts-Layer (DID + Ed25519), verschiedene Verteilungs
 
 ### 1. Review von H01 — Trust-Scores als VC
 
-Schau dir bitte `04-hmc-extensions/H01-trust-scores.md` an. Die zentrale Frage: deckt unser Vorschlag, dein quantitatives Modell als **W3C Verifiable Credential** zu verpacken, deine Anforderungen ab? Gibt es Aspekte deines Modells (Trust-Level-Semantik, Listen-Versionierung, Gewichtung), die im VC-Format nicht sauber abbildbar sind?
+Schau dir bitte `05-hmc-extensions/H01-trust-scores.md` an. Die zentrale Frage: deckt unser Vorschlag, dein quantitatives Modell als **W3C Verifiable Credential** zu verpacken, deine Anforderungen ab? Gibt es Aspekte deines Modells (Trust-Level-Semantik, Listen-Versionierung, Gewichtung), die im VC-Format nicht sauber abbildbar sind?
 
 ### 2. W3C VC als gemeinsames Attestation-Format
 
@@ -115,10 +115,11 @@ Du nutzt PBKDF2 mit 100k Runden zusätzlich zum BIP39-PBKDF2. Wir nicht. Wenn St
 ## Die Struktur
 
 ```
-01-wot-core/         ← Das gemeinsame Fundament (001-004)
-02-wot-sync/         ← Sync-Infrastruktur (005-010)
-03-rls-extensions/   ← Unsere Extensions (Badges)
-04-hmc-extensions/   ← Deine Extensions (Trust-Scores, Transactions, Gossip)
+01-wot-identity/     ← Kryptographisches Fundament (001-003)
+02-wot-trust/        ← Attestations und Verifikation (001-002)
+03-wot-sync/         ← Sync-Infrastruktur (001-006)
+04-rls-extensions/   ← Unsere Extensions (Badges)
+05-hmc-extensions/   ← Deine Extensions (Trust-Scores, Transactions, Gossip)
 test-vectors/        ← Normative Interop-Testvektoren
 research/            ← Forschung, Interop-Analyse, Outreach
 ```

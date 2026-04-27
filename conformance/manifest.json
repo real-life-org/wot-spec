@@ -2,38 +2,50 @@
   "version": "v0.1.0-draft",
   "status": "draft",
   "profiles": {
-    "wot-core@0.1": {
-      "description": "Identität, Signaturen, Attestations, Verifikation und DID-Resolution.",
+    "wot-identity@0.1": {
+      "description": "Schlüsselableitung, DID, Signaturen, JCS/JWS und DID-Resolution.",
       "requires": [],
       "spec_documents": [
-        "01-wot-core/001-identitaet-und-schluesselableitung.md",
-        "01-wot-core/002-signaturen-und-verifikation.md",
-        "01-wot-core/003-attestations.md",
-        "01-wot-core/004-verifikation.md",
-        "01-wot-core/005-did-resolution.md"
+        "01-wot-identity/001-identitaet-und-schluesselableitung.md",
+        "01-wot-identity/002-signaturen-und-verifikation.md",
+        "01-wot-identity/003-did-resolution.md"
+      ],
+      "schemas": ["schemas/did-document-wot.schema.json"],
+      "test_vectors": [
+        {
+          "file": "test-vectors/phase-1-interop.json",
+          "sections": ["identity", "did_resolution"]
+        }
+      ]
+    },
+    "wot-trust@0.1": {
+      "description": "Attestations, Verification-Attestations und Verifikation realer Begegnungen.",
+      "requires": ["wot-identity@0.1"],
+      "spec_documents": [
+        "02-wot-trust/001-attestations.md",
+        "02-wot-trust/002-verifikation.md"
       ],
       "schemas": [
         "schemas/attestation-vc-payload.schema.json",
-        "schemas/did-document-wot.schema.json",
         "schemas/qr-challenge.schema.json"
       ],
       "test_vectors": [
         {
           "file": "test-vectors/phase-1-interop.json",
-          "sections": ["identity", "did_resolution", "attestation_vc_jws"]
+          "sections": ["attestation_vc_jws"]
         }
       ]
     },
     "wot-sync@0.1": {
       "description": "Verschlüsselung, Log-Sync, Transport/Broker, Discovery, Gruppen und Personal Doc.",
-      "requires": ["wot-core@0.1"],
+      "requires": ["wot-identity@0.1"],
       "spec_documents": [
-        "02-wot-sync/005-verschluesselung.md",
-        "02-wot-sync/006-sync-protokoll.md",
-        "02-wot-sync/007-transport-und-broker.md",
-        "02-wot-sync/008-discovery.md",
-        "02-wot-sync/009-gruppen.md",
-        "02-wot-sync/010-personal-doc.md"
+        "03-wot-sync/001-verschluesselung.md",
+        "03-wot-sync/002-sync-protokoll.md",
+        "03-wot-sync/003-transport-und-broker.md",
+        "03-wot-sync/004-discovery.md",
+        "03-wot-sync/005-gruppen.md",
+        "03-wot-sync/006-personal-doc.md"
       ],
       "schemas": [
         "schemas/capability-payload.schema.json",
@@ -67,18 +79,18 @@
     },
     "wot-rls@0.1": {
       "description": "Real-Life-Extension-Felder für visuelle Badges, Events und Orte.",
-      "requires": ["wot-core@0.1"],
-      "spec_documents": ["03-rls-extensions/R01-badges.md"],
+      "requires": ["wot-trust@0.1"],
+      "spec_documents": ["04-rls-extensions/R01-badges.md"],
       "schemas": [],
       "test_vectors": []
     },
     "wot-hmc@0.1": {
       "description": "Human-Money-Trust-Listen, Trust-Scores und Gossip-Nachrichten.",
-      "requires": ["wot-core@0.1"],
+      "requires": ["wot-trust@0.1", "wot-sync@0.1"],
       "spec_documents": [
-        "04-hmc-extensions/H01-trust-scores.md",
-        "04-hmc-extensions/H02-transactions.md",
-        "04-hmc-extensions/H03-gossip.md"
+        "05-hmc-extensions/H01-trust-scores.md",
+        "05-hmc-extensions/H02-transactions.md",
+        "05-hmc-extensions/H03-gossip.md"
       ],
       "schemas": ["schemas/trust-list-delta.schema.json"],
       "test_vectors": [

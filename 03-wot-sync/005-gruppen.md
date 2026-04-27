@@ -1,10 +1,10 @@
-# WoT Sync 009: Gruppen und Mitgliedschaft
+# WoT Sync 005: Gruppen und Mitgliedschaft
 
 - **Status:** Entwurf
 - **Autoren:** Anton Tranelis
 - **Datum:** 2026-04-22
 - **Scope:** Spaces, Membership, Einladungen, Rollen und Key-Rotation
-- **Depends on:** Core 001, Sync 005, Sync 006, Sync 007
+- **Depends on:** Identity 001, Sync 001, Sync 002, Sync 003
 - **Conformance profile:** `wot-sync@0.1`
 
 ## Zusammenfassung
@@ -13,19 +13,19 @@ Dieses Dokument spezifiziert wie Gruppen (Spaces) im Sync Layer funktionieren �
 
 ## Referenzierte Dokumente
 
-- [Core 001: Identität](../01-wot-core/001-identitaet-und-schluesselableitung.md) — Schlüsselableitung, HKDF-Pfade
-- [Sync 005: Verschlüsselung](005-verschluesselung.md) — Space-Schlüssel, ECIES, Space Capability Key Pair
-- [Sync 007: Transport und Broker](007-transport-und-broker.md) — Inbox, Message Envelope, Capabilities
+- [Identity 001: Identität](../01-wot-identity/001-identitaet-und-schluesselableitung.md) — Schlüsselableitung, HKDF-Pfade
+- [Sync 001: Verschlüsselung](001-verschluesselung.md) — Space-Schlüssel, ECIES, Space Capability Key Pair
+- [Sync 003: Transport und Broker](003-transport-und-broker.md) — Inbox, Message Envelope, Capabilities
 
 ## Grundprinzip
 
-Ein Space ist ein verschlüsseltes CRDT-Dokument mit Mitgliederliste, Space Content Key, Space Capability Key Pair und optional mehreren Admins. Die Schlüssel sind normativ in [Sync 005](005-verschluesselung.md#gruppen-verschlüsselung-spaces) definiert; Broker-Capabilities sind in [Sync 007](007-transport-und-broker.md#autorisierung-capabilities) definiert.
+Ein Space ist ein verschlüsseltes CRDT-Dokument mit Mitgliederliste, Space Content Key, Space Capability Key Pair und optional mehreren Admins. Die Schlüssel sind normativ in [Sync 001](001-verschluesselung.md#gruppen-verschlüsselung-spaces) definiert; Broker-Capabilities sind in [Sync 003](003-transport-und-broker.md#autorisierung-capabilities) definiert.
 
-Die Mitgliederliste ist Teil der Sync-Daten und wird wie alle anderen Änderungen über Append-only Logs synchronisiert (siehe [Sync 006](006-sync-protokoll.md)). Bei Member-Entfernung werden Space Content Key und Space Capability Key Pair gemeinsam rotiert. Admin Keys bleiben stabil, außer bei Admin-Wechsel.
+Die Mitgliederliste ist Teil der Sync-Daten und wird wie alle anderen Änderungen über Append-only Logs synchronisiert (siehe [Sync 002](002-sync-protokoll.md)). Bei Member-Entfernung werden Space Content Key und Space Capability Key Pair gemeinsam rotiert. Admin Keys bleiben stabil, außer bei Admin-Wechsel.
 
 ### Admin Key Ableitung
 
-Admin Keys werden pro Space aus dem 64-Byte BIP39-Seed abgeleitet; die normative Ableitung steht in [Sync 005](005-verschluesselung.md#admin-key-abgeleitet). Der Broker kennt nur die abgeleitete `adminDid`, nicht die Haupt-DID des Admins.
+Admin Keys werden pro Space aus dem 64-Byte BIP39-Seed abgeleitet; die normative Ableitung steht in [Sync 001](001-verschluesselung.md#admin-key-abgeleitet). Der Broker kennt nur die abgeleitete `adminDid`, nicht die Haupt-DID des Admins.
 
 ## Rollen
 
@@ -187,7 +187,7 @@ Signiert mit dem (noch einzigen) Admin Key. Der Broker akzeptiert die Registrier
 
 ### Capability-Prüfung
 
-Capability-Prüfung ist in [Sync 007](007-transport-und-broker.md#autorisierung-capabilities) spezifiziert.
+Capability-Prüfung ist in [Sync 003](003-transport-und-broker.md#autorisierung-capabilities) spezifiziert.
 
 ### Offline-Entfernung
 

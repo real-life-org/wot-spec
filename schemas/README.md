@@ -14,15 +14,15 @@ Status: initialer Draft. Die Schemas decken die in den Spec-Dokumenten beschrieb
 
 | Schema | Dokument | Zweck |
 |---|---|---|
-| `qr-challenge.schema.json` | Core 004 | QR-Code Challenge fuer In-Person-Verifikation |
-| `did-document-wot.schema.json` | Core 005 | Minimales WoT-DID-Dokument-Profil |
-| `attestation-vc-payload.schema.json` | Core 003 | WotAttestation VC 2.0 Payload |
-| `didcomm-plaintext-message.schema.json` | Sync 007 | DIDComm-kompatible Envelope-Struktur |
-| `log-entry-payload.schema.json` | Sync 006 | JWS-Payload eines Log-Eintrags |
-| `capability-payload.schema.json` | Sync 007 | Broker-Capability JWS-Payload |
-| `profile-service-response.schema.json` | Sync 008 | Profil-Service Antwort mit DID-Dokument |
-| `space-invite.schema.json` | Sync 009 | Space-Einladung ueber Inbox |
-| `key-rotation.schema.json` | Sync 009 | Key-Rotation Nachricht |
+| `qr-challenge.schema.json` | Trust 002 | QR-Code Challenge fuer In-Person-Verifikation |
+| `did-document-wot.schema.json` | Identity 003 | Minimales WoT-DID-Dokument-Profil |
+| `attestation-vc-payload.schema.json` | Trust 001 | WotAttestation VC 2.0 Payload |
+| `didcomm-plaintext-message.schema.json` | Sync 003 | DIDComm-kompatible Envelope-Struktur |
+| `log-entry-payload.schema.json` | Sync 002 | JWS-Payload eines Log-Eintrags |
+| `capability-payload.schema.json` | Sync 003 | Broker-Capability JWS-Payload |
+| `profile-service-response.schema.json` | Sync 004 | Profil-Service Antwort mit DID-Dokument |
+| `space-invite.schema.json` | Sync 005 | Space-Einladung ueber Inbox |
+| `key-rotation.schema.json` | Sync 005 | Key-Rotation Nachricht |
 | `trust-list-delta.schema.json` | H03 | HMC Trust-List-Gossip Nachricht |
 
 ## Regeln

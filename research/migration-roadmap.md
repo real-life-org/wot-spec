@@ -18,16 +18,16 @@ Die Spec ist in den letzten Wochen (vor allem seit dem 18./19.04.2026) substanzi
 
 | Spec-Dokument | Spec-Stand | WoT Core Impl | HMC Impl | Gap-Größe |
 |---|---|---|---|---|
-| Core 001 Identität | v1.0 (HKDF `wot/identity/ed25519/v1`, volle 64 Bytes) | Abweichend (slice(0,32), `wot-identity-v1`) | Abweichend (info `human-money-core/ed25519`) | Klein (Info-String + Slicing) |
-| Core 002 Signaturen | v1.0 (alg-strict, JCS-Test-Vektoren) | Teilweise konform | Zu prüfen | Klein |
-| Core 003 Attestations | v1.0 (W3C VC 2.0) | Teilweise konform | Teilweise konform | Mittel |
-| Core 004 Verifikation | v1.0 (QR-Challenge-Response) | Vorhanden | Zu prüfen | Klein |
-| Sync 005 Verschlüsselung | v1.0+ (ECIES, Constant-Time, Det-Nonce aus seq) | Teilweise (ECIES vorhanden, Nonce/Key-Pfade pruefen) | Abweichend (SecureContainer, ChaCha20) | Mittel |
-| Sync 006 Sync-Protokoll | v1.0+ (Multi-Source-Sync) | Append-Only-Logs da, Multi-Source fehlt | Eigenes Modell (Gutschein-Transfer) | Mittel |
-| Sync 007 Transport | v1.0+ (DIDComm-Plaintext-Envelope mit `typ`, Threading, Envelope-Policy, Capability-TTL, Nonce-History) | Teilweise | Eigenes (L2-Server) | Mittel |
-| Sync 008 Discovery | v1.0 (Profile-Service, Broker-Discovery) | Läuft (wot-profiles) | Zu prüfen | Klein |
-| Sync 009 Gruppen | v1.0 (Einladungen, Key-Rotation) | Implementiert | Nicht direkt anwendbar | Mittel |
-| Sync 010 Personal Doc | v1.0 (neu, 2026-04-19) | Fehlt | Fehlt | Groß |
+| Identity 001 Identität | v1.0 (HKDF `wot/identity/ed25519/v1`, volle 64 Bytes) | Abweichend (slice(0,32), `wot-identity-v1`) | Abweichend (info `human-money-core/ed25519`) | Klein (Info-String + Slicing) |
+| Identity 002 Signaturen | v1.0 (alg-strict, JCS-Test-Vektoren) | Teilweise konform | Zu prüfen | Klein |
+| Trust 001 Attestations | v1.0 (W3C VC 2.0) | Teilweise konform | Teilweise konform | Mittel |
+| Trust 002 Verifikation | v1.0 (QR-Challenge-Response) | Vorhanden | Zu prüfen | Klein |
+| Sync 001 Verschlüsselung | v1.0+ (ECIES, Constant-Time, Det-Nonce aus seq) | Teilweise (ECIES vorhanden, Nonce/Key-Pfade pruefen) | Abweichend (SecureContainer, ChaCha20) | Mittel |
+| Sync 002 Sync-Protokoll | v1.0+ (Multi-Source-Sync) | Append-Only-Logs da, Multi-Source fehlt | Eigenes Modell (Gutschein-Transfer) | Mittel |
+| Sync 003 Transport | v1.0+ (DIDComm-Plaintext-Envelope mit `typ`, Threading, Envelope-Policy, Capability-TTL, Nonce-History) | Teilweise | Eigenes (L2-Server) | Mittel |
+| Sync 004 Discovery | v1.0 (Profile-Service, Broker-Discovery) | Läuft (wot-profiles) | Zu prüfen | Klein |
+| Sync 005 Gruppen | v1.0 (Einladungen, Key-Rotation) | Implementiert | Nicht direkt anwendbar | Mittel |
+| Sync 006 Personal Doc | v1.0 (neu, 2026-04-19) | Fehlt | Fehlt | Groß |
 | H01 Trust-Scores | Entwurf (SD-JWT VC, 2026-04-19) | Nicht implementiert | Teilweise (eigene Trust-Lists) | Groß |
 | H02 Transactions | Platzhalter | Nicht implementiert | Implementiert (eigene Spec) | N/A |
 | H03 Gossip | Entwurf | Nicht implementiert | Teilweise | Mittel |
@@ -47,25 +47,25 @@ Die Spec ist in den letzten Wochen (vor allem seit dem 18./19.04.2026) substanzi
 ```
 ┌────────────────────────────────────────────────────────┐
 │ Anwendungs-Extensions (H01 SD-JWT VC, H02, H03, R01)   │
-│   ↑ hängt an Core 003 + Format-Entscheidungen          │
+│   ↑ hängt an Trust 001 + Format-Entscheidungen          │
 ├────────────────────────────────────────────────────────┤
 │ Unlock-Mechanismen (Passwort, Passkey)                 │
-│   ↑ App-Layer — hängt an Core 001 (verschlüsselter     │
+│   ↑ App-Layer — hängt an Identity 001 (verschlüsselter     │
 │     Container), aber nicht an Multi-Key-Frage          │
 ├────────────────────────────────────────────────────────┤
-│ Core 003 Attestations + Core 004 Verifikation          │
-│   ↑ hängt an Core 001-002 + ggf. Multi-Key-DID         │
+│ Trust 001 Attestations + Trust 002 Verifikation          │
+│   ↑ hängt an Identity 001-002 + ggf. Multi-Key-DID         │
 ├────────────────────────────────────────────────────────┤
-│ Core 001 Identität + Core 002 Signaturen               │
+│ Identity 001 Identität + Identity 002 Signaturen               │
 │   ↑ hier entscheidet sich: did:key → did:peer:4        │
 │     Format-Fixes aber unabhängig von DID-Methoden-     │
 │     Wechsel                                             │
 ├────────────────────────────────────────────────────────┤
-│ Sync 005-007, 010                                       │
+│ Sync 001-006                                            │
 │   ↑ nutzt DIDs nur als opake Strings                    │
 │   ↑ UNABHÄNGIG von DID-Struktur                         │
 ├────────────────────────────────────────────────────────┤
-│ Sync 008 Discovery                                      │
+│ Sync 004 Discovery                                      │
 │   ↑ bindet DIDs an Profile, nicht an DID-Struktur       │
 └────────────────────────────────────────────────────────┘
 ```
@@ -80,20 +80,20 @@ Die Spec ist in den letzten Wochen (vor allem seit dem 18./19.04.2026) substanzi
 
 **Spec-Dokumente:**
 
-- Sync 005 (Verschlüsselung)
+- Sync 001 (Verschlüsselung)
   - ECIES statt DIDComm-JWE/Authcrypt
   - Constant-Time-MUSS
   - Deterministische Nonce aus `(deviceId, seq)` für Gruppen-Verschlüsselung
-- Sync 006 (Sync-Protokoll)
+- Sync 002 (Sync-Protokoll)
   - Multi-Source-Sync für Censorship-Detection
-- Sync 007 (Transport)
+- Sync 003 (Transport)
   - DIDComm-v2-kompatibler Plaintext-Envelope mit `typ: "application/didcomm-plain+json"` und `thid`/`pthid` Threading
   - Broker-Presence statt Trust Ping 2.0
   - Profil-`protocols` statt Discover Features 2.0
   - Envelope-Signatur-Policy (wann Signed Message, wann nicht)
   - Capability `validUntil` Pflichtfeld
   - Nonce-History (24h) beim Broker
-- Sync 010 (Personal Doc + Cross-Device-Sync)
+- Sync 006 (Personal Doc + Cross-Device-Sync)
 
 **Abhängigkeiten:** Keine zu anderen Phasen. Kann sofort beginnen.
 
@@ -118,14 +118,14 @@ Die Spec ist in den letzten Wochen (vor allem seit dem 18./19.04.2026) substanzi
 
 ### Phase 2 — Core-Format-Fixes
 
-**Was:** Die formalen Inkonsistenzen in Core 001-002 beseitigen.
+**Was:** Die formalen Inkonsistenzen in Identity 001-002 beseitigen.
 
 **Spec-Änderungen:**
 
-- Core 001: HKDF-Info auf `wot/identity/ed25519/v1` vereinheitlichen, volle 64 Bytes
-- Core 002: alg-strict-Enforcement, JCS-Test-Vektoren integrieren
+- Identity 001: HKDF-Info auf `wot/identity/ed25519/v1` vereinheitlichen, volle 64 Bytes
+- Identity 002: alg-strict-Enforcement, JCS-Test-Vektoren integrieren
 
-**Abhängigkeiten:** Muss mit Phase 3 (Wortlisten) koordiniert werden, da beides Core 001 berührt.
+**Abhängigkeiten:** Muss mit Phase 3 (Wortlisten) koordiniert werden, da beides Identity 001 berührt.
 
 **Parallelisierbar:** Zu Phase 1 ja. Zu Phase 4 ja, da Format-Fixes innerhalb did:key-Welt gemacht werden können.
 
@@ -153,7 +153,7 @@ Die Spec ist in den letzten Wochen (vor allem seit dem 18./19.04.2026) substanzi
 - B) Beide normativ unterstützt (Impl kennt englisch UND deutsch)
 - C) Nur englisch BIP39
 
-**Abhängigkeiten:** Muss mit Phase 2 koordiniert werden (beides Core 001). Gespräch mit Sebastian steht aus.
+**Abhängigkeiten:** Muss mit Phase 2 koordiniert werden (beides Identity 001). Gespräch mit Sebastian steht aus.
 
 **Parallelisierbar:** Zu Phase 1 ja.
 
@@ -165,11 +165,11 @@ Die Spec ist in den letzten Wochen (vor allem seit dem 18./19.04.2026) substanzi
 
 **Spec-Dokumente:**
 
-- Core 001 umschreiben: DID-Methoden-Wechsel auf did:peer:4, DID-Document-Struktur spezifizieren
-- Core 002 erweitern: Multi-Key-Verifikation (kid-Resolution, Versions-Semantik, Historisch-gültig-Semantik, append-only Revocation)
-- Core 003 erweitern: DID-Document-Snapshot-Option für Offline-Verifikation
-- Core 004 erweitern: Long-Form-DID im QR-Code für In-Person-Verifikation
-- **Neu: Core 005 (DID-Document-Updates)**
+- Identity 001 umschreiben: DID-Methoden-Wechsel auf did:peer:4, DID-Document-Struktur spezifizieren
+- Identity 002 erweitern: Multi-Key-Verifikation (kid-Resolution, Versions-Semantik, Historisch-gültig-Semantik, append-only Revocation)
+- Trust 001 erweitern: DID-Document-Snapshot-Option für Offline-Verifikation
+- Trust 002 erweitern: Long-Form-DID im QR-Code für In-Person-Verifikation
+- **Neu: Identity 003 (DID-Document-Updates)**
   - Update-Attestation-Format
   - Signatur-Regeln (Master signiert, Guardian-Quorum signiert, Device-Keys mit begrenzten Rechten)
   - Guardian-Vouching-Flow aus NLnet WP2
@@ -227,7 +227,7 @@ Die Spec ist in den letzten Wochen (vor allem seit dem 18./19.04.2026) substanzi
 
 **Was:** Den in Phase 4 spezifizierten Recovery-Flow aus NLnet WP2 tatsächlich bauen.
 
-**Spec-Dokumente:** Bereits in Phase 4 (Core 005) spezifiziert, hier nur Implementation.
+**Spec-Dokumente:** Bereits in Phase 4 (Identity 003) spezifiziert, hier nur Implementation.
 
 **Abhängigkeiten:** Phase 4 muss abgeschlossen sein (DID-Document-Update-Protokoll steht).
 
@@ -302,7 +302,7 @@ Das heißt konkret: Die Format-Fixes müssen vor der did:peer:4-Migration stehen
 **Branch:** `next/sync-v1` im `web-of-trust`-Repo — angelegt 20.04.2026.
 
 - **Main bleibt unverändert** — alte Implementation läuft weiter für existierende Entwicklungs-/Pilot-Nutzung
-- **Der Branch `next/sync-v1` bekommt alle Phase-1-Änderungen** — Sync 005/006/007/010 nach neuer Spec
+- **Der Branch `next/sync-v1` bekommt alle Phase-1-Änderungen** — Sync 001-006 nach neuer Spec
 - **Merge nach Main erst wenn**:
   - Alle Tests grün
   - End-to-End-Flow funktioniert (zwei Devices, Space erstellen, syncen, Attestation ausstellen)
@@ -380,7 +380,7 @@ Die Migration ist nicht nur unser Projekt — sie betrifft HMC Core genauso. Fol
 
 5. **Wie dokumentieren wir die Migration für Nutzer?** User-facing Changelog, In-App-Benachrichtigung, Migration-Assistent?
 
-6. **Welche Phase hat Priorität für das NLnet-Projekt?** Die Bewerbung listet WP2 (Recovery + Key Rotation) als konkretes Deliverable — das ist Phase 4 + Phase 6. WP1 (Authorization & Access Control) überschneidet sich mit Sync 007-Capabilities. WP3 (Developer Experience) wird durch alle Phasen informiert.
+6. **Welche Phase hat Priorität für das NLnet-Projekt?** Die Bewerbung listet WP2 (Recovery + Key Rotation) als konkretes Deliverable — das ist Phase 4 + Phase 6. WP1 (Authorization & Access Control) überschneidet sich mit Sync 003-Capabilities. WP3 (Developer Experience) wird durch alle Phasen informiert.
 
 ## Notizen aus Web5-Recherche (20.04.2026)
 

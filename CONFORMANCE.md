@@ -16,9 +16,13 @@ Eine konforme Implementierung MUSS:
 6. JWS `alg` strikt gegen die erlaubte Whitelist pruefen.
 7. Signaturen ueber exakt die empfangenen JWS-Signing-Input-Bytes verifizieren.
 
-## `wot-core@0.1`
+## Profil-Abhaengigkeiten
 
-Eine Implementierung ist `wot-core@0.1`-konform, wenn sie die folgenden Faehigkeiten besitzt.
+`wot-identity@0.1` ist die kryptographische Basisschicht. `wot-trust@0.1` und `wot-sync@0.1` bauen darauf auf, sind aber voneinander unabhaengig nutzbar. Implementierungen SOLLTEN genau die Profile ausweisen, die sie tatsaechlich unterstuetzen.
+
+## `wot-identity@0.1`
+
+Eine Implementierung ist `wot-identity@0.1`-konform, wenn sie die folgenden Faehigkeiten besitzt.
 
 ### Identitaet und Key-Derivation
 
@@ -35,6 +39,16 @@ Eine Implementierung ist `wot-core@0.1`-konform, wenn sie die folgenden Faehigke
 - `kid` im JWS-Header verpflichtend setzen und auswerten.
 - Signatur-Keys ueber `resolve(did)` und DID-Dokumente aufloesen.
 
+### DID-Resolution
+
+- `resolve(did)` fuer `did:key` implementieren.
+- Ed25519 `verificationMethod`, `authentication` und `assertionMethod` aus `did:key` ableiten.
+- Fehlende `keyAgreement`-Informationen fuer `did:key` als nicht kommunikationsfaehigen Zustand behandeln, nicht als Signaturfehler.
+
+## `wot-trust@0.1`
+
+Eine Implementierung ist `wot-trust@0.1`-konform, wenn sie zusaetzlich `wot-identity@0.1` erfuellt und die folgenden Faehigkeiten besitzt.
+
 ### Attestations
 
 - W3C VC 2.0 Payloads fuer `WotAttestation` erzeugen und parsen.
@@ -44,19 +58,13 @@ Eine Implementierung ist `wot-core@0.1`-konform, wenn sie die folgenden Faehigke
 
 ### Verifikation
 
-- QR-Challenge-Felder gemaess Core 004 parsen.
+- QR-Challenge-Felder gemaess Trust 002 parsen.
 - Verification-Attestations als VC-JWS erzeugen und verifizieren.
 - Nonces gegen aktive Challenges und Nonce-History pruefen.
 
-### DID-Resolution
-
-- `resolve(did)` fuer `did:key` implementieren.
-- Ed25519 `verificationMethod`, `authentication` und `assertionMethod` aus `did:key` ableiten.
-- Fehlende `keyAgreement`-Informationen fuer `did:key` als nicht kommunikationsfaehigen Zustand behandeln, nicht als Signaturfehler.
-
 ## `wot-sync@0.1`
 
-Eine Implementierung ist `wot-sync@0.1`-konform, wenn sie zusaetzlich `wot-core@0.1` erfuellt und die folgenden Faehigkeiten besitzt.
+Eine Implementierung ist `wot-sync@0.1`-konform, wenn sie zusaetzlich `wot-identity@0.1` erfuellt und die folgenden Faehigkeiten besitzt. `wot-trust@0.1` ist fuer Sync nicht erforderlich.
 
 ### Verschluesselung
 
@@ -76,6 +84,7 @@ Eine Implementierung ist `wot-sync@0.1`-konform, wenn sie zusaetzlich `wot-core@
 
 - DIDComm-v2-kompatible Plaintext Messages mit `typ: "application/didcomm-plain+json"` erzeugen und parsen.
 - Envelope-Testvektoren mit mindestens einer etablierten DIDComm-v2-Library validieren.
+- DIDComm-Envelopes nur als ephemeres Transport-Framing behandeln; persistente WoT-Objekte bleiben JWS-/Payload-Objekte im Body.
 - Broker-Challenge-Response mit DID-Signaturen umsetzen.
 - Capabilities als JWS verifizieren.
 - Inbox-Nachrichten pro Device zustellen und ACKs verarbeiten.
@@ -84,16 +93,16 @@ Eine Implementierung ist `wot-sync@0.1`-konform, wenn sie zusaetzlich `wot-core@
 
 - Personal Doc Key aus `wot/personal-doc/v1` ableiten.
 - Personal Doc mit derselben Log-Infrastruktur wie Spaces synchronisieren.
-- Space Content Keys und Capability Keys gemaess Sync 005/009 verwalten.
+- Space Content Keys und Capability Keys gemaess Sync 001/005 verwalten.
 - Key-Rotation bei Member-Entfernung verarbeiten.
 
 ## `wot-rls@0.1`
 
-Eine Implementierung ist `wot-rls@0.1`-konform, wenn sie `wot-core@0.1` erfuellt und RLS-spezifische Attestation-Felder gemaess `03-rls-extensions/` erzeugt oder sicher ignoriert.
+Eine Implementierung ist `wot-rls@0.1`-konform, wenn sie `wot-trust@0.1` erfuellt und RLS-spezifische Attestation-Felder gemaess `04-rls-extensions/` erzeugt oder sicher ignoriert.
 
 ## `wot-hmc@0.1`
 
-Eine Implementierung ist `wot-hmc@0.1`-konform, wenn sie `wot-core@0.1` erfuellt und HMC-spezifische Trust-Listen, Trust-Scores und Gossip-Nachrichten gemaess `04-hmc-extensions/` erzeugt oder sicher ignoriert.
+Eine Implementierung ist `wot-hmc@0.1`-konform, wenn sie `wot-trust@0.1` und `wot-sync@0.1` erfuellt und HMC-spezifische Trust-Listen, Trust-Scores und Gossip-Nachrichten gemaess `05-hmc-extensions/` erzeugt oder sicher ignoriert.
 
 Fuer vollstaendige HMC-Konformitaet MUESSEN SD-JWT VC Trust-Lists validiert werden:
 
@@ -106,7 +115,7 @@ Fuer vollstaendige HMC-Konformitaet MUESSEN SD-JWT VC Trust-Lists validiert werd
 
 Die Testvektoren in `test-vectors/` sind Teil der Konformitaet. Eine Implementierung darf ein Profil erst beanspruchen, wenn alle fuer dieses Profil vorhandenen Testvektoren bestanden werden.
 
-Noch fehlende Testvektoren blockieren keine Draft-Konformitaet, MUESSEN aber vor einem stabilen `v1.0.0-core` oder `v1.0.0-sync` Release ergaenzt werden.
+Noch fehlende Testvektoren blockieren keine Draft-Konformitaet, MUESSEN aber vor einem stabilen `v1.0.0-identity`, `v1.0.0-trust` oder `v1.0.0-sync` Release ergaenzt werden.
 
 ## Conformance Kit
 

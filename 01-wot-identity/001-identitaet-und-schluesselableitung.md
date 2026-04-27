@@ -1,17 +1,17 @@
-# WoT Spec 001: Identität und Schlüsselableitung
+# WoT Identity 001: Identität und Schlüsselableitung
 
 - **Status:** Entwurf
 - **Autoren:** Anton Tranelis, Sebastian Galek
 - **Datum:** 2026-04-23
-- **Scope:** Seed-, Key- und DID-Key-Ableitung für WoT Core
+- **Scope:** Seed-, Key- und DID-Key-Ableitung für WoT Identity
 - **Depends on:** BIP39, HKDF, Ed25519, X25519
-- **Conformance profile:** `wot-core@0.1`
+- **Conformance profile:** `wot-identity@0.1`
 
 ## Zusammenfassung
 
 Dieses Dokument spezifiziert wie Schlüsselmaterial aus einem BIP39-Mnemonic abgeleitet wird. Das Ziel ist ein deterministischer Pfad vom Mnemonic zu einem Ed25519-Schlüsselpaar und weiteren abgeleiteten Schlüsseln — so dass verschiedene Implementierungen aus demselben Seed dieselben Schlüssel erzeugen.
 
-Wie aus dem Schlüsselmaterial eine auflösbare DID mit DID-Dokument wird, ist in [Core 005: DID-Dokument und Resolution](005-did-resolution.md) spezifiziert.
+Wie aus dem Schlüsselmaterial eine auflösbare DID mit DID-Dokument wird, ist in [Identity 003: DID-Dokument und Resolution](003-did-resolution.md) spezifiziert.
 
 ## Referenzierte Standards
 
@@ -28,7 +28,7 @@ BIP39 Mnemonic (12+ Wörter)
   → BIP39 Seed (PBKDF2-HMAC-SHA512, 2048 Runden, Passphrase="") → 64 Bytes
   → HKDF-SHA256(seed, info="wot/identity/ed25519/v1") → 32 Bytes → Ed25519 Schlüsselpaar
   → HKDF-SHA256(seed, info="wot/encryption/x25519/v1") → 32 Bytes → X25519 Schlüsselpaar
-  → resolve() → DID-Dokument (siehe Core 005)
+  → resolve() → DID-Dokument (siehe Identity 003)
 ```
 
 Selbes Mnemonic → selbe Schlüssel → selbe Identität. Über alle Implementierungen, Sprachen und Anwendungen hinweg.
@@ -65,7 +65,7 @@ Kein zusätzliches Key-Stretching — BIP39-PBKDF2 ist bei mindestens 128 Bit En
 - **Eingabe:** 32-Byte Seed aus HKDF
 - **Ausgabe:** Ed25519 Schlüsselpaar (Private Key + Public Key)
 
-Wie aus dem Schlüsselpaar eine DID und ein DID-Dokument werden, ist in [Core 005](005-did-resolution.md) spezifiziert. Die DID-Methode ist austauschbar — das Protokoll arbeitet DID-Methoden-agnostisch über eine `resolve()`-Abstraktion.
+Wie aus dem Schlüsselpaar eine DID und ein DID-Dokument werden, ist in [Identity 003](003-did-resolution.md) spezifiziert. Die DID-Methode ist austauschbar — das Protokoll arbeitet DID-Methoden-agnostisch über eine `resolve()`-Abstraktion.
 
 ### Weitere Schlüssel
 
@@ -74,9 +74,9 @@ Aus demselben Seed werden weitere Schlüssel abgeleitet. Jeder Schlüssel verwen
 | Schlüssel | HKDF Info | Zweck | Spezifiziert in |
 |-----------|-----------|-------|----------------|
 | Identity Key | `"wot/identity/ed25519/v1"` | Identität, Attestations | Dieses Dokument |
-| Verschlüsselung | `"wot/encryption/x25519/v1"` | Asymmetrische Verschlüsselung (X25519) | [Sync 005](../02-wot-sync/005-verschluesselung.md) |
-| Personal Doc | `"wot/personal-doc/v1"` | Symmetrische Verschlüsselung des Personal Doc (AES-256) | [Sync 010](../02-wot-sync/010-personal-doc.md) |
-| Space Admin (pro Space) | `"wot/space-admin/<canonical-lowercase-uuid>/v1"` | Space-spezifischer Admin Key (Ed25519). Nur für Admins eines Spaces. IKM ist der 64-Byte BIP39-Seed (nicht der Ed25519-Identity-Seed). | [Sync 005](../02-wot-sync/005-verschluesselung.md#admin-key-abgeleitet) |
+| Verschlüsselung | `"wot/encryption/x25519/v1"` | Asymmetrische Verschlüsselung (X25519) | [Sync 001](../03-wot-sync/001-verschluesselung.md) |
+| Personal Doc | `"wot/personal-doc/v1"` | Symmetrische Verschlüsselung des Personal Doc (AES-256) | [Sync 006](../03-wot-sync/006-personal-doc.md) |
+| Space Admin (pro Space) | `"wot/space-admin/<canonical-lowercase-uuid>/v1"` | Space-spezifischer Admin Key (Ed25519). Nur für Admins eines Spaces. IKM ist der 64-Byte BIP39-Seed (nicht der Ed25519-Identity-Seed). | [Sync 001](../03-wot-sync/001-verschluesselung.md#admin-key-abgeleitet) |
 
 Alle Schlüssel sind deterministisch aus demselben Seed ableitbar. Durch die verschiedenen Info-Strings sind sie kryptographisch unabhängig voneinander.
 

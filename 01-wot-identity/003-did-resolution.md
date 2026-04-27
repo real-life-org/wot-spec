@@ -1,11 +1,11 @@
-# WoT Core 005: DID-Dokument und Resolution
+# WoT Identity 003: DID-Dokument und Resolution
 
 - **Status:** Entwurf
 - **Autoren:** Anton Tranelis
 - **Datum:** 2026-04-23
 - **Scope:** DID-Dokumente, Resolution-Interface und DID-Methoden-Profile für WoT
-- **Depends on:** Core 001, DID Core, did:key
-- **Conformance profile:** `wot-core@0.1`
+- **Depends on:** Identity 001, DID Core, did:key
+- **Conformance profile:** `wot-identity@0.1`
 
 ## Zusammenfassung
 
@@ -27,7 +27,7 @@ Dieses Dokument definiert:
 ## Grundprinzip
 
 ```
-Seed → Keys (Core 001)
+Seed → Keys (Identity 001)
   ↓
 Keys → DID-Dokument (dieses Dokument)
   ↓
@@ -36,7 +36,7 @@ DID-Dokument → resolve() Interface
 Alle Protokoll-Operationen nutzen resolve()
 ```
 
-**Core 001** erzeugt Schlüsselmaterial (Ed25519, X25519) aus dem BIP39-Seed. **Dieses Dokument** definiert, wie aus dem Schlüsselmaterial eine auflösbare Identität mit DID-Dokument wird. Alle anderen Spec-Dokumente (Core 002-004, Sync 005-010) arbeiten ausschließlich mit DID-Dokumenten über `resolve()`.
+**Identity 001** erzeugt Schlüsselmaterial (Ed25519, X25519) aus dem BIP39-Seed. **Dieses Dokument** definiert, wie aus dem Schlüsselmaterial eine auflösbare Identität mit DID-Dokument wird. Identity-, Trust- und Sync-Dokumente arbeiten über `resolve()` mit DID-Dokumenten.
 
 ## DID-Dokument-Struktur
 
@@ -99,7 +99,7 @@ Alle Protokoll-Operationen nutzen resolve()
 
 Der Service-Endpoint identifiziert den **Inbox-Broker** — den Ort, an dem 1:1-Nachrichten (Attestations, Verifikationen, Space-Einladungen) zugestellt werden. Er ist vergleichbar mit einer E-Mail-Adresse.
 
-**Privacy-Abgrenzung:** Nur der Inbox-Broker steht im DID-Dokument. **Space-Broker** (wo Spaces synchronisiert werden) stehen NICHT im DID-Dokument — sie werden in Space-Einladungen transportiert und sind nur für Space-Members sichtbar. Siehe [Sync 009](../02-wot-sync/009-gruppen.md).
+**Privacy-Abgrenzung:** Nur der Inbox-Broker steht im DID-Dokument. **Space-Broker** (wo Spaces synchronisiert werden) stehen NICHT im DID-Dokument — sie werden in Space-Einladungen transportiert und sind nur für Space-Members sichtbar. Siehe [Sync 005](../03-wot-sync/005-gruppen.md).
 
 ## resolve() — Das Interface
 
@@ -133,13 +133,13 @@ Für did:key ohne vorherigen Kontakt liefert `resolve()` ein **signaturfähiges*
 
 | Caller | Zweck | Felder die er braucht |
 |--------|-------|----------------------|
-| Core 002 (Signatur-Verifikation) | Public Key des Signierers | `verificationMethod` via `assertionMethod` |
-| Core 003 (Attestation-Verifikation) | Issuer-Key | `verificationMethod` via `assertionMethod` |
-| Core 004 (Verifikation) | Peer-Key für Challenge-Response | `verificationMethod` via `authentication` |
-| Sync 005 (Verschlüsselung) | Encryption Key des Empfängers | `keyAgreement` |
-| Sync 007 (Broker-Auth) | DID-Verifikation beim Login | `verificationMethod` via `authentication` |
-| Sync 007 (Inbox-Zustellung) | Broker-URL des Empfängers | `service` |
-| Sync 009 (Einladung) | Encryption Key für ECIES | `keyAgreement` |
+| Identity 002 (Signatur-Verifikation) | Public Key des Signierers | `verificationMethod` via `assertionMethod` |
+| Trust 001 (Attestation-Verifikation) | Issuer-Key | `verificationMethod` via `assertionMethod` |
+| Trust 002 (Verifikation) | Peer-Key für Challenge-Response | `verificationMethod` via `authentication` |
+| Sync 001 (Verschlüsselung) | Encryption Key des Empfängers | `keyAgreement` |
+| Sync 003 (Broker-Auth) | DID-Verifikation beim Login | `verificationMethod` via `authentication` |
+| Sync 003 (Inbox-Zustellung) | Broker-URL des Empfängers | `service` |
+| Sync 001 (Einladung) | Encryption Key für ECIES | `keyAgreement` |
 
 ### Zweck-Bindung (MUSS)
 
@@ -159,7 +159,7 @@ Das DID-Dokument einer Person erreicht andere Teilnehmer auf verschiedenen Wegen
 
 **Szenario: In-Person (offline, QR-Scan)**
 
-Der QR-Code (siehe [Core 004](004-verifikation.md)) enthält Hilfsfelder (`enc`, `broker`), aus denen der Resolver ein Bootstrap-DID-Dokument konstruiert:
+Der QR-Code (siehe [Trust 002](../02-wot-trust/002-verifikation.md)) enthält Hilfsfelder (`enc`, `broker`), aus denen der Resolver ein Bootstrap-DID-Dokument konstruiert:
 
 ```
 QR-Code { did, enc, broker, name, nonce, ts }
@@ -190,7 +190,7 @@ In Phase 2 (did:webvh) kann sich das DID-Dokument ändern (Key-Rotation, Broker-
 
 ### Profil-Service als DID-Dokument-Quelle
 
-Der Profil-Service ([Sync 008](../02-wot-sync/008-discovery.md)) liefert das DID-Dokument **als Teil der Profil-Antwort** — ein Call, ein Response:
+Der Profil-Service ([Sync 004](../03-wot-sync/004-discovery.md)) liefert das DID-Dokument **als Teil der Profil-Antwort** — ein Call, ein Response:
 
 ```
 GET /p/{did} → JWS-signiertes Profil mit eingebettetem DID-Dokument
@@ -225,7 +225,7 @@ GET /p/{did} → JWS-signiertes Profil mit eingebettetem DID-Dokument
 
 **Phase-2-Erweiterung:** Für did:webvh-konforme externe Resolution kann ein zusätzlicher Endpoint `GET /p/{did}/log` das JSONL-Log liefern. Für WoT-Clients bleibt der primäre Pfad über `/p/{did}`.
 
-Der Client prüft die JWS-Signatur und die `version`-Monotonie (siehe [Sync 008 Rollback-Schutz](../02-wot-sync/008-discovery.md#versionierung-und-rollback-schutz)).
+Der Client prüft die JWS-Signatur und die `version`-Monotonie (siehe [Sync 004 Rollback-Schutz](../03-wot-sync/004-discovery.md#versionierung-und-rollback-schutz)).
 
 ### Zusammenfassung der Quellen pro Situation
 
@@ -260,12 +260,12 @@ resolve("did:key:z6MkhaXgBZDvotDkL5257faiztiGiC2QtKLGpbnnEGta2doK")
 
 **Das keyAgreement-Problem bei did:key:**
 
-Der X25519 Encryption Key wird über einen separaten HKDF-Pfad abgeleitet (siehe [Core 001](001-identitaet-und-schluesselableitung.md)) und ist **nicht aus der `did:key` ableitbar**. Deshalb ist `keyAgreement` im generierten Dokument zunächst leer.
+Der X25519 Encryption Key wird über einen separaten HKDF-Pfad abgeleitet (siehe [Identity 001](001-identitaet-und-schluesselableitung.md)) und ist **nicht aus der `did:key` ableitbar**. Deshalb ist `keyAgreement` im generierten Dokument zunächst leer.
 
 Der Resolver befüllt `keyAgreement` aus externen Quellen:
 
-- **QR-Code:** Das `enc`-Feld (siehe [Core 004](004-verifikation.md)) wird in `keyAgreement` eingetragen
-- **Profil-Service:** Das `encryptionPublicKey`-Feld (siehe [Sync 008](../02-wot-sync/008-discovery.md)) wird in `keyAgreement` eingetragen
+- **QR-Code:** Das `enc`-Feld (siehe [Trust 002](../02-wot-trust/002-verifikation.md)) wird in `keyAgreement` eingetragen
+- **Profil-Service:** Das `encryptionPublicKey`-Feld (siehe [Sync 004](../03-wot-sync/004-discovery.md)) wird in `keyAgreement` eingetragen
 
 Dies ist ein **bekannter Workaround** für die Phase-1-Architektur. In Phase 2 (did:webvh) steht der Encryption Key direkt im DID-Dokument.
 
@@ -318,7 +318,7 @@ Ein WoT-Netzwerk KANN gemischte DID-Methoden enthalten. Alice nutzt `did:key`, B
 
 ## Admin-Keys
 
-Space-Admin-Keys (siehe [Sync 005](../02-wot-sync/005-verschluesselung.md#admin-key-abgeleitet), [Sync 009](../02-wot-sync/009-gruppen.md)) sind **immer did:key** — unabhängig von der DID-Methode des Users. Sie sind:
+Space-Admin-Keys (siehe [Sync 001](../03-wot-sync/001-verschluesselung.md#admin-key-abgeleitet), [Sync 005](../03-wot-sync/005-gruppen.md)) sind **immer did:key** — unabhängig von der DID-Methode des Users. Sie sind:
 
 - Space-spezifisch (per HKDF abgeleitet)
 - Kurzlebig (nur für Broker-Management)

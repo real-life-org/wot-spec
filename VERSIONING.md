@@ -11,7 +11,7 @@ Git-Tags und GitHub Releases markieren eingefrorene Snapshots der gesamten Spec:
 - `v0.1.0-draft` - erster oeffentlicher Draft-Snapshot
 - `v0.2.0-interop` - erster Snapshot mit bestandenen TypeScript/Rust-Interop-Tests
 - `v0.3.0-sync` - erster Snapshot mit minimalem Broker/Personal-Doc-Sync
-- `v1.0.0-core` - stabiler Core-Snapshot nach Interop zwischen mindestens zwei Implementierungen
+- `v1.0.0-identity-trust` - stabiler Identity-/Trust-Snapshot nach Interop zwischen mindestens zwei Implementierungen
 
 Vor `v1.0.0` sind Breaking Changes erlaubt. Sie MUESSEN im `CHANGELOG.md` dokumentiert werden.
 
@@ -27,7 +27,8 @@ Implementierungen geben an, welche Profile sie unterstuetzen:
 
 | Profil | Bedeutung |
 |---|---|
-| `wot-core@0.1` | Identitaet, Signaturen, Attestations, Verifikation, DID-Resolution |
+| `wot-identity@0.1` | Identitaet, Key-Derivation, Signaturen, JWS/JCS, DID-Resolution |
+| `wot-trust@0.1` | Attestations, Verification-Attestations, QR-/Nonce-Verifikation |
 | `wot-sync@0.1` | Verschluesselung, Append-only Log, Broker, Discovery, Gruppen, Personal Doc |
 | `wot-rls@0.1` | Real-Life-Stack-spezifische Erweiterungen |
 | `wot-hmc@0.1` | Human-Money-Core-spezifische Erweiterungen |
@@ -54,10 +55,11 @@ Stabile Referenzen verwenden Git-Tags, nicht Branch-Namen.
 
 Normativ sind:
 
-- `01-wot-core/`
-- `02-wot-sync/`
-- `03-rls-extensions/`
-- `04-hmc-extensions/`
+- `01-wot-identity/`
+- `02-wot-trust/`
+- `03-wot-sync/`
+- `04-rls-extensions/`
+- `05-hmc-extensions/`
 - `test-vectors/`
 - `CONFORMANCE.md`
 

@@ -14,14 +14,14 @@ Aus Transparenzgründen bleibt dieses Dokument vollständig — auch bereits beh
 
 | ID | Schwachstelle | Schwere | Behoben am | Fix |
 |----|---------------|---------|------------|-----|
-| [K2](#k2-nonce-reuse-bei-aes-256-gcm--katastrophaler-schlüsselverlust) | Nonce-Reuse bei AES-256-GCM | 🔴 Kritisch | 2026-04-18 | Deterministische Nonce aus `(deviceId, seq)` — [Sync 005](../02-wot-sync/005-verschluesselung.md) |
-| [K4](#k4-jws-alg-konfusion) | JWS `alg`-Konfusion | 🔴 Kritisch | 2026-04-18 | Normativer `alg=EdDSA`-Strict-Check — [Core 002](../01-wot-core/002-signaturen-und-verifikation.md#algorithmus-validierung-muss) |
-| [S2](#s2-nonce-reuse-attacke-bei-challenge-response) | Nonce-Reuse bei Challenge-Response | 🟠 Schwer | 2026-04-18 | Nonce-History (24h) im Broker — [Sync 007](../02-wot-sync/007-transport-und-broker.md) |
-| [S4](#s4-capability-replay-innerhalb-der-gleichen-generation) | Capability-Replay ohne Ablauf | 🟠 Schwer | 2026-04-18 | `validUntil` als Pflichtfeld — [Sync 007](../02-wot-sync/007-transport-und-broker.md#capability-format) |
-| [M1](#m1-timing-angriffe-bei-decryption) | Timing-Angriffe bei Decryption | 🟡 Mittel | 2026-04-19 | Constant-Time-Anforderung (MUSS) — [Sync 005](../02-wot-sync/005-verschluesselung.md#konstante-laufzeit-constant-time--muss) |
-| [M5](#m5-jcs-canonicalization-edge-cases) | JCS-Canonicalization Edge Cases | 🟡 Mittel | 2026-04-18 | Test-Vektoren (Unicode, Zahlen) — [Core 002](../01-wot-core/002-signaturen-und-verifikation.md) |
-| [S3](#s3-split-brain-durch-broker-manipulation) | Split-Brain durch Broker (80-90%) | 🟠 Schwer | 2026-04-19 | Multi-Source-Sync + Heads-Vergleich — [Sync 006](../02-wot-sync/006-sync-protokoll.md#censorship--und-split-brain-detection) |
-| [S5](#s5-silent-log-censorship-durch-admin) | Silent Log-Censorship (80-90%) | 🟠 Schwer | 2026-04-19 | Identisch mit S3-Fix (Multi-Source-Sync) — [Sync 006](../02-wot-sync/006-sync-protokoll.md#censorship--und-split-brain-detection) |
+| [K2](#k2-nonce-reuse-bei-aes-256-gcm--katastrophaler-schlüsselverlust) | Nonce-Reuse bei AES-256-GCM | 🔴 Kritisch | 2026-04-18 | Deterministische Nonce aus `(deviceId, seq)` — [Sync 001](../03-wot-sync/001-verschluesselung.md) |
+| [K4](#k4-jws-alg-konfusion) | JWS `alg`-Konfusion | 🔴 Kritisch | 2026-04-18 | Normativer `alg=EdDSA`-Strict-Check — [Identity 002](../01-wot-identity/002-signaturen-und-verifikation.md#algorithmus-validierung-muss) |
+| [S2](#s2-nonce-reuse-attacke-bei-challenge-response) | Nonce-Reuse bei Challenge-Response | 🟠 Schwer | 2026-04-18 | Nonce-History (24h) im Broker — [Sync 003](../03-wot-sync/003-transport-und-broker.md) |
+| [S4](#s4-capability-replay-innerhalb-der-gleichen-generation) | Capability-Replay ohne Ablauf | 🟠 Schwer | 2026-04-18 | `validUntil` als Pflichtfeld — [Sync 003](../03-wot-sync/003-transport-und-broker.md#capability-format) |
+| [M1](#m1-timing-angriffe-bei-decryption) | Timing-Angriffe bei Decryption | 🟡 Mittel | 2026-04-19 | Constant-Time-Anforderung (MUSS) — [Sync 001](../03-wot-sync/001-verschluesselung.md#konstante-laufzeit-constant-time--muss) |
+| [M5](#m5-jcs-canonicalization-edge-cases) | JCS-Canonicalization Edge Cases | 🟡 Mittel | 2026-04-18 | Test-Vektoren (Unicode, Zahlen) — [Identity 002](../01-wot-identity/002-signaturen-und-verifikation.md) |
+| [S3](#s3-split-brain-durch-broker-manipulation) | Split-Brain durch Broker (80-90%) | 🟠 Schwer | 2026-04-19 | Multi-Source-Sync + Heads-Vergleich — [Sync 002](../03-wot-sync/002-sync-protokoll.md#censorship--und-split-brain-detection) |
+| [S5](#s5-silent-log-censorship-durch-admin) | Silent Log-Censorship (80-90%) | 🟠 Schwer | 2026-04-19 | Identisch mit S3-Fix (Multi-Source-Sync) — [Sync 002](../03-wot-sync/002-sync-protokoll.md#censorship--und-split-brain-detection) |
 
 ### ⏳ Noch offen
 
@@ -146,7 +146,7 @@ Auch möglich: alg=none (keine Signatur)
 → Verifier akzeptiert unsignierte Nachrichten
 ```
 
-**Fix:** Core 002 verlangt jetzt normativ (MUSS): Verifier prüfen das `alg`-Feld strikt gegen die erlaubten Werte (nur `EdDSA`). Abweichende Werte — inklusive `none`, `HS256`, `RS256` — MÜSSEN abgelehnt werden.
+**Fix:** Identity 002 verlangt jetzt normativ (MUSS): Verifier prüfen das `alg`-Feld strikt gegen die erlaubten Werte (nur `EdDSA`). Abweichende Werte — inklusive `none`, `HS256`, `RS256` — MÜSSEN abgelehnt werden.
 
 ---
 
@@ -194,13 +194,13 @@ Angreifer der Challenge 1 aufgezeichnet hat:
 
 **Spec-Lücke (vor Fix):** Keine Nonce-History-Prüfung.
 
-**Fix:** Sync 007 verlangt: der Empfänger MUSS Nonces für mindestens 24h speichern und Wiederholungen ablehnen. Das entschärft schwache RNGs als Bedrohungsquelle.
+**Fix:** Sync 003 verlangt: der Empfänger MUSS Nonces für mindestens 24h speichern und Wiederholungen ablehnen. Das entschärft schwache RNGs als Bedrohungsquelle.
 
 ---
 
 ### S3. Split-Brain durch Broker-Manipulation
 
-**Status:** ✅ Zu 80-90% behoben 2026-04-19 — Multi-Source-Sync + Heads-Vergleich in [Sync 006](../02-wot-sync/006-sync-protokoll.md#censorship--und-split-brain-detection). Strukturelle Grenzen (Single-Broker-Communities ohne P2P-Option) bleiben unvermeidbar bestehen.
+**Status:** ✅ Zu 80-90% behoben 2026-04-19 — Multi-Source-Sync + Heads-Vergleich in [Sync 002](../03-wot-sync/002-sync-protokoll.md#censorship--und-split-brain-detection). Strukturelle Grenzen (Single-Broker-Communities ohne P2P-Option) bleiben unvermeidbar bestehen.
 
 **Problem:** Der Broker kann Nachrichten selektiv zustellen. Wenn er eine **Mitglieder-Entfernung** nur an einige Clients zustellt, entstehen inkonsistente Sichten.
 
@@ -214,14 +214,14 @@ aber NICHT an Dave und Eve.
 
 Resultat:
 - Alice, Carol: sehen Bob als entfernt
-- Dave, Eve: sehen Bob noch als Mitglied  
+- Dave, Eve: sehen Bob noch als Mitglied
 - Bob: weiß nicht dass er entfernt wurde
 - CRDT-State divergiert still
 ```
 
 **Spec-Lücke (vor Fix):** Keine Detection von fehlenden Nachrichten. Keine End-to-End-Bestätigung dass alle Mitglieder den State sehen.
 
-**Fix:** Sync 006 empfiehlt Multi-Source-Sync — Clients SOLLEN regelmäßig gegen mehrere Broker oder direkte P2P-Peers syncen und die zurückgegebenen Heads vergleichen. Divergenz wird dem User als Status-Indikator sichtbar gemacht, mit Handlungsoptionen (alternativer Broker, P2P-Sync, ignorieren).
+**Fix:** Sync 002 empfiehlt Multi-Source-Sync — Clients SOLLEN regelmäßig gegen mehrere Broker oder direkte P2P-Peers syncen und die zurückgegebenen Heads vergleichen. Divergenz wird dem User als Status-Indikator sichtbar gemacht, mit Handlungsoptionen (alternativer Broker, P2P-Sync, ignorieren).
 
 **Strukturelle Grenze:** Communities mit einem einzigen Broker und ohne P2P-Kapazität haben keinen unabhängigen Vergleichspunkt — auch ein formales Digest-Protokoll könnte das nicht lösen. Das ist ein Architektur- und Betriebsthema, nicht ein Protokoll-Defizit.
 
@@ -246,13 +246,13 @@ Bob hat die Capability noch, kann weiter auf doc X zugreifen.
 
 **Spec-Lücke (vor Fix):** Spec unterschied nicht zwischen "entfernt" und "ausgetreten". Capabilities hatten keine Zeit-Begrenzung.
 
-**Fix:** Sync 007 verlangt jetzt `validUntil` als Pflichtfeld. Empfohlene Dauer: 6 Monate (normal), 1 Monat (hochsensitiv), 1 Jahr (persönliches Doc). Der Admin erneuert Capabilities für aktive Members rechtzeitig; inaktive Members verlieren den Zugriff automatisch.
+**Fix:** Sync 003 verlangt jetzt `validUntil` als Pflichtfeld. Empfohlene Dauer: 6 Monate (normal), 1 Monat (hochsensitiv), 1 Jahr (persönliches Doc). Der Admin erneuert Capabilities für aktive Members rechtzeitig; inaktive Members verlieren den Zugriff automatisch.
 
 ---
 
 ### S5. Silent Log-Censorship durch Admin
 
-**Status:** ✅ Zu 80-90% behoben 2026-04-19 — derselbe Multi-Source-Sync-Mechanismus wie bei S3 deckt diesen Angriff ab. Siehe [Sync 006](../02-wot-sync/006-sync-protokoll.md#censorship--und-split-brain-detection).
+**Status:** ✅ Zu 80-90% behoben 2026-04-19 — derselbe Multi-Source-Sync-Mechanismus wie bei S3 deckt diesen Angriff ab. Siehe [Sync 002](../03-wot-sync/002-sync-protokoll.md#censorship--und-split-brain-detection).
 
 **Problem:** Ein böswilliger Admin könnte den Log **editieren bevor andere Member ihn verteilt bekommen**. Er sieht einen Log-Eintrag den er nicht mag, verwirft ihn lokal und liefert ihn nicht weiter.
 
@@ -268,13 +268,13 @@ Bob hat die Capability noch, kann weiter auf doc X zugreifen.
 
 ### M1. Timing-Angriffe bei Decryption
 
-**Status:** ✅ Behoben 2026-04-19 — normative Constant-Time-Anforderung in [Sync 005](../02-wot-sync/005-verschluesselung.md#konstante-laufzeit-constant-time--muss).
+**Status:** ✅ Behoben 2026-04-19 — normative Constant-Time-Anforderung in [Sync 001](../03-wot-sync/001-verschluesselung.md#konstante-laufzeit-constant-time--muss).
 
 **Problem:** Wenn Decryption nicht konstant-zeit implementiert ist, kann ein Angreifer mit vielen Versuchen den Klartext inferieren.
 
 **Abhängigkeit:** Web Crypto API ist in modernen Browsern konstant-zeit. Ältere/Mobile-Implementierungen oder Eigenimplementierungen in JavaScript nicht garantiert.
 
-**Fix:** Sync 005 verlangt jetzt normativ (MUSS): alle Krypto-Operationen (AES-GCM Tag-Verifikation, X25519 Scalar Multiplication, HKDF/HMAC-Vergleich) laufen in konstanter Zeit. Implementierungen MÜSSEN die Web Crypto API oder eine äquivalent auditierte native Bibliothek verwenden — kein JavaScript-Eigenbau von AES, X25519, HKDF oder HMAC.
+**Fix:** Sync 001 verlangt jetzt normativ (MUSS): alle Krypto-Operationen (AES-GCM Tag-Verifikation, X25519 Scalar Multiplication, HKDF/HMAC-Vergleich) laufen in konstanter Zeit. Implementierungen MÜSSEN die Web Crypto API oder eine äquivalent auditierte native Bibliothek verwenden — kein JavaScript-Eigenbau von AES, X25519, HKDF oder HMAC.
 
 ---
 
@@ -329,9 +329,9 @@ Alice muss entscheiden ob sie akzeptiert. Aber die Metadata
 (Absender-DIDs, Zeitstempel, Inhalte) werden vom Broker
 verarbeitet, an Alice's Geräte weitergeleitet.
 
-Resultat: 
+Resultat:
 - Bandbreiten-Verbrauch
-- Storage auf Alice's Geräten  
+- Storage auf Alice's Geräten
 - Psychologische Last für Alice
 ```
 
@@ -364,7 +364,7 @@ Signatur von A verifiziert sich nicht gegen Kanonisierung von B.
   ungültig in anderer Impl zu machen
 ```
 
-**Fix:** Core 002 enthält jetzt Test-Vektoren mit Unicode-Edge-Cases, Zahlen-Formatierung und Null-/Leer-Feldern. Implementierungen MÜSSEN gegen diese Vektoren testen.
+**Fix:** Identity 002 enthält jetzt Test-Vektoren mit Unicode-Edge-Cases, Zahlen-Formatierung und Null-/Leer-Feldern. Implementierungen MÜSSEN gegen diese Vektoren testen.
 
 ---
 
@@ -474,7 +474,7 @@ Ein Jahr später wird die Wohnung eingebrochen. Das Telefon wird mitgenommen. Fo
 3. Implementierung sieht "alg=none", verifiziert nicht
 4. Akzeptiert den Payload als gültig
 
-**Fix:** Core 002 verlangt normativ (MUSS): nur `alg=EdDSA` wird akzeptiert, alle anderen Werte — inklusive `none` — MÜSSEN abgelehnt werden.
+**Fix:** Identity 002 verlangt normativ (MUSS): nur `alg=EdDSA` wird akzeptiert, alle anderen Werte — inklusive `none` — MÜSSEN abgelehnt werden.
 
 ---
 

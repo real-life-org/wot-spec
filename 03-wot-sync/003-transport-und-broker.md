@@ -1,10 +1,10 @@
-# WoT Sync 007: Transport und Broker
+# WoT Sync 003: Transport und Broker
 
 - **Status:** Entwurf
 - **Autoren:** Anton Tranelis
 - **Datum:** 2026-04-13
 - **Scope:** Broker, Transport, Capabilities, DIDComm Plaintext Envelopes und P2P-Sync
-- **Depends on:** Core 002, Core 004, Core 005, Sync 005, Sync 006, Sync 009, Sync 010
+- **Depends on:** Identity 002, Trust 002, Identity 003, Sync 001, Sync 002, Sync 005, Sync 006
 - **Conformance profile:** `wot-sync@0.1`
 
 ## Zusammenfassung
@@ -16,19 +16,19 @@ Dieses Dokument spezifiziert wie Daten zwischen Peers transportiert werden und w
 - **WebSocket** (RFC 6455) — Primärer Transportkanal
 - **DIDComm v2** (DIF) — Plaintext Message Envelope (keine DIDComm-JWE/Authcrypt-Verschlüsselung)
 - **Ed25519** (RFC 8032) — Signatur im Message Envelope
-- **ECIES** (siehe [Sync 005](005-verschluesselung.md)) — 1:1-Verschlüsselung für Inbox-Nachrichten
+- **ECIES** (siehe [Sync 001](001-verschluesselung.md)) — 1:1-Verschlüsselung für Inbox-Nachrichten
 
 ## Broker
 
 Ein Broker ist ein immer erreichbarer Peer für Store-and-Forward, Log-Sync, Device-Inboxen und Push-Signale. Broker speichern nur verschlüsselte Inhalte und Autorisierungs-Metadaten:
 
-- verschlüsselte Log-Einträge für Dokumente (siehe [Sync 006](006-sync-protokoll.md))
+- verschlüsselte Log-Einträge für Dokumente (siehe [Sync 002](002-sync-protokoll.md))
 - verschlüsselte Inbox-Nachrichten pro Device
 - Capabilities für Dokumentzugriff
 - Device-Registrierungen pro DID
 - Push-Endpoints
 
-Broker sehen keinen Klartext, keine Inbox-Inhalte und keine Space-Mitgliederlisten. Ein einzelner Broker kann Nachrichten zurückhalten; Clients mit höheren Sicherheitsanforderungen SOLLTEN mehrere Broker parallel nutzen und Heads vergleichen (siehe [Sync 006](006-sync-protokoll.md#censorship--und-split-brain-detection)).
+Broker sehen keinen Klartext, keine Inbox-Inhalte und keine Space-Mitgliederlisten. Ein einzelner Broker kann Nachrichten zurückhalten; Clients mit höheren Sicherheitsanforderungen SOLLTEN mehrere Broker parallel nutzen und Heads vergleichen (siehe [Sync 002](002-sync-protokoll.md#censorship--und-split-brain-detection)).
 
 Das Sync-Protokoll selbst ist peer-agnostisch. Die Broker-Schicht ergänzt Authentisierung, Capability-Prüfung, Store-and-Forward und Push. Im direkten P2P-Modus fällt diese Broker-Schicht weg; P2P-Authentisierung ist in [Direkter P2P-Sync](#direkter-p2p-sync) spezifiziert.
 
@@ -52,11 +52,11 @@ Beim Verbindungsaufbau zum Broker authentifiziert sich der Client via **Challeng
 
 Nach dem Handshake ist die WebSocket-Verbindung authentifiziert. Alle weiteren Nachrichten auf dieser Verbindung gelten als von dieser DID + deviceId kommend.
 
-Die Device-ID (`deviceId`) identifiziert das Gerät stabil — derselbe Wert wie im Sync-Protokoll ([Sync 006](006-sync-protokoll.md#device-identifikation)).
+Die Device-ID (`deviceId`) identifiziert das Gerät stabil — derselbe Wert wie im Sync-Protokoll ([Sync 002](002-sync-protokoll.md#device-identifikation)).
 
 ### Nonce-Handling (MUSS)
 
-Die Challenge-Nonce in der Broker-Authentisierung MUSS denselben Replay-Schutz-Regeln folgen wie die Verifikations-Challenge in [Core 004](../01-wot-core/004-verifikation.md#nonce-history-muss):
+Die Challenge-Nonce in der Broker-Authentisierung MUSS denselben Replay-Schutz-Regeln folgen wie die Verifikations-Challenge in [Trust 002](../02-wot-trust/002-verifikation.md#nonce-history-muss):
 
 - Broker MÜSSEN bereits verwendete Nonces für mindestens 24 Stunden speichern
 - Eine Nonce DARF nur einmal akzeptiert werden
@@ -67,8 +67,8 @@ Die Challenge-Nonce in der Broker-Authentisierung MUSS denselben Replay-Schutz-R
 
 Der Broker MUSS pro DID eine Liste der zugehörigen Device-IDs führen. Das ist notwendig für:
 
-- **Sequenzierte Log-Einträge** — jeder Log-Eintrag ist identifiziert durch `(deviceId, docId, seq)` (siehe [Sync 006](006-sync-protokoll.md))
-- **Nonce-Konstruktion** — die deterministische AES-GCM-Nonce basiert auf `(deviceId, seq)` (siehe [Sync 005](005-verschluesselung.md#nonce-konstruktion))
+- **Sequenzierte Log-Einträge** — jeder Log-Eintrag ist identifiziert durch `(deviceId, docId, seq)` (siehe [Sync 002](002-sync-protokoll.md))
+- **Nonce-Konstruktion** — die deterministische AES-GCM-Nonce basiert auf `(deviceId, seq)` (siehe [Sync 001](001-verschluesselung.md#nonce-konstruktion))
 - **Store-and-Forward pro Device** — Inbox-Nachrichten müssen jedem Device zugestellt werden, auch wenn es vorübergehend offline ist
 
 ### Erstregistrierung
@@ -112,7 +112,7 @@ Signiert mit dem Identity Key der angegebenen DID. Der Broker MUSS prüfen:
 3. Ausstehende Inbox-Nachrichten für dieses Device werden gelöscht
 4. Zukünftige Verbindungsversuche mit dieser Kombination werden mit `DEVICE_REVOKED` abgelehnt
 
-**Limitation im Shared-Seed-Modell:** Wer den Seed hat, kann eine neue `deviceId` generieren und sich als "neues Device" registrieren. Device-Deaktivierung schützt nicht gegen Seed-Kompromittierung — siehe [Core 001](../01-wot-core/001-identitaet-und-schluesselableitung.md#multi-device--shared-seed-modell). Für echten Schutz muss die Identität rotiert werden.
+**Limitation im Shared-Seed-Modell:** Wer den Seed hat, kann eine neue `deviceId` generieren und sich als "neues Device" registrieren. Device-Deaktivierung schützt nicht gegen Seed-Kompromittierung — siehe [Identity 001](../01-wot-identity/001-identitaet-und-schluesselableitung.md#multi-device--shared-seed-modell). Für echten Schutz muss die Identität rotiert werden.
 
 ### Device-Liste im Broker
 
@@ -148,7 +148,7 @@ Der Broker ist E2EE — er kann die Mitgliederliste eines Space nicht lesen (ver
 
 ### Space-Schlüssel am Broker
 
-Der Broker kennt pro Space den `spaceCapabilityVerificationKey` für Capability-Prüfung und die `adminDid(s)` für Broker-Management-Nachrichten. Members signieren Capabilities mit dem geteilten `spaceCapabilitySigningKey`; Admins signieren Rotation und Admin-Wechsel mit ihrem abgeleiteten Admin Key (siehe [Sync 009](009-gruppen.md#admin-key-ableitung)).
+Der Broker kennt pro Space den `spaceCapabilityVerificationKey` für Capability-Prüfung und die `adminDid(s)` für Broker-Management-Nachrichten. Members signieren Capabilities mit dem geteilten `spaceCapabilitySigningKey`; Admins signieren Rotation und Admin-Wechsel mit ihrem abgeleiteten Admin Key (siehe [Sync 005](005-gruppen.md#admin-key-ableitung)).
 
 ### Capability-Format
 
@@ -189,7 +189,7 @@ Der JWS wird mit dem Space Capability Signing Key signiert. Der `kid` im JWS-Hea
 
 Capabilities werden zusammen mit den Space-Schlüsseln verteilt:
 
-- **Bei Einladung:** Der Einladende signiert eine Capability mit dem `spaceCapabilitySigningKey` für den Eingeladenen. Die `space-invite` Inbox-Nachricht enthält Space Content Key, Capability Signing Key und Capability ([Sync 009](009-gruppen.md)).
+- **Bei Einladung:** Der Einladende signiert eine Capability mit dem `spaceCapabilitySigningKey` für den Eingeladenen. Die `space-invite` Inbox-Nachricht enthält Space Content Key, Capability Signing Key und Capability ([Sync 005](005-gruppen.md)).
 - **Bei Key-Rotation (Member-Entfernung):** Der Admin generiert einen neuen Space Content Key und ein neues Capability Key Pair. Alle verbleibenden Members bekommen neuen Content Key + neuen Capability Signing Key + neue Capability.
 - **Vor Ablauf:** Jedes Mitglied kann sich selbst (oder Peers) eine erneuerte Capability ausstellen, solange der aktuelle `spaceCapabilitySigningKey` gültig ist.
 
@@ -199,7 +199,7 @@ Wenn ein Client ein Dokument syncen will:
 
 1. Client sendet seine Capability
 2. Broker prüft:
-   - JWS-Signatur gültig gegen den aktuellen `spaceCapabilityVerificationKey`? (inklusive `alg=EdDSA`, siehe [Core 002](../01-wot-core/002-signaturen-und-verifikation.md#algorithmus-validierung-muss))
+   - JWS-Signatur gültig gegen den aktuellen `spaceCapabilityVerificationKey`? (inklusive `alg=EdDSA`, siehe [Identity 002](../01-wot-identity/002-signaturen-und-verifikation.md#algorithmus-validierung-muss))
    - `audience` = authentifizierte DID?
    - `spaceId` = angefragter Space?
    - `generation` = aktuelle Capability-Key-Generation? (alte Capabilities werden damit implizit widerrufen)
@@ -251,7 +251,7 @@ Beide Nachrichten müssen mit einem **bestehenden Admin Key** für diesen Space 
 
 Für das persönliche Dokument (Identität, Keys) stellt der User sich seine eigene Capability aus. Das persönliche Dokument hat kein Space Capability Key Pair — stattdessen signiert der User die Capability direkt mit seinem **Identity Key** (DID). Der Broker prüft: `issuer` = `audience` = authentifizierte DID.
 
-**Unterschied zum Space-Capability-Modell:** Bei Spaces signiert der geteilte `spaceCapabilitySigningKey`, bei Personal Docs signiert der persönliche Identity Key (DID). Das ist eine bewusste Vereinfachung — ein Personal Doc hat genau einen Eigentümer, kein Gruppen-Key-Management nötig. Die Capability-Felder (`spaceId`, `generation`, `validUntil`) werden analog verwendet, aber `spaceId` wird durch die deterministische Personal-Doc-ID ersetzt (siehe [Sync 010](010-personal-doc.md)).
+**Unterschied zum Space-Capability-Modell:** Bei Spaces signiert der geteilte `spaceCapabilitySigningKey`, bei Personal Docs signiert der persönliche Identity Key (DID). Das ist eine bewusste Vereinfachung — ein Personal Doc hat genau einen Eigentümer, kein Gruppen-Key-Management nötig. Die Capability-Felder (`spaceId`, `generation`, `validUntil`) werden analog verwendet, aber `spaceId` wird durch die deterministische Personal-Doc-ID ersetzt (siehe [Sync 006](006-personal-doc.md)).
 
 ## Broker-Kanäle
 
@@ -262,7 +262,9 @@ Der Broker bietet zwei Kanäle:
 
 ## Message Envelope (DIDComm-kompatibel)
 
-Alle Nachrichten zwischen Peers (über Broker oder direkt) verwenden das **DIDComm v2 Plaintext Message Format** ([DIF DIDComm Messaging v2](https://identity.foundation/didcomm-messaging/spec/v2.0/)). Das stellt Interoperabilität auf der Envelope-Ebene sicher: etablierte DIDComm-v2-Libraries können WoT-Plaintext-Messages parsen und routen. Die Verschlüsselung bleibt WoT-spezifisch (ECIES statt DIDComm-JWE/Authcrypt).
+WoT-Peer-Nachrichten (über Broker oder direkt) verwenden das **DIDComm v2 Plaintext Message Format** ([DIF DIDComm Messaging v2](https://identity.foundation/didcomm-messaging/spec/v2.0/)) als ephemeren Transport-Envelope. Das stellt Interoperabilität auf der Envelope-Ebene sicher: etablierte DIDComm-v2-Libraries können WoT-Plaintext-Messages parsen und routen. Die Verschlüsselung bleibt WoT-spezifisch (ECIES statt DIDComm-JWE/Authcrypt).
+
+Persistente WoT-Objekte (Attestation-JWS, Capability-JWS, Log-Entry-JWS, verschlüsselte Dokument-Payloads) sind **keine DIDComm Messages**. Sie DÜRFEN im `body` einer DIDComm Plaintext Message transportiert werden. Ihre Autorität und Integrität ergeben sich aus dem inneren JWS, der Capability, Broker-Authentisierung oder der dokumentenspezifischen Verschlüsselung — nicht aus `from`, `to` oder anderen Envelope-Feldern.
 
 ### Plaintext Message
 
@@ -297,6 +299,16 @@ Alle Nachrichten zwischen Peers (über Broker oder direkt) verwenden das **DIDCo
 | `pthid` | UUID v4 | Optional | Parent-Thread-ID. Verweist auf einen übergeordneten Thread — für verschachtelte Konversationen (z.B. ein Sub-Protokoll das innerhalb eines größeren Flows läuft). |
 | `body` | Object | Ja | Nachrichteninhalt. Struktur abhängig vom `type`. |
 
+### Autoritätsgrenze (MUSS)
+
+Implementierungen MÜSSEN DIDComm-Felder als Transport- und Routing-Metadaten behandeln. Insbesondere:
+
+- `from` im Envelope DARF NICHT als Autor des enthaltenen Log-Eintrags oder der enthaltenen Attestation gewertet werden.
+- Log-Einträge MÜSSEN über das innere Log-Entry-JWS und `authorKid` verifiziert werden.
+- Attestations MÜSSEN über ihr VC-JWS und `issuer` / `iss` verifiziert werden.
+- Capabilities MÜSSEN über ihr Capability-JWS und den passenden Verification Key verifiziert werden.
+- Inbox-Nachrichten MÜSSEN nach ECIES-Entschlüsselung den inneren JWS prüfen.
+
 ### Threading
 
 `thid` und `pthid` sind identisch zu den gleichnamigen DIDComm v2 Feldern. Sie erlauben:
@@ -313,7 +325,7 @@ Unser Message-Envelope kann in drei Formen vorliegen (analog zu DIDComm v2, aber
 
 1. **Plaintext Message** — nackte JSON, keine Envelope-Signatur, keine Envelope-Verschlüsselung
 2. **Signed Message** — Plaintext in JWS verpackt (Envelope-Signatur)
-3. **Encrypted Message** — Body mit **ECIES** verschlüsselt (siehe [Sync 005](005-verschluesselung.md#peer-to-peer-verschlüsselung-ecies)). Der Sender wird nicht durch die Verschlüsselung selbst gebunden, sondern durch eine separate JWS-Signatur im Body oder im Envelope
+3. **Encrypted Message** — Body mit **ECIES** verschlüsselt (siehe [Sync 001](001-verschluesselung.md#peer-to-peer-verschlüsselung-ecies)). Der Sender wird nicht durch die Verschlüsselung selbst gebunden, sondern durch eine separate JWS-Signatur im Body oder im Envelope
 
 ### Wann wird welche Form verwendet (NORMATIV)
 
@@ -321,7 +333,7 @@ Der Envelope wird NUR dann als **Signed Message** verpackt, wenn der Body nicht 
 
 | Nachrichtentyp | Authentifizierung durch | Envelope |
 |---|---|---|
-| `log-entry` | Innerer JWS im Body (persistent, dauerhaft verifizierbar) | Plaintext |
+| `log-entry` | Innerer Log-Entry-JWS im Body (persistentes WoT-Objekt) | Plaintext |
 | `sync-request`, `sync-response` | Kontext der authentifizierten WebSocket-Verbindung | Plaintext |
 | `inbox` (Attestation, etc.) | Innerer JWS im Klartext-Body (bindet Sender) + ECIES-Wrap | Encrypted (ECIES) |
 | `space-invite`, `key-rotation`, `member-update` | Innerer JWS im Klartext-Body + ECIES-Wrap | Encrypted (ECIES) |
@@ -329,7 +341,7 @@ Der Envelope wird NUR dann als **Signed Message** verpackt, wenn der Body nicht 
 
 ### Signatur (WoT Envelope-JWS)
 
-Wenn ein Envelope signiert wird, geschieht das als **JWS Compact Serialization** — identisch mit unseren Attestations ([Core 002](../01-wot-core/002-signaturen-und-verifikation.md)) und strukturell an DIDComm Signed Messages angelehnt. Anders als beim Plaintext Envelope beanspruchen WoT Envelope-JWS derzeit keine Library-validierte DIDComm-Signed-Message-Kompatibilität; dieser Anspruch wird erst mit eigenen Signed-Envelope-Testvektoren erhoben.
+Wenn ein Envelope signiert wird, geschieht das als **JWS Compact Serialization** — identisch mit unseren Attestations ([Identity 002](../01-wot-identity/002-signaturen-und-verifikation.md)) und strukturell an DIDComm Signed Messages angelehnt. Anders als beim Plaintext Envelope beanspruchen WoT Envelope-JWS derzeit keine Library-validierte DIDComm-Signed-Message-Kompatibilität; dieser Anspruch wird erst mit eigenen Signed-Envelope-Testvektoren erhoben.
 
 1. Plaintext Message mit JCS kanonisieren (RFC 8785)
 2. JCS-Bytes als Base64URL kodieren
@@ -346,7 +358,7 @@ Ablauf:
 1. Sender erstellt den Klartext-Body (z.B. Attestation, Space-Invite)
 2. Sender signiert den Body mit seinem Identity Key → innerer JWS
 3. Sender verschlüsselt den JWS-String mit ECIES für den X25519-Key des Empfängers
-4. Ausgabe: `{ epk, nonce, ciphertext }` (siehe [Sync 005](005-verschluesselung.md#verschlüsseltes-nachrichtenformat))
+4. Ausgabe: `{ epk, nonce, ciphertext }` (siehe [Sync 001](001-verschluesselung.md#verschlüsseltes-nachrichtenformat))
 5. Transport als Body der DIDComm-Envelope-Nachricht (type = `inbox/1.0`, `space-invite/1.0`, etc.)
 
 **Pflichtfelder im inneren JWS-Payload (MUSS):**
@@ -359,7 +371,7 @@ Der innere JWS MUSS mindestens enthalten: `from` (Sender-DID), `to` (Empfänger-
 4. `created_time` MUSS aktuell sein (nicht älter als konfigurierbar, z.B. 24h) — verhindert Replay
 5. `id` DARF nicht bereits verarbeitet worden sein (Message-ID-History) — zweite Replay-Verteidigung
 
-Siehe [Sync 005](005-verschluesselung.md#peer-to-peer-verschlüsselung-ecies) für Details.
+Siehe [Sync 001](001-verschluesselung.md#peer-to-peer-verschlüsselung-ecies) für Details.
 
 Log-Einträge werden NICHT mit ECIES verschlüsselt — sie sind bereits mit dem Space Content Key (AES-256-GCM) verschlüsselt. ECIES ist nur für den Inbox-Kanal.
 
@@ -375,7 +387,7 @@ Log-Einträge werden NICHT mit ECIES verschlüsselt — sie sind bereits mit dem
 | `.../inbox/1.0` | Inbox | Direkte verschlüsselte Nachricht (Attestation, etc.) |
 | `.../ack/1.0` | Beide | Empfangsbestätigung (referenziert `id` der Original-Nachricht) |
 
-#### Gruppen ([Sync 009](009-gruppen.md))
+#### Gruppen ([Sync 005](005-gruppen.md))
 
 | Type-URI | Kanal | Beschreibung |
 |----------|-------|-------------|
@@ -383,7 +395,7 @@ Log-Einträge werden NICHT mit ECIES verschlüsselt — sie sind bereits mit dem
 | `.../key-rotation/1.0` | Inbox | Neuer Content Key + Capability Signing Key nach Member-Entfernung |
 | `.../member-update/1.0` | Inbox | Mitgliedschafts-Änderung (hinzugefügt/entfernt) |
 
-#### HMC Extension ([H03 Gossip](../04-hmc-extensions/H03-gossip.md))
+#### HMC Extension ([H03 Gossip](../05-hmc-extensions/H03-gossip.md))
 
 | Type-URI | Kanal | Beschreibung |
 |----------|-------|-------------|
@@ -395,7 +407,7 @@ Alle Type-URIs verwenden den Präfix `https://web-of-trust.de/protocols/`.
 
 #### `log-entry/1.0` — Neuer verschlüsselter Log-Eintrag
 
-Ein Peer publiziert einen neuen Log-Eintrag an andere Peers. Der Log-Eintrag selbst ist ein **JWS Compact String** (siehe [Sync 006](006-sync-protokoll.md#signatur-des-log-eintrags)). Er wird als opaker String im Body transportiert:
+Ein Peer publiziert einen neuen Log-Eintrag an andere Peers. Der Log-Eintrag selbst ist ein persistentes WoT-Objekt und **JWS Compact String** (siehe [Sync 002](002-sync-protokoll.md#signatur-des-log-eintrags)). Er wird als opaker String im Body transportiert:
 
 ```json
 {
@@ -403,7 +415,7 @@ Ein Peer publiziert einen neuen Log-Eintrag an andere Peers. Der Log-Eintrag sel
 }
 ```
 
-Der JWS-Payload des Eintrags enthält die Felder `seq`, `deviceId`, `docId`, `authorKid`, `keyGeneration`, `data`, `timestamp` — JCS-kanonisiert, Ed25519-signiert. Vollständiges Schema in [Sync 006 Log-Eintrag](006-sync-protokoll.md#log-eintrag).
+Der JWS-Payload des Eintrags enthält die Felder `seq`, `deviceId`, `docId`, `authorKid`, `keyGeneration`, `data`, `timestamp` — JCS-kanonisiert, Ed25519-signiert. Vollständiges Schema in [Sync 002 Log-Eintrag](002-sync-protokoll.md#log-eintrag).
 
 **Broker-Indexing:** Der Broker extrahiert `docId`, `deviceId`, `seq` aus dem JWS-Payload (Base64URL-dekodieren des mittleren Segments, JCS-kanonisiertes JSON parsen). Diese drei Felder braucht er für Indexing, Sync-Anfragen und Kollisionserkennung. Der Broker MUSS die JWS-Signatur NICHT verifizieren — Signatur-Verifikation ist Aufgabe der Peers, die die Einträge letztendlich konsumieren. Der Broker darf sie aber als zusätzliche Integritätsprüfung durchführen.
 
@@ -419,11 +431,11 @@ Der Broker MUSS für jeden akzeptierten Log-Eintrag den **Content-Hash** (SHA-25
    - **Hash unterschiedlich:** **Kollision** — der Broker MUSS den neuen Eintrag ablehnen und mit `SEQ_COLLISION_DETECTED` antworten
 3. Falls nicht: Eintrag akzeptieren, Hash speichern
 
-Diese Prüfung ist die letzte Verteidigungslinie gegen AES-GCM-Nonce-Reuse und MUSS auch dann erzwungen werden, wenn der Client seq-Konsistenz-Regeln aus [Sync 006](006-sync-protokoll.md#seq-konsistenz-muss) einhält (Defense in Depth).
+Diese Prüfung ist die letzte Verteidigungslinie gegen AES-GCM-Nonce-Reuse und MUSS auch dann erzwungen werden, wenn der Client seq-Konsistenz-Regeln aus [Sync 002](002-sync-protokoll.md#seq-konsistenz-muss) einhält (Defense in Depth).
 
 **Reaktion des Clients bei `SEQ_COLLISION_DETECTED`:**
 
-Der Client MUSS diese Response als Indikator für ein Restore/Clone-Szenario behandeln und die Restore-Detection-Regel aus [Sync 006](006-sync-protokoll.md#seq-konsistenz-muss) anwenden: neue `deviceId` generieren, alte deaktivieren, neu beginnen.
+Der Client MUSS diese Response als Indikator für ein Restore/Clone-Szenario behandeln und die Restore-Detection-Regel aus [Sync 002](002-sync-protokoll.md#seq-konsistenz-muss) anwenden: neue `deviceId` generieren, alte deaktivieren, neu beginnen.
 
 #### `sync-request/1.0` — Anfrage: "Was hast du seit X?"
 
@@ -471,13 +483,13 @@ Antwort auf `sync-request`. Body:
 | Feld | Typ | Pflicht | Beschreibung |
 |------|-----|---------|-------------|
 | `docId` | UUID | Ja | Für welches Dokument |
-| `entries` | Array of JWS-Strings | Ja | Die fehlenden Log-Einträge als JWS Compact Strings, sortiert nach `(deviceId, seq)`. Format gemäß [Sync 006 Log-Eintrag](006-sync-protokoll.md#log-eintrag). |
+| `entries` | Array of JWS-Strings | Ja | Die fehlenden Log-Einträge als JWS Compact Strings, sortiert nach `(deviceId, seq)`. Format gemäß [Sync 002 Log-Eintrag](002-sync-protokoll.md#log-eintrag). |
 | `heads` | Object | Ja | Die aktuell höchsten bekannten seq pro deviceId beim Antwortenden |
 | `truncated` | Boolean | Ja | `true` wenn durch `limit` abgeschnitten — der Fragende MUSS einen weiteren `sync-request` mit aktualisierten Heads senden |
 
 **Threading:** Der `sync-response` MUSS denselben `thid` wie der zugehörige `sync-request` tragen.
 
-**Heads-Diskrepanz-Detection:** Der Fragende kann die erhaltenen `heads` mit denen anderer Broker/Peers vergleichen, um Censorship oder Split-Brain zu erkennen (siehe [Sync 006](006-sync-protokoll.md#censorship--und-split-brain-detection)).
+**Heads-Diskrepanz-Detection:** Der Fragende kann die erhaltenen `heads` mit denen anderer Broker/Peers vergleichen, um Censorship oder Split-Brain zu erkennen (siehe [Sync 002](002-sync-protokoll.md#censorship--und-split-brain-detection)).
 
 #### `ack/1.0` — Empfangsbestätigung
 
@@ -590,7 +602,7 @@ Die Initiator/Responder-Rolle MUSS vor der Signatur eindeutig festgelegt und in 
 ### Nonce-Anforderungen
 
 - Nonces MÜSSEN mindestens 32 Bytes aus einer kryptographisch sicheren Zufallsquelle sein
-- Jede Seite MUSS eine Nonce-History (wie [Core 004](../01-wot-core/004-verifikation.md#nonce-history-muss)) führen um Replay-Angriffe zu verhindern
+- Jede Seite MUSS eine Nonce-History (wie [Trust 002](../02-wot-trust/002-verifikation.md#nonce-history-muss)) führen um Replay-Angriffe zu verhindern
 - Nonces MÜSSEN nach Verwendung verworfen werden
 - Der Transcript MUSS mit JCS (RFC 8785) kanonisiert werden, damit beide Seiten bitgenau denselben Input signieren/verifizieren
 

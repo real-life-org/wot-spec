@@ -6,9 +6,11 @@ Ein Protokoll für dezentrale Vertrauensnetzwerke basierend auf echten Begegnung
 
 Zwei Menschen treffen sich, verifizieren ihre Identität, und stellen sich gegenseitig signierte Aussagen aus — kryptographisch verifizierbar, offline-fähig, ohne zentrale Instanz.
 
-Das Protokoll besteht aus zwei Paketen:
+Das Protokoll besteht aus drei Schichten:
 
-**WoT Core** — Dezentrale Identität (DID), signierte Aussagen (W3C Verifiable Credentials) und ein Challenge-Response-Verifikationsverfahren für physische Begegnungen.
+**WoT Identity** — Dezentrale Identität (DID), Schlüsselableitung, Signaturen, JCS/JWS und DID-Resolution.
+
+**WoT Trust** — Signierte Aussagen (W3C Verifiable Credentials) und ein Challenge-Response-Verifikationsverfahren für physische Begegnungen.
 
 **WoT Sync** — Verschlüsselter Local-First Sync mit E2EE, Append-only Logs und Broker-as-Peer.
 
@@ -35,13 +37,17 @@ WoT definiert keine neuen Standards — es kombiniert bestehende zu einem intero
 ├──────────────────┬──────────────────────┤
 │  RLS Extension   │  HMC Extension       │
 ├──────────────────┴──────────────────────┤
-│  WoT Sync (Verschlüsselung, Sync,      │
-│  Transport, Discovery, Gruppen)         │
+│  WoT Sync (E2EE, Logs, Broker, Groups)  │
 ├─────────────────────────────────────────┤
-│  WoT Core (Identität, Signaturen,      │
-│  Attestations, Verifikation)            │
+│  WoT Trust (Attestations, Verification) │
+├─────────────────────────────────────────┤
+│  WoT Identity (Keys, DID, JWS, resolve) │
 └─────────────────────────────────────────┘
 ```
+
+### DIDComm-Grenze
+
+DIDComm wird nur als ephemerer Plaintext-Transport-Envelope für ausgewählte Peer-Nachrichten verwendet. Persistente WoT-Objekte wie Attestation-JWS, Capability-JWS und Log-Entry-JWS sind keine DIDComm Messages; sie können im Body einer DIDComm Message transportiert werden. Autorität und Integrität kommen aus dem inneren JWS, der Capability, Broker-Authentisierung oder dokumentenspezifischer Verschlüsselung, nicht aus Envelope-Feldern wie `from` oder `to`.
 
 ## Governance
 
@@ -58,17 +64,24 @@ WoT definiert keine neuen Standards — es kombiniert bestehende zu einem intero
 
 ## Dokumente
 
-### WoT Core — Das Fundament
+### WoT Identity — Kryptographisches Fundament
 
-Was jede Implementierung verstehen muss um Teil des Web of Trust zu sein.
+Was jede Implementierung braucht, die WoT-DIDs, Signaturen oder DID-Dokumente verwendet.
 
 | # | Dokument | Beschreibung |
 |---|----------|-------------|
-| 001 | [Identität und Schlüsselableitung](01-wot-core/001-identitaet-und-schluesselableitung.md) | BIP39 → HKDF → Ed25519 + X25519 Schlüsselpaare |
-| 002 | [Signaturen und Verifikation](01-wot-core/002-signaturen-und-verifikation.md) | Ed25519, JWS, JCS, SHA-256 |
-| 003 | [Attestations](01-wot-core/003-attestations.md) | W3C Verifiable Credentials 2.0, VC-JOSE-COSE |
-| 004 | [Verifikation](01-wot-core/004-verifikation.md) | QR-Code-Austausch, Nonce-basierte Verifikation, Offline-Fallback |
-| 005 | [DID-Dokument und Resolution](01-wot-core/005-did-resolution.md) | DID-Methoden-agnostisch, resolve()-Interface, did:key + did:webvh |
+| 001 | [Identität und Schlüsselableitung](01-wot-identity/001-identitaet-und-schluesselableitung.md) | BIP39 → HKDF → Ed25519 + X25519 Schlüsselpaare |
+| 002 | [Signaturen und Verifikation](01-wot-identity/002-signaturen-und-verifikation.md) | Ed25519, JWS, JCS, SHA-256 |
+| 003 | [DID-Dokument und Resolution](01-wot-identity/003-did-resolution.md) | DID-Methoden-agnostisch, resolve()-Interface, did:key + did:webvh |
+
+### WoT Trust — Vertrauenssemantik
+
+Was Apps brauchen, die Attestations und reale Verifikation verwenden.
+
+| # | Dokument | Beschreibung |
+|---|----------|-------------|
+| 001 | [Attestations](02-wot-trust/001-attestations.md) | W3C Verifiable Credentials 2.0, VC-JOSE-COSE |
+| 002 | [Verifikation](02-wot-trust/002-verifikation.md) | QR-Code-Austausch, Nonce-basierte Verifikation, Offline-Fallback |
 
 ### WoT Sync — Verschlüsselte Infrastruktur
 
@@ -76,21 +89,21 @@ Nicht WoT-spezifisch — jede Local-First-App könnte das nutzen.
 
 | # | Dokument | Beschreibung |
 |---|----------|-------------|
-| 005 | [Verschlüsselung](02-wot-sync/005-verschluesselung.md) | AES-256-GCM, ECIES, Gruppen-Verschlüsselung |
-| 006 | [Sync-Protokoll](02-wot-sync/006-sync-protokoll.md) | Append-only Logs, Sedimentree, RIBLT |
-| 007 | [Transport und Broker](02-wot-sync/007-transport-und-broker.md) | Broker, Authentisierung, Capabilities, Inbox, Push |
-| 008 | [Discovery](02-wot-sync/008-discovery.md) | Broker-Discovery, Profil-Service |
-| 009 | [Gruppen und Mitgliedschaft](02-wot-sync/009-gruppen.md) | Rollen, Einladungen, Key Rotation |
-| 010 | [Personal Doc und Cross-Device Sync](02-wot-sync/010-personal-doc.md) | Struktur, Key-Derivation, Device-Management |
+| 001 | [Verschlüsselung](03-wot-sync/001-verschluesselung.md) | AES-256-GCM, ECIES, Gruppen-Verschlüsselung |
+| 002 | [Sync-Protokoll](03-wot-sync/002-sync-protokoll.md) | Append-only Logs, Sedimentree, RIBLT |
+| 003 | [Transport und Broker](03-wot-sync/003-transport-und-broker.md) | Broker, Authentisierung, Capabilities, Inbox, Push |
+| 004 | [Discovery](03-wot-sync/004-discovery.md) | Broker-Discovery, Profil-Service |
+| 005 | [Gruppen und Mitgliedschaft](03-wot-sync/005-gruppen.md) | Rollen, Einladungen, Key Rotation |
+| 006 | [Personal Doc und Cross-Device Sync](03-wot-sync/006-personal-doc.md) | Struktur, Key-Derivation, Device-Management |
 
 ### Extensions
 
 | # | Dokument | Beschreibung |
 |---|----------|-------------|
-| R01 | [Badges](03-rls-extensions/R01-badges.md) | Badges (Emoji, Farbe, Form), Event- und Ortsbezüge |
-| H01 | [Trust-Scores](04-hmc-extensions/H01-trust-scores.md) | Quantitative Vertrauensstufen, Propagation, Hop-Limits |
-| H02 | [Transactions](04-hmc-extensions/H02-transactions.md) | Gutscheine, Double-Spend-Prevention, SecureContainer |
-| H03 | [Gossip-Propagation](04-hmc-extensions/H03-gossip.md) | Trust-List-Verteilung über Inbox, Forward-Logik |
+| R01 | [Badges](04-rls-extensions/R01-badges.md) | Badges (Emoji, Farbe, Form), Event- und Ortsbezüge |
+| H01 | [Trust-Scores](05-hmc-extensions/H01-trust-scores.md) | Quantitative Vertrauensstufen, Propagation, Hop-Limits |
+| H02 | [Transactions](05-hmc-extensions/H02-transactions.md) | Gutscheine, Double-Spend-Prevention, SecureContainer |
+| H03 | [Gossip-Propagation](05-hmc-extensions/H03-gossip.md) | Trust-List-Verteilung über Inbox, Forward-Logik |
 
 ### Normative Artefakte
 
@@ -126,7 +139,7 @@ Die Spec ist an keine der beiden Implementierungen gebunden. Abweichungen zwisch
 
 ## Status
 
-Alle Dokumente sind im Status **Entwurf**. Dieses Repository ist die neutrale Spezifikationsquelle fuer WoT Core, WoT Sync und die dokumentierten Extensions. Normative Releases werden ueber Git-Tags und GitHub Releases versioniert; Details stehen in [VERSIONING.md](VERSIONING.md).
+Alle Dokumente sind im Status **Entwurf**. Dieses Repository ist die neutrale Spezifikationsquelle fuer WoT Identity, WoT Trust, WoT Sync und die dokumentierten Extensions. Normative Releases werden ueber Git-Tags und GitHub Releases versioniert; Details stehen in [VERSIONING.md](VERSIONING.md).
 
 ## Lizenz
 

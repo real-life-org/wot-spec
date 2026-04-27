@@ -4,7 +4,7 @@
 - **Autoren:** Sebastian Galek, Anton Tranelis
 - **Datum:** 2026-04-19
 - **Scope:** HMC Trust-Level, Haftung und Trust-Propagation
-- **Depends on:** Core 003, SD-JWT VC
+- **Depends on:** Trust 001, SD-JWT VC
 - **Conformance profile:** `wot-hmc@0.1`
 
 ## Zusammenfassung
@@ -26,7 +26,7 @@ Trust-Lists werden als **SD-JWT VC** (IETF Draft) kodiert — das Selective-Disc
 
 ### Einzelne Trust-Attestation (W3C VC)
 
-Kompatibel mit dem WoT Core — eine Aussage pro Kontakt, als W3C Verifiable Credential:
+Kompatibel mit WoT Trust — eine Aussage pro Kontakt, als W3C Verifiable Credential:
 
 ```json
 {
@@ -55,7 +55,7 @@ Alices gesamte Vertrauensliste als ein signiertes Dokument mit mehreren Einträg
 **Grund für SD-JWT VC als normatives Format:**
 
 - **EU-Wallet-Interop** — eIDAS 2.0 ARF schreibt SD-JWT VC als Pflichtformat für Credentials vor. Trust-Lists in diesem Format sind im EU-Digital-Identity-Ökosystem direkt lesbar.
-- **JWT-native** — keine separate JSON-LD-Normalisierung, kein LD-Signatures-Aufwand. Passt zu unserer JWS-basierten Core-Signatur-Infrastruktur.
+- **JWT-native** — keine separate JSON-LD-Normalisierung, kein LD-Signatures-Aufwand. Passt zu unserer JWS-basierten Identity-Signatur-Infrastruktur.
 - **EdDSA-kompatibel** — unsere Ed25519-Identität wird direkt für die Signatur genutzt.
 - **Holder-Redaktion** — der Besitzer der Liste kann beim Weitergeben einzelne Einträge verbergen, ohne die Signatur zu brechen. Exakt das Modell, das Sebastian braucht.
 - **Salted-Hash-Mechanik** — jedes verschwärzbare Feld wird mit einem zufälligen Salt zu einem Hash gerechnet; der Hash landet im signierten JWT-Payload, der Klartext samt Salt als "Disclosure" separat. Offenlegen = Disclosure mitsenden. Schwärzen = Disclosure weglassen.
@@ -110,11 +110,11 @@ Der Sender wählt pro Empfänger aus, welche Disclosures er mitsendet. Weggelass
 
 **Verteilung:** Im Gegensatz zu qualitativen Attestations (Empfängerprinzip) verteilt der **Sender** seine Trust List aktiv via Gossip an sein Netzwerk. Jeder Knoten leitet die Liste unter Beachtung der Hop-Limits weiter. Konkrete Gossip-Mechanik siehe [H03](H03-gossip.md).
 
-### Verhältnis zu WoT Core Attestations
+### Verhältnis zu WoT Trust Attestations
 
 Trust Lists und qualitative Attestations sind verschiedene Dinge die koexistieren:
 
-| | Qualitative Attestation (WoT Core) | Trust List (HMC Extension) |
+| | Qualitative Attestation (WoT Trust) | Trust List (HMC Extension) |
 |---|---|---|
 | **Inhalt** | Freitext-Aussage ("kann gut programmieren") | Numerische Bewertung (Trust-Level 0-3) |
 | **Granularität** | Eine Aussage pro VC | Alle Kontakte in einem Dokument |
@@ -156,7 +156,7 @@ Vertrauenslisten werden via Gossip verteilt:
 
 Verifier einer Trust-List MÜSSEN mindestens prüfen:
 
-1. **JWT-Signatur** verifizieren (Ed25519, `iss` → DID-Dokument via [Core 005](../01-wot-core/005-did-resolution.md) resolve())
+1. **JWT-Signatur** verifizieren (Ed25519, `iss` → DID-Dokument via [Identity 003](../01-wot-identity/003-did-resolution.md) resolve())
 2. **`vct`** (Verifiable Credential Type) prüfen — MUSS mit dem erwarteten Credential-Typ übereinstimmen
 3. **`exp`** prüfen — nicht abgelaufen
 4. **`iat`** prüfen — liegt in der Vergangenheit
@@ -184,4 +184,4 @@ Formale spieltheoretische Analyse und Anti-Gaming-Regeln werden mit Sebastian ve
 - Detaillierte Spec der Trust-Berechnung
 - `cnf` Key-Binding: soll der Holder einen eigenen Key haben?
 - Formale Anti-Gaming-Regeln
-- Widerruf via StatusList2021 (siehe [Core 003](../01-wot-core/003-attestations.md#widerruf-credential-status))
+- Widerruf via StatusList2021 (siehe [Trust 001](../02-wot-trust/001-attestations.md#widerruf-credential-status))

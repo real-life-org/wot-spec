@@ -30,10 +30,10 @@ Erster Interop-Snapshot zwischen mindestens zwei Implementierungen.
 
 Release-Kriterien:
 
-- TypeScript und Rust bestehen die Core-Testvektoren.
+- TypeScript und Rust bestehen die Identity- und Trust-Testvektoren.
 - DIDComm-Library-Validierung, ECIES-, DID-Resolution-, Log-Entry- und Capability-Testvektoren sind ergaenzt.
-- JSON Schemas fuer Core- und Sync-Objekte sind verfuegbar.
-- `wot-core@0.1` ist praktisch implementierbar ohne offene normative Luecken.
+- JSON Schemas fuer Identity-, Trust- und Sync-Objekte sind verfuegbar.
+- `wot-identity@0.1` und `wot-trust@0.1` sind praktisch implementierbar ohne offene normative Luecken.
 
 ### `v0.3.0-sync`
 
@@ -45,15 +45,15 @@ Release-Kriterien:
 - Personal Doc funktioniert mit Append-only Log und AES-GCM.
 - Restore/Clone- und `seq`-Kollisionsregeln sind getestet.
 
-### `v1.0.0-core`
+### `v1.0.0-identity-trust`
 
-Stabiler Core-Snapshot.
+Stabiler Identity-/Trust-Snapshot.
 
 Release-Kriterien:
 
-- Core-Dokumente sind stabil genug fuer langfristige Implementierungen.
+- Identity- und Trust-Dokumente sind stabil genug fuer langfristige Implementierungen.
 - Mindestens zwei unabhaengige Implementierungen interoperieren fuer Identity, JWS, Attestations und Verification.
-- Breaking Changes am Core sind danach nur noch per Major Release erlaubt.
+- Breaking Changes an Identity oder Trust sind danach nur noch per Major Release erlaubt.
 
 ## Arbeitsbloecke
 
@@ -67,7 +67,7 @@ Release-Kriterien:
 
 - `keyAgreement`-Zustaende fuer `did:key` sauber formulieren: signaturfaehig vs. kommunikationsfaehig.
 - AES-GCM Nonce-Domain klaeren: `docId` aufnehmen oder formalen Beweis dokumentieren.
-- Nonce-only Challenge-Binding in Core 004 beibehalten und explizit begruenden.
+- Nonce-only Challenge-Binding in Trust 002 beibehalten und explizit begruenden.
 - Inner-JWS-Pflichtfelder fuer Inbox-Nachrichten normativ machen.
 - `kid`, `authorKid`, `deviceKid` und Zweckbindung durch alle relevanten Dokumente konsistent halten.
 - Capability `kid`/Issuer/Audience-Semantik praezisieren.
@@ -106,8 +106,8 @@ Release-Kriterien:
 
 ### F. Implementierung nachziehen
 
-- TypeScript Core auf neue Testvektoren bringen.
-- Rust/HMC Core-Ableitungen gegen dieselben Testvektoren pruefen.
+- TypeScript-Implementierung auf neue Testvektoren bringen.
+- Rust/HMC-Ableitungen gegen dieselben Testvektoren pruefen.
 - Attestations auf VC-JWS umstellen.
 - Verification-Flow auf QR-Felder und VC-JWS umstellen.
 - Minimalen Broker/Personal-Doc-Sync implementieren.

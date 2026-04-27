@@ -1,10 +1,10 @@
 # Human Money Extension: Payment
 
-- **Status:** Platzhalter (nicht normativ — wird mit Sebastian ausgearbeitet. Custody-Konzept siehe [Sync 010](../02-wot-sync/010-personal-doc.md#extension-hinweis-device-spezifische-felder))
+- **Status:** Platzhalter (nicht normativ — wird mit Sebastian ausgearbeitet. Custody-Konzept siehe [Sync 006](../03-wot-sync/006-personal-doc.md#extension-hinweis-device-spezifische-felder))
 - **Autoren:** Sebastian Galek
 - **Datum:** 2026-04-13
 - **Scope:** HMC Transaktionen, Vouchers und Settlement-Bezug
-- **Depends on:** Core 003, H01, Sync 010
+- **Depends on:** Trust 001, H01, Sync 006
 - **Conformance profile:** `wot-hmc@0.1` (geplant, aktuell Platzhalter)
 
 ## Zusammenfassung
@@ -22,4 +22,4 @@ Erweitert das WoT-Protokoll um dezentrales Payment mit Gutscheinen. Nutzt Detach
 ## Zu klären
 
 - Detaillierte Spec (mit Sebastian)
-- SecureContainer als eigenständiges Format oder als Extension des Verschlüsselungsmodells (Sync 005)
+- SecureContainer als eigenständiges Format oder als Extension des Verschlüsselungsmodells (Sync 001)

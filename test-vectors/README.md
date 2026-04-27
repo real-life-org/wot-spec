@@ -4,7 +4,7 @@ Kanonische Test-Vektoren fuer die Verifikation von Implementierungen. Jede Imple
 
 **WARNUNG:** Die hier verwendeten Schluessel sind oeffentlich bekannt und duerfen NIEMALS in Produktion verwendet werden.
 
-## 1. Identitaet (Core 001)
+## 1. Identitaet (Identity 001)
 
 ### Eingabe
 
@@ -47,7 +47,7 @@ HKDF-SHA256(seed, salt="", info="wot/encryption/x25519/v1") -> 32 Bytes:
 X25519 Seed: 955ae6771ff7a40465800baded885780c88527b2eabcd9ef4683dac041ab1e82
 ```
 
-## 2. JWS Signatur (Core 002)
+## 2. JWS Signatur (Identity 002)
 
 ### Eingabe
 
@@ -96,7 +96,7 @@ Signing Input: Header.Payload (UTF-8 Bytes)
 Ed25519-Verify(public_key, signing_input, signature) -> true
 ```
 
-## 3. AES-256-GCM Verschluesselung (Sync 005)
+## 3. AES-256-GCM Verschluesselung (Sync 001)
 
 ### Eingabe
 
@@ -120,7 +120,7 @@ Format: [12-Byte Nonce | Ciphertext | 16-Byte Auth Tag]
 Full Blob (Base64URL): AAECAwQFBgcICQoLyWH2cWnHdWfO6lBB_UQF-FK8h5QKC1Lu7kE
 ```
 
-## 4. JCS Kanonisierung (Core 002)
+## 4. JCS Kanonisierung (Identity 002)
 
 Test-Vektoren fuer das JSON Canonicalization Scheme (RFC 8785). Verschiedene Implementierungen MUESSEN fuer dieselben Eingaben bytengenau dieselbe Ausgabe erzeugen.
 

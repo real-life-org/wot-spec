@@ -1,10 +1,10 @@
-# WoT Sync 010: Personal Doc und Cross-Device Sync
+# WoT Sync 006: Personal Doc und Cross-Device Sync
 
 - **Status:** Entwurf
 - **Autoren:** Anton Tranelis
 - **Datum:** 2026-04-18
 - **Scope:** Personal Doc, Cross-Device Sync, Device-Management und Self-Addressed Messages
-- **Depends on:** Core 001, Core 002, Sync 005, Sync 006, Sync 007
+- **Depends on:** Identity 001, Identity 002, Sync 001, Sync 002, Sync 003
 - **Conformance profile:** `wot-sync@0.1`
 
 ## Zusammenfassung
@@ -15,11 +15,11 @@ Technisch nutzt das Personal Doc dieselbe Sync-Infrastruktur wie Space-Dokumente
 
 ## Referenzierte Dokumente
 
-- [Core 001: Identität](../01-wot-core/001-identitaet-und-schluesselableitung.md) — Seed, HKDF-Ableitung
-- [Sync 005: Verschlüsselung](005-verschluesselung.md) — AES-256-GCM, Nonce-Konstruktion
-- [Sync 006: Sync-Protokoll](006-sync-protokoll.md) — Log-Struktur, seq-Konsistenz
-- [Sync 007: Transport und Broker](007-transport-und-broker.md) — Multi-Broker-Replikation
-- [Sync 009: Gruppen](009-gruppen.md) — Vergleichspunkt für das Key-Modell
+- [Identity 001: Identität](../01-wot-identity/001-identitaet-und-schluesselableitung.md) — Seed, HKDF-Ableitung
+- [Sync 001: Verschlüsselung](001-verschluesselung.md) — AES-256-GCM, Nonce-Konstruktion
+- [Sync 002: Sync-Protokoll](002-sync-protokoll.md) — Log-Struktur, seq-Konsistenz
+- [Sync 003: Transport und Broker](003-transport-und-broker.md) — Multi-Broker-Replikation
+- [Sync 005: Gruppen](005-gruppen.md) — Vergleichspunkt für das Key-Modell
 
 ## Abgrenzung
 
@@ -37,7 +37,7 @@ Personal Doc und Space-Dokumente nutzen dieselbe Log-Struktur, dasselbe Sync-Pro
 
 ## Struktur des Personal Doc
 
-Das Personal Doc ist ein CRDT-Dokument (siehe [Sync 006: CRDT-Agnostik](006-sync-protokoll.md#crdt-agnostik)) mit folgenden Kern-Feldern:
+Das Personal Doc ist ein CRDT-Dokument (siehe [Sync 002: CRDT-Agnostik](002-sync-protokoll.md#crdt-agnostik)) mit folgenden Kern-Feldern:
 
 ```
 PersonalDoc
@@ -52,7 +52,7 @@ PersonalDoc
 
 ### `profile`
 
-Öffentliche Profil-Daten des Users. Dieses Profil wird vom [Profil-Service](008-discovery.md#profil-service) als JWS-signierte Kopie veröffentlicht; im Personal Doc liegt es als CRDT-Feld.
+Öffentliche Profil-Daten des Users. Dieses Profil wird vom [Profil-Service](004-discovery.md#profil-service) als JWS-signierte Kopie veröffentlicht; im Personal Doc liegt es als CRDT-Feld.
 
 ```json
 {
@@ -107,11 +107,11 @@ Verifizierte und gespeicherte Kontakte, indexiert nach DID:
 }
 ```
 
-Das `trustLevel`-Feld ist optional und nur relevant wenn die HMC-Extension (Trust Lists, [H01](../04-hmc-extensions/H01-trust-scores.md)) verwendet wird.
+Das `trustLevel`-Feld ist optional und nur relevant wenn die HMC-Extension (Trust Lists, [H01](../05-hmc-extensions/H01-trust-scores.md)) verwendet wird.
 
 ### `verifications`
 
-Aufzeichnungen der In-Person-Verifikationen (siehe [Core 004](../01-wot-core/004-verifikation.md)):
+Aufzeichnungen der In-Person-Verifikationen (siehe [Trust 002](../02-wot-trust/002-verifikation.md)):
 
 ```json
 {
@@ -128,7 +128,7 @@ Aufzeichnungen der In-Person-Verifikationen (siehe [Core 004](../01-wot-core/004
 
 ### `attestations`
 
-Empfangene und erstellte Attestations (siehe [Core 003](../01-wot-core/003-attestations.md)):
+Empfangene und erstellte Attestations (siehe [Trust 001](../02-wot-trust/001-attestations.md)):
 
 ```json
 {
@@ -172,15 +172,15 @@ Die Space Content Keys aller Generationen die der User erhalten hat:
 }
 ```
 
-Diese werden benötigt um historische Space-Daten zu entschlüsseln (siehe [Sync 005: Schlüsselrotation](005-verschluesselung.md#schlüsselrotation)).
+Diese werden benötigt um historische Space-Daten zu entschlüsseln (siehe [Sync 001: Schlüsselrotation](001-verschluesselung.md#schlüsselrotation)).
 
 ### Implementierungsspezifische Felder
 
-Eine Implementierung DARF zusätzliche Felder verwalten die für den Betrieb nötig sind aber nicht zum Core-Protokoll gehören — z.B. eine Outbox für unzugestellte Nachrichten, Metadaten zu Delivery-Status, Caches. Diese Felder sind nicht Teil der Spec und MÜSSEN nicht zwischen Implementierungen interoperabel sein.
+Eine Implementierung DARF zusätzliche Felder verwalten die für den Betrieb nötig sind aber nicht zum Sync-Protokoll gehören — z.B. eine Outbox für unzugestellte Nachrichten, Metadaten zu Delivery-Status, Caches. Diese Felder sind nicht Teil der Spec und MÜSSEN nicht zwischen Implementierungen interoperabel sein.
 
 ## Schlüsselableitung
 
-Der Personal Doc Key wird deterministisch aus dem BIP39-Seed abgeleitet (siehe [Core 001](../01-wot-core/001-identitaet-und-schluesselableitung.md)):
+Der Personal Doc Key wird deterministisch aus dem BIP39-Seed abgeleitet (siehe [Identity 001](../01-wot-identity/001-identitaet-und-schluesselableitung.md)):
 
 ```
 BIP39 Seed
@@ -204,7 +204,7 @@ Damit hat jedes Gerät des Users dieselbe Document-ID. Der Broker speichert Log-
 
 ### Device-Lifecycle
 
-Ein Device durchläuft die Zustände `new`, `active`, `restored/cloned` und `revoked`. Broker-Registrierung und Revocation sind in [Sync 007](007-transport-und-broker.md#device-registrierung) spezifiziert; `seq`-/Restore-Regeln in [Sync 006](006-sync-protokoll.md#seq-konsistenz-muss).
+Ein Device durchläuft die Zustände `new`, `active`, `restored/cloned` und `revoked`. Broker-Registrierung und Revocation sind in [Sync 003](003-transport-und-broker.md#device-registrierung) spezifiziert; `seq`-/Restore-Regeln in [Sync 002](002-sync-protokoll.md#seq-konsistenz-muss).
 
 ### Device-Registrierung
 
@@ -224,17 +224,17 @@ Der User kann ein Device als deaktiviert markieren. Das setzt `revokedAt` auf de
 }
 ```
 
-Nach Deaktivierung lehnt der Broker Authentisierung mit dieser `deviceId` ab (siehe [Sync 007](007-transport-und-broker.md#device-deaktivierung)); eigene Geräte sehen die Deaktivierung über das Personal Doc. Andere Space-Members werden nicht direkt benachrichtigt, weil sie DID-Signaturen und nicht Device-IDs prüfen.
+Nach Deaktivierung lehnt der Broker Authentisierung mit dieser `deviceId` ab (siehe [Sync 003](003-transport-und-broker.md#device-deaktivierung)); eigene Geräte sehen die Deaktivierung über das Personal Doc. Andere Space-Members werden nicht direkt benachrichtigt, weil sie DID-Signaturen und nicht Device-IDs prüfen.
 
 ### Limitationen der Device-Deaktivierung (MUSS dokumentiert)
 
-Im aktuellen **Shared-Seed-Modell** (siehe [Core 001](../01-wot-core/001-identitaet-und-schluesselableitung.md#multi-device--shared-seed-modell)) ist Device-Deaktivierung keine kryptographische Maßnahme. Die `deviceId` ist eine UUID, kein Schlüssel; wer den Seed extrahiert, kann eine neue `deviceId` erzeugen und sich erneut registrieren.
+Im aktuellen **Shared-Seed-Modell** (siehe [Identity 001](../01-wot-identity/001-identitaet-und-schluesselableitung.md#multi-device--shared-seed-modell)) ist Device-Deaktivierung keine kryptographische Maßnahme. Die `deviceId` ist eine UUID, kein Schlüssel; wer den Seed extrahiert, kann eine neue `deviceId` erzeugen und sich erneut registrieren.
 
 Bei Seed-Kompromittierung schützt nur Key-Rotation aller Spaces und gegebenenfalls Identitäts-Rotation (siehe [Identity Migration](../research/identity-migration.md)). Per-Device Keys sind ein zukünftiger Upgrade-Pfad.
 
 ### Restore/Clone-Detection: erzwungener deviceId-Wechsel
 
-Bei Device-Restore oder Storage-Clone können zwei physische Geräte dieselbe `deviceId` beanspruchen. Sobald ein Client beim Reconnect feststellt, dass der Broker für seine `(deviceId, docId)` einen höheren `seq` hat als er selbst, MUSS er dieses als Restore/Clone-Ereignis behandeln (siehe [Sync 006](006-sync-protokoll.md#seq-konsistenz-muss)):
+Bei Device-Restore oder Storage-Clone können zwei physische Geräte dieselbe `deviceId` beanspruchen. Sobald ein Client beim Reconnect feststellt, dass der Broker für seine `(deviceId, docId)` einen höheren `seq` hat als er selbst, MUSS er dieses als Restore/Clone-Ereignis behandeln (siehe [Sync 002](002-sync-protokoll.md#seq-konsistenz-muss)):
 
 1. **Neue `deviceId` generieren** (zufällige UUID v4)
 2. **Alte `deviceId` deaktivieren** via signierter `device-revoke`-Nachricht an den Broker
@@ -250,7 +250,7 @@ Extensions des WoT-Protokolls (z.B. HMC, RLS) dürfen eigene Datenstrukturen im 
 
 - Bei einem **deviceId-Wechsel** MUSS die Extension ihre device-spezifischen Felder konsistent aktualisieren
 - Extensions, die solche Felder verwenden, MÜSSEN dokumentieren, wie sie auf deviceId-Wechsel reagieren
-- Der Core stellt nur die CRDT-Infrastruktur und das Device-Rotation-Event bereit — die Semantik der device-spezifischen Felder liegt bei der Extension
+- WoT Sync stellt nur die CRDT-Infrastruktur und das Device-Rotation-Event bereit — die Semantik der device-spezifischen Felder liegt bei der Extension
 
 ### Device-Verlust
 
@@ -260,7 +260,7 @@ Extensions des WoT-Protokolls (z.B. HMC, RLS) dürfen eigene Datenstrukturen im 
 
 ## Sync-Mechanismus
 
-Das Personal Doc nutzt dieselbe Log-, Signatur-, Nonce- und DIDComm-Infrastruktur wie Space-Dokumente (siehe [Sync 006](006-sync-protokoll.md)).
+Das Personal Doc nutzt dieselbe Log-, Signatur-, Nonce- und DIDComm-Infrastruktur wie Space-Dokumente (siehe [Sync 002](002-sync-protokoll.md)).
 
 ### Self-Addressed Messages
 
@@ -268,15 +268,15 @@ Personal-Doc-Nachrichten werden an die eigene DID adressiert. Der Broker routet 
 
 ### Replikation auf mehreren Brokern
 
-Das Personal Doc wird auf allen Brokern repliziert, bei denen der User registriert ist (siehe [Sync 007: Broker-Zuordnung und Multi-Broker](007-transport-und-broker.md#broker-zuordnung-und-multi-broker)). Die Devices übernehmen Multi-Broker-Synchronisierung; Broker kommunizieren nicht untereinander.
+Das Personal Doc wird auf allen Brokern repliziert, bei denen der User registriert ist (siehe [Sync 003: Broker-Zuordnung und Multi-Broker](003-transport-und-broker.md#broker-zuordnung-und-multi-broker)). Die Devices übernehmen Multi-Broker-Synchronisierung; Broker kommunizieren nicht untereinander.
 
 ### `seq`-Konsistenz
 
-Die in [Sync 006: seq-Konsistenz](006-sync-protokoll.md#seq-konsistenz-muss) definierte MUSS-Anforderung gilt auch hier.
+Die in [Sync 002: seq-Konsistenz](002-sync-protokoll.md#seq-konsistenz-muss) definierte MUSS-Anforderung gilt auch hier.
 
 ## Verschlüsselung
 
-Der Personal Doc wird mit dem Personal Doc Key und AES-256-GCM verschlüsselt. Die Nonce-Konstruktion ist dieselbe wie bei Space-Dokumenten (siehe [Sync 005: Nonce-Konstruktion](005-verschluesselung.md#nonce-konstruktion)):
+Der Personal Doc wird mit dem Personal Doc Key und AES-256-GCM verschlüsselt. Die Nonce-Konstruktion ist dieselbe wie bei Space-Dokumenten (siehe [Sync 001: Nonce-Konstruktion](001-verschluesselung.md#nonce-konstruktion)):
 
 ```
 Nonce = SHA-256(deviceId || "|" || seq)[0:12]
@@ -286,7 +286,7 @@ Es gibt keine Personal-Doc-Key-Rotation im normalen Betrieb; der Key ändert sic
 
 ## Capability-Modell
 
-Der User ist sein eigener Admin für das Personal Doc. Broker prüfen self-issued Capabilities (siehe [Sync 007](007-transport-und-broker.md#autorisierung-capabilities)):
+Der User ist sein eigener Admin für das Personal Doc. Broker prüfen self-issued Capabilities (siehe [Sync 003](003-transport-und-broker.md#autorisierung-capabilities)):
 
 ```
 Personal Doc Capability:
