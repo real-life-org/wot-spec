@@ -4,11 +4,56 @@ Diese Roadmap beschreibt die naechsten Arbeitsbloecke fuer die Web-of-Trust-Spez
 
 ## Zielbild
 
-Die Spec soll als neutrales, versioniertes Interop-Profil dienen:
+Die Web-of-Trust-Arbeit hat ein klares Ergebnisziel:
 
-- Menschen und Communities koennen WoT-Identitaeten, Attestations und Sync unabhaengig von einer einzelnen App implementieren.
-- TypeScript- und Rust-Implementierungen koennen dieselben Testvektoren bestehen.
-- Normative Dokumente, Schemas, Testvektoren und Conformance-Regeln sind getrennt von Research.
+```txt
+Spec + zwei unabhaengige Implementierungen + Demo-App
+```
+
+Die Spec soll als neutrales, versioniertes Interop-Profil dienen. Menschen und Communities sollen WoT-Identitaeten, Attestations und Sync unabhaengig von einer einzelnen App implementieren koennen. Der Interop-Beweis ist erst erbracht, wenn mindestens zwei unabhaengige Implementierungen dieselben Testvektoren bestehen. Die Demo-App beweist zusaetzlich, dass die Protokollentscheidungen fuer echte Menschen und echte Geraete benutzbar sind.
+
+## Roadmap-Tracks
+
+### 1. Spec Track
+
+Die Spec ist die neutrale Protokollquelle. Sie definiert normative Dokumente, Schemas, Testvektoren, Conformance-Profile und Research-Abgrenzungen.
+
+Erfolgskriterium:
+
+- Eine externe Implementierung kann anhand von Spec, Schemas und Testvektoren interoperabel bauen, ohne implizites Wissen aus der TypeScript-App zu brauchen.
+
+### 2. TypeScript Conformance Track
+
+Die TypeScript-Implementierung (`web-of-trust`, `@web_of_trust/core/src/spec`) ist die erste Spec-nahe Referenzimplementierung. Sie beweist praktische Implementierbarkeit, darf aber nicht die Spec ersetzen.
+
+Erfolgskriterium:
+
+- Der Spec-Core besteht alle relevanten `wot-spec`-Vektoren mit vendored Fixtures und bleibt getrennt von Legacy-App-Services, Storage, Messaging, CRDT und UI.
+
+### 3. Rust/HMC Conformance Track
+
+Die Rust/HMC-Implementierung ist der zweite unabhaengige Interop-Beweis. Sie ist nicht nur Portierung, sondern Gegenprobe: Wenn Rust und TypeScript dieselben Vektoren bestehen, ist die Spec praezise genug.
+
+Erfolgskriterium:
+
+- Rust/HMC reproduziert dieselben Identity-, Trust-, Sync-Krypto- und Device-Delegation-Vektoren wie TypeScript. Abweichungen werden in Spec oder Testvektoren zurueckgefuehrt.
+
+### 4. Demo-App Track
+
+Die Web-of-Trust Demo App ist kein Conformance-Beweis und keine zweite Implementierung. Sie ist der UX-, Mobile-, Offline- und Systembeweis auf Basis der TypeScript-Implementierung.
+
+Erfolgskriterium:
+
+- Ein nicht-technischer Nutzer kann Identitaet erzeugen, wiederherstellen, eine Person per QR verifizieren, Attestations austauschen und verschluesselte Daten ueber Broker/Inbox/Sync auf mehreren Geraeten nutzen.
+
+Kurzform:
+
+```txt
+Spec sagt, was korrekt ist.
+TypeScript beweist, dass es implementierbar ist.
+Rust beweist, dass es interoperabel ist.
+Demo App beweist, dass es benutzbar ist.
+```
 
 ## Milestones
 
@@ -26,24 +71,29 @@ Release-Kriterien:
 
 ### `v0.2.0-interop`
 
-Erster Interop-Snapshot zwischen mindestens zwei Implementierungen.
+Erster Interop-Snapshot zwischen mindestens zwei unabhaengigen Implementierungen.
 
 Release-Kriterien:
 
-- TypeScript und Rust bestehen die Identity- und Trust-Testvektoren.
-- DIDComm-Library-Validierung, ECIES-, DID-Resolution-, Log-Entry- und Capability-Testvektoren sind ergaenzt.
+- TypeScript Spec-Core und Rust/HMC bestehen die Identity- und Trust-Testvektoren.
+- TypeScript Spec-Core besteht die erweiterten Phase-1-Vektoren: DID-Resolution, ECIES, Log-Entry-JWS, Capability-JWS, Log-Payload-Encryption, Admin-Key, Personal-Doc und SD-JWT-VC Trust-List.
+- WoT Plaintext Envelope bleibt externe Transport-Envelope-Validierung im Conformance-Kit, nicht TypeScript-Spec-Core.
+- Rust/HMC reproduziert mindestens Identity, DID/key encoding, JCS/JWS, Attestation VC-JWS und die fuer HMC relevanten Trust-List-/SD-JWT-VC-Vektoren.
 - JSON Schemas fuer Identity-, Trust- und Sync-Objekte sind verfuegbar.
 - `wot-identity@0.1` und `wot-trust@0.1` sind praktisch implementierbar ohne offene normative Luecken.
+- Abweichungen zwischen TypeScript, Rust/HMC und Spec sind dokumentiert oder behoben.
 
 ### `v0.3.0-sync`
 
-Minimaler Sync-Snapshot.
+Minimaler Sync- und Demo-App-Snapshot.
 
 Release-Kriterien:
 
 - Minimaler Broker-Prototyp spricht Challenge-Response, Inbox und Log-Sync.
 - Personal Doc funktioniert mit Append-only Log und AES-GCM.
 - Restore/Clone- und `seq`-Kollisionsregeln sind getestet.
+- Demo App zeigt den Kernflow: Onboarding, Recovery, QR-Verifikation, Attestation-Austausch, Personal-Doc-Sync und Offline-Outbox.
+- Demo App nutzt die TypeScript-Implementierung als Produkt-/UX-Integration, definiert aber keine normativen Protokollregeln.
 
 ### `v0.4.0-device-delegation`
 
@@ -56,6 +106,7 @@ Release-Kriterien:
 - Verifikationsregeln fuer `issuer`/`iss` = Identity DID und `kid` = Device Key sind normativ beschrieben.
 - Capability-Scopes `sign-attestation`, `sign-verification`, `sign-log-entry`, `broker-auth` und `device-admin` sind definiert.
 - Testvektoren fuer gueltige, abgelaufene Delegation und capability-falsche Device-Key-Signaturen liegen vor.
+- TypeScript und Rust/HMC koennen DeviceKeyBinding und Delegated-Attestation-Bundle verifizieren.
 
 ### `v0.5.0-temporal-key-history`
 
@@ -170,14 +221,33 @@ Release-Kriterien:
 - SD-JWT `cnf` / Key-Binding entscheiden.
 - Widerruf / StatusList2021 fuer Trust Lists klaeren.
 
-### H. Implementierung nachziehen
+### H. TypeScript Conformance pflegen
 
-- TypeScript-Implementierung auf neue Testvektoren bringen.
-- Rust/HMC-Ableitungen gegen dieselben Testvektoren pruefen.
-- Attestations auf VC-JWS umstellen.
-- Verification-Flow auf QR-Felder und VC-JWS umstellen.
-- Minimalen Broker/Personal-Doc-Sync implementieren.
-- Device-Key-Delegation in TypeScript prototypisieren und gegen Testvektoren pruefen.
+- TypeScript Spec-Core auf neue Testvektoren bringen.
+- Spec-Core strikt von Legacy-App-Services, Storage, Messaging, CRDT und UI getrennt halten.
+- Vendored Fixtures bytegenau gegen `wot-spec/test-vectors/` abgleichen.
+- Attestations, Verification-Flow und Device-Key-Delegation nur dann in App-/Legacy-Services integrieren, wenn die Spec-Core-Abdeckung existiert.
+
+### I. Rust/HMC Conformance aufbauen
+
+- Rust/HMC-Conformance-Harness gegen `wot-spec/test-vectors/*.json` anlegen.
+- Identity-Derivation, did:key, JCS/JWS und Attestation VC-JWS zuerst reproduzieren.
+- Danach ECIES, Log-Entry-JWS, Capability-JWS, Admin-Key, Personal-Doc und SD-JWT-VC Trust-List-Vektor abdecken.
+- Abweichungen nicht lokal wegpatchen, sondern als Spec-/Vektor-/Implementierungsfrage dokumentieren.
+
+### J. Demo App als Systembeweis
+
+- Demo App auf die Spec-nahe TypeScript-Implementierung zurueckfuehren, ohne App-Logik zur Norm zu machen.
+- Onboarding, Recovery, QR-Verifikation, Attestation-Austausch, Personal-Doc-Sync und Offline-Outbox als Kernflows stabilisieren.
+- Mobile/Web-Realitaet testen: Kamera, IndexedDB, Biometrie/Unlock, Offline, Relay-Ausfall, Wiederherstellung auf neuem Geraet.
+- Erkenntnisse aus UX und Betrieb zurueck in Spec, Schemas oder Testvektoren fuehren, wenn sie Protokollrelevanz haben.
+
+### K. Minimalen Broker/Personal-Doc-Sync implementieren
+
+- Broker-Challenge-Response, Inbox, ACKs und Log-Sync minimal lauffaehig machen.
+- Personal Doc ueber Append-only Log und AES-GCM synchronisieren.
+- Restore/Clone-Erkennung und `seq`-Kollisionen testen.
+- Capability-Pruefung und Personal-Doc-Self-Capability im Broker-Pfad verifizieren.
 
 ## Nicht Phase 1
 
