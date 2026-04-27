@@ -5,6 +5,7 @@ Dieses Verzeichnis ist der maschinenlesbare Einstieg für Implementierer. Es bes
 ## Artefakte
 
 - [`manifest.json`](manifest.json) ordnet Profile wie `wot-identity@0.1`, `wot-trust@0.1`, `wot-sync@0.1` und geplante Erweiterungsprofile ihren Pflichtartefakten zu.
+- [`rust-hmc-checklist.md`](rust-hmc-checklist.md) beschreibt den ersten externen Rust/HMC-Conformance-Harness fuer `v0.2.0-interop`.
 - `schemas/` enthält JSON Schemas plus gültige und ungültige Beispiele.
 - `test-vectors/` enthält reproduzierbare Krypto- und Interop-Vektoren.
 
