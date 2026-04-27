@@ -47,7 +47,22 @@ Ein Bootstrap-DID-Dokument nach QR- oder Profil-Service-Kontakt:
 SHA-256(JCS DID Document): 9f71bde97db9df9bc5fd14ab3c5a65dd3eb3e77fd1e74a43fe187a718015fefc
 ```
 
-## 3. ECIES (Sync 005)
+## 3. Attestation VC-JWS (Core 003)
+
+Payload ist das gültige Beispiel aus `schemas/examples/valid/attestation-vc-payload.json`, kanonisiert mit JCS und als `vc+jwt` signiert.
+
+```
+SHA-256(JCS Payload): 6343aadfd74d1e21310d8eda82fdc538a7b24cb736caedfd70b67be34d49548c
+JWS Header: {"alg":"EdDSA","kid":"did:key:z6Mko3ZEjKJWQAM5nDXKoZ9jErvvxbWbYgS8KJXYpC5Hbu8a#sig-0","typ":"vc+jwt"}
+```
+
+JWS Compact:
+
+```text
+eyJhbGciOiJFZERTQSIsImtpZCI6ImRpZDprZXk6ejZNa28zWkVqS0pXUUFNNW5EWEtvWjlqRXJ2dnhiV2JZZ1M4S0pYWXBDNUhidThhI3NpZy0wIiwidHlwIjoidmMrand0In0.eyJAY29udGV4dCI6WyJodHRwczovL3d3dy53My5vcmcvbnMvY3JlZGVudGlhbHMvdjIiLCJodHRwczovL3dlYi1vZi10cnVzdC5kZS92b2NhYi92MSJdLCJjcmVkZW50aWFsU3ViamVjdCI6eyJjbGFpbSI6Imthbm4gZ3V0IHByb2dyYW1taWVyZW4iLCJpZCI6ImRpZDprZXk6ejZNa3BUSFI4Vk5zQnhZQUFXSHV0MkdlYWRkOWpTd3VCVjh4Um9BbndXc2R2a3RIIn0sImlzcyI6ImRpZDprZXk6ejZNa28zWkVqS0pXUUFNNW5EWEtvWjlqRXJ2dnhiV2JZZ1M4S0pYWXBDNUhidThhIiwiaXNzdWVyIjoiZGlkOmtleTp6Nk1rbzNaRWpLSldRQU01bkRYS29aOWpFcnZ2eGJXYllnUzhLSlhZcEM1SGJ1OGEiLCJuYmYiOjE3NzY3NjU2MDAsInN1YiI6ImRpZDprZXk6ejZNa3BUSFI4Vk5zQnhZQUFXSHV0MkdlYWRkOWpTd3VCVjh4Um9BbndXc2R2a3RIIiwidHlwZSI6WyJWZXJpZmlhYmxlQ3JlZGVudGlhbCIsIldvdEF0dGVzdGF0aW9uIl0sInZhbGlkRnJvbSI6IjIwMjYtMDQtMjFUMTA6MDA6MDBaIn0.semxZPGYdkExNWs5vWh76XaqlPvZsCE3sZLxFOQMg1J4oALgf2QV8rPv2Q6bMCIygzcmEWKolJG3eRJxZdOBAA
+```
+
+## 4. ECIES (Sync 005)
 
 Deterministischer Testvektor fuer das sonst zufaellige ECIES-Verfahren. In Produktion MUSS der ephemere Private Key zufaellig sein.
 
@@ -69,7 +84,7 @@ ECIES-Nachrichtenformat:
 {"epk":"j0DFrbaPJWJK5bIU6nZ6bslNgp09e14a0bpvPiE4KF8","nonce":"GhscHR4fICEiIyQl","ciphertext":"0DkOSxhxP_lROCSisq2DAbveWqoA_M2E2kidsoVFdw"}
 ```
 
-## 4. Deterministische Log-Nonce und Payload-Verschluesselung (Sync 005/006)
+## 5. Deterministische Log-Nonce und Payload-Verschluesselung (Sync 005/006)
 
 ```
 Space Content Key (hex): 0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef
@@ -83,7 +98,7 @@ Ciphertext + Auth Tag (hex): e852936e45c1669415dcb240c0e6387e18d69140a7b7d67ddcb
 Full Blob (Nonce | Ciphertext | Tag, Base64URL): euBp22iusxYapnEx6FKTbkXBZpQV3LJAwOY4fhjWkUCnt9Z93LCvruAdIAGFv0502lIqKJFqHsAETeBDRxz3KsPh3qyHkL1q1T1mVXo
 ```
 
-## 5. Log-Entry JWS (Sync 006)
+## 6. Log-Entry JWS (Sync 006)
 
 Payload (JCS):
 
@@ -97,7 +112,7 @@ JWS Compact:
 eyJhbGciOiJFZERTQSIsImtpZCI6ImRpZDprZXk6ejZNa28zWkVqS0pXUUFNNW5EWEtvWjlqRXJ2dnhiV2JZZ1M4S0pYWXBDNUhidThhI3NpZy0wIn0.eyJhdXRob3JLaWQiOiJkaWQ6a2V5Ono2TWtvM1pFaktKV1FBTTVuRFhLb1o5akVydnZ4YldiWWdTOEtKWFlwQzVIYnU4YSNzaWctMCIsImRhdGEiOiJldUJwMjJpdXN4WWFwbkV4NkZLVGJrWEJacFFWM0xKQXdPWTRmaGpXa1VDbnQ5WjkzTEN2cnVBZElBR0Z2MDUwMmxJcUtKRnFIc0FFVGVCRFJ4ejNLc1BoM3F5SGtMMXExVDFtVlhvIiwiZGV2aWNlSWQiOiI1NTBlODQwMC1lMjliLTQxZDQtYTcxNi00NDY2NTU0NDAwMDAiLCJkb2NJZCI6IjdmM2EyYjEwLTRjNWQtNGU2Zi04YTdiLTljMGQxZTJmM2E0YiIsImtleUdlbmVyYXRpb24iOjMsInNlcSI6NDIsInRpbWVzdGFtcCI6IjIwMjYtMDQtMTdUMTA6MDA6MDBaIn0.lIwGioTDMKdkkAkKnMTr1Eup-fnU7CcDVPiYSIM1-vsN0i--losDm8fwkKE5Lyn5Kmgo78nSGv2CJ9lEQ2PyDw
 ```
 
-## 6. Space Capability JWS (Sync 007)
+## 7. Space Capability JWS (Sync 007)
 
 ```
 spaceCapabilitySigningKey Seed (hex): 202122232425262728292a2b2c2d2e2f303132333435363738393a3b3c3d3e3f
@@ -117,7 +132,7 @@ JWS Compact:
 eyJhbGciOiJFZERTQSIsImtpZCI6IndvdDpzcGFjZTo3ZjNhMmIxMC00YzVkLTRlNmYtOGE3Yi05YzBkMWUyZjNhNGIjY2FwLTMiLCJ0eXAiOiJ3b3QtY2FwYWJpbGl0eStqd3QifQ.eyJhdWRpZW5jZSI6ImRpZDprZXk6ejZNa28zWkVqS0pXUUFNNW5EWEtvWjlqRXJ2dnhiV2JZZ1M4S0pYWXBDNUhidThhIiwiZ2VuZXJhdGlvbiI6MywiaXNzdWVkQXQiOiIyMDI2LTA0LTIyVDEwOjAwOjAwWiIsInBlcm1pc3Npb25zIjpbInJlYWQiLCJ3cml0ZSJdLCJzcGFjZUlkIjoiN2YzYTJiMTAtNGM1ZC00ZTZmLThhN2ItOWMwZDFlMmYzYTRiIiwidHlwZSI6ImNhcGFiaWxpdHkiLCJ2YWxpZFVudGlsIjoiMjAyNi0xMC0yMlQxMDowMDowMFoifQ.lqBuMxntI15vmJCnT9UTavTQqM_sxbL4fcrt_n_cSakXE4fy-EFvnXWAngNq5uFYqPbX_r8W-TE16Md97pfWAQ
 ```
 
-## 7. Admin-Key-Ableitung (Sync 005/009)
+## 8. Admin-Key-Ableitung (Sync 005/009)
 
 ```
 spaceId: 7f3a2b10-4c5d-4e6f-8a7b-9c0d1e2f3a4b
@@ -127,7 +142,7 @@ Admin Public Key: ebf654f331fdbf131ca46ce2f28b269ceee064244e521b557a3e919bffe32c
 Admin DID: did:key:z6MkvLMiE11z8wXjNScxqjcMJHNfNyc8XqDT4aGzry4pFTTd
 ```
 
-## 8. Personal-Doc-Key und Document-ID (Sync 010)
+## 9. Personal-Doc-Key und Document-ID (Sync 010)
 
 ```
 HKDF Info: wot/personal-doc/v1
@@ -135,7 +150,7 @@ Personal Doc Key: ed3b3cbec944063041a15cf14be4c2aecd87ec30f2085cd9f2f82333cfcd43
 Document-ID: ed3b3cbe-c944-0630-41a1-5cf14be4c2ae
 ```
 
-## 9. SD-JWT VC Trust List (H01/H03)
+## 10. SD-JWT VC Trust List (H01/H03)
 
 Minimaler Draft-Vektor fuer eine Trust-List mit einem selectively-disclosable Eintrag.
 

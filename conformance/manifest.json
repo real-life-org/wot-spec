@@ -1,0 +1,98 @@
+{
+  "version": "v0.1.0-draft",
+  "status": "draft",
+  "profiles": {
+    "wot-core@0.1": {
+      "description": "Identität, Signaturen, Attestations, Verifikation und DID-Resolution.",
+      "requires": [],
+      "spec_documents": [
+        "01-wot-core/001-identitaet-und-schluesselableitung.md",
+        "01-wot-core/002-signaturen-und-verifikation.md",
+        "01-wot-core/003-attestations.md",
+        "01-wot-core/004-verifikation.md",
+        "01-wot-core/005-did-resolution.md"
+      ],
+      "schemas": [
+        "schemas/attestation-vc-payload.schema.json",
+        "schemas/did-document-wot.schema.json",
+        "schemas/qr-challenge.schema.json"
+      ],
+      "test_vectors": [
+        {
+          "file": "test-vectors/phase-1-interop.json",
+          "sections": ["identity", "did_resolution", "attestation_vc_jws"]
+        }
+      ]
+    },
+    "wot-sync@0.1": {
+      "description": "Verschlüsselung, Log-Sync, Transport/Broker, Discovery, Gruppen und Personal Doc.",
+      "requires": ["wot-core@0.1"],
+      "spec_documents": [
+        "02-wot-sync/005-verschluesselung.md",
+        "02-wot-sync/006-sync-protokoll.md",
+        "02-wot-sync/007-transport-und-broker.md",
+        "02-wot-sync/008-discovery.md",
+        "02-wot-sync/009-gruppen.md",
+        "02-wot-sync/010-personal-doc.md"
+      ],
+      "schemas": [
+        "schemas/capability-payload.schema.json",
+        "schemas/didcomm-plaintext-message.schema.json",
+        "schemas/key-rotation.schema.json",
+        "schemas/log-entry-payload.schema.json",
+        "schemas/profile-service-response.schema.json",
+        "schemas/space-invite.schema.json"
+      ],
+      "test_vectors": [
+        {
+          "file": "test-vectors/phase-1-interop.json",
+          "sections": [
+            "didcomm_plaintext_envelope",
+            "ecies",
+            "log_payload_encryption",
+            "log_entry_jws",
+            "space_capability_jws",
+            "admin_key_derivation",
+            "personal_doc"
+          ]
+        }
+      ],
+      "library_checks": [
+        {
+          "file": "test-vectors/phase-1-interop.json",
+          "section": "didcomm_plaintext_envelope",
+          "libraries": ["didcomm-node", "@veramo/did-comm"]
+        }
+      ]
+    },
+    "wot-rls@0.1": {
+      "description": "Real-Life-Extension-Felder für visuelle Badges, Events und Orte.",
+      "requires": ["wot-core@0.1"],
+      "spec_documents": ["03-rls-extensions/R01-badges.md"],
+      "schemas": [],
+      "test_vectors": []
+    },
+    "wot-hmc@0.1": {
+      "description": "Human-Money-Trust-Listen, Trust-Scores und Gossip-Nachrichten.",
+      "requires": ["wot-core@0.1"],
+      "spec_documents": [
+        "04-hmc-extensions/H01-trust-scores.md",
+        "04-hmc-extensions/H02-transactions.md",
+        "04-hmc-extensions/H03-gossip.md"
+      ],
+      "schemas": ["schemas/trust-list-delta.schema.json"],
+      "test_vectors": [
+        {
+          "file": "test-vectors/phase-1-interop.json",
+          "sections": ["sd_jwt_vc_trust_list"]
+        }
+      ]
+    }
+  },
+  "validators": [
+    { "name": "manifest", "command": "npm run validate:conformance" },
+    { "name": "schemas", "command": "npm run validate:schemas" },
+    { "name": "test-vectors", "command": "npm run validate:vectors" },
+    { "name": "didcomm-envelope", "command": "npm run validate:didcomm" }
+  ]
+}

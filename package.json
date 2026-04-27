@@ -3,7 +3,9 @@
   "private": true,
   "type": "module",
   "scripts": {
-    "validate": "npm run validate:schemas && npm run validate:vectors && npm run validate:didcomm",
+    "conformance": "npm run validate",
+    "validate": "npm run validate:conformance && npm run validate:schemas && npm run validate:vectors && npm run validate:didcomm",
+    "validate:conformance": "python3 scripts/validate_conformance_manifest.py",
     "validate:schemas": "python3 scripts/validate_schemas.py",
     "validate:vectors": "python3 scripts/validate_test_vectors.py",
     "validate:didcomm": "node scripts/validate_didcomm_envelope.mjs"

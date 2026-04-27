@@ -107,3 +107,13 @@ Fuer vollstaendige HMC-Konformitaet MUESSEN SD-JWT VC Trust-Lists validiert werd
 Die Testvektoren in `test-vectors/` sind Teil der Konformitaet. Eine Implementierung darf ein Profil erst beanspruchen, wenn alle fuer dieses Profil vorhandenen Testvektoren bestanden werden.
 
 Noch fehlende Testvektoren blockieren keine Draft-Konformitaet, MUESSEN aber vor einem stabilen `v1.0.0-core` oder `v1.0.0-sync` Release ergaenzt werden.
+
+## Conformance Kit
+
+Das Verzeichnis [`conformance/`](conformance/) enthält ein maschinenlesbares Manifest, das Profile auf Spec-Dokumente, Schemas und Testvektor-Sektionen abbildet.
+
+```sh
+npm run conformance
+```
+
+Dieser Befehl validiert Manifest, Schemas, Testvektoren und den DIDComm-Plaintext-Envelope. Er prüft die Artefakte dieses Repositories; externe Implementierungen müssen die gelisteten Vektoren in ihrer eigenen Sprache reproduzieren.

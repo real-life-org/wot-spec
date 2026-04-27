@@ -51,6 +51,7 @@ WoT definiert keine neuen Standards — es kombiniert bestehende zu einem intero
 | [VERSIONING](VERSIONING.md) | Release-Versionen, Spec-Profile, Wire-Versionen |
 | [CHANGELOG](CHANGELOG.md) | Nachvollziehbare Aenderungen zwischen Releases |
 | [CONFORMANCE](CONFORMANCE.md) | Anforderungen fuer konforme Implementierungen |
+| [Conformance Kit](conformance/) | Maschinenlesbares Profil-Manifest und Validierungsbefehle |
 | [GLOSSARY](GLOSSARY.md) | Normative Begriffe und konsistente Terminologie |
 | [CONTRIBUTING](CONTRIBUTING.md) | Beitragsregeln und PR-Erwartungen |
 | [Test-Vektoren](test-vectors/) | Normative Krypto-Werte und DIDComm-Envelope-Validierung fuer Interoperabilitaets-Tests |
@@ -97,6 +98,7 @@ Nicht WoT-spezifisch — jede Local-First-App könnte das nutzen.
 |----------|-------------|
 | [Schemas](schemas/) | Geplante JSON Schemas fuer normative Payloads |
 | [Test-Vektoren](test-vectors/) | Kanonische Krypto-Werte fuer Interoperabilitaets-Tests |
+| [Conformance Kit](conformance/) | Profilzuordnung fuer Schemas, Testvektoren und Validatoren |
 
 ### Forschung
 

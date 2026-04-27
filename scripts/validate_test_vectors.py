@@ -103,6 +103,21 @@ def main() -> None:
     assert hashlib.sha256(jcs(did_doc["did_document"])).hexdigest() == did_doc["jcs_sha256"]
     print("did resolution ok")
 
+    attestation = data["attestation_vc_jws"]
+    header_b64, payload_b64, sig_b64 = attestation["jws"].split(".")
+    assert json.loads(b64u_decode(header_b64)) == attestation["header"]
+    assert json.loads(b64u_decode(payload_b64)) == attestation["payload"]
+    assert hashlib.sha256(jcs(attestation["payload"])).hexdigest() == attestation["payload_jcs_sha256"]
+    assert f"{header_b64}.{payload_b64}" == attestation["signing_input"]
+    assert sig_b64 == attestation["signature_b64"]
+    assert attestation["header"]["typ"] == "vc+jwt"
+    assert attestation["header"]["kid"] == identity["kid"]
+    assert attestation["payload"]["issuer"] == identity["did"]
+    assert attestation["payload"]["iss"] == identity["did"]
+    assert attestation["payload"]["credentialSubject"]["id"] == attestation["payload"]["sub"]
+    verify_jws(attestation["jws"], ed_pub)
+    print("attestation vc jws ok")
+
     ecies = data["ecies"]
     eph_public = b64u_decode(ecies["ephemeral_public_b64"])
     shared = x25519.X25519PrivateKey.from_private_bytes(x_seed).exchange(
