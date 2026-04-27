@@ -20,6 +20,20 @@ Dieses Dokument spezifiziert wie Daten zwischen Peers synchronisiert werden — 
 
 Das Sync-Protokoll ist für alle Peers identisch. Phase 1 spezifiziert nur den Append-only Log pro Device und Dokument. Kompression (z.B. Sedimentree) und effiziente Set-Reconciliation (z.B. RIBLT) sind zukünftige Erweiterungen und nicht Teil dieses Konformitätsprofils.
 
+### Ausbauphasen des Sync-Protokolls
+
+Das langfristige Sync-Design besteht aus drei aufeinander aufbauenden Phasen. Nur Phase 1 ist Teil von `wot-sync@0.1`; Phase 2 und Phase 3 sind bewusst dokumentierte, aber noch nicht normative Erweiterungen.
+
+| Phase | Bestandteil | Zweck | Status |
+|---|---|---|---|
+| **1** | Append-only Log | Korrektes, einfaches Live-Sync und Catch-Up ueber Heads pro `(docId, deviceId)` | Normativ in `wot-sync@0.1` |
+| **2** | Deterministische Kompression | Alte History zu reproduzierbaren Chunks verdichten, ohne Koordinator oder vertrauenswuerdigen Snapshot-Ersteller | Zukunft |
+| **3** | Effiziente Set-Reconciliation | Stark divergierte Peers effizient abgleichen, proportional zur tatsaechlichen Differenz statt zur Log-Groesse | Zukunft |
+
+Phase 2 kann sich an Sedimentree-orientiertem Chunking orientieren: Chunk-Grenzen werden deterministisch aus Hash-Eigenschaften berechnet, sodass verschiedene Peers unabhaengig dieselben komprimierten History-Segmente erzeugen koennen. Phase 3 kann RIBLT-basierte Reconciliation nutzen, um nach langer Offline-Zeit oder bei mehreren Quellen nur die fehlenden Eintraege bzw. Chunks zu identifizieren.
+
+Diese Phasen sind wichtig fuer langfristige Skalierung, aber Implementierungen duerfen `wot-sync@0.1` beanspruchen, ohne Phase 2 oder Phase 3 zu implementieren. Details stehen im nicht-normativen Architekturentwurf [Sync-Architektur](../research/sync-architektur.md).
+
 ## Device-Identifikation
 
 Jedes Gerät generiert beim ersten Start eine zufällige **Device-UUID** und speichert sie lokal:
@@ -68,7 +82,7 @@ Der `seq`-Wert ist sicherheitskritisch, weil er in die AES-256-GCM-Nonce-Konstru
 
 **Anforderungen:**
 
-- Vor jedem Schreibvorgang MUSS der Client den aktuellen höchsten `seq`-Wert für (`deviceId`, `docId`, `keyGeneration`) kennen
+- Vor jedem Schreibvorgang MUSS der Client den aktuellen höchsten `seq`-Wert für (`deviceId`, `docId`) kennen
 - Dieser Wert MUSS aus dem persistierten Log gelesen werden, nicht aus volatilem Memory
 - Der neue `seq` MUSS strikt größer sein als alle bisher geschriebenen
 - Bei Divergenz zwischen lokalem Log und Broker-Log MUSS der höhere Wert zugrunde gelegt werden
@@ -79,7 +93,7 @@ Der `seq`-Wert ist sicherheitskritisch, weil er in die AES-256-GCM-Nonce-Konstru
 - Beim App-Start oder Reconnect MUSS der Client für jede aktive `(deviceId, docId)`-Kombination `broker_seq` und lokalen persistierten `local_seq` vergleichen.
 - Falls `broker_seq > local_seq`, MUSS der Client Restore/Clone annehmen, eine neue zufällige `deviceId` generieren, die alte `deviceId` per signierter `device-revoke`-Nachricht deaktivieren (siehe [Sync 003](003-transport-und-broker.md#device-deaktivierung)) und neue Einträge unter der neuen `deviceId` ab `seq=0` schreiben.
 - Extensions MÜSSEN über den `deviceId`-Wechsel informiert werden, wenn sie device-spezifische Felder führen (siehe [Sync 006](006-personal-doc.md)).
-- Bei parallelen Schreibvorgängen MUSS `seq`-Allocation atomar über `(deviceId, docId, keyGeneration)` erfolgen. Browser-Implementierungen SOLLEN Cross-Tab-Koordination verwenden.
+- Bei parallelen Schreibvorgängen MUSS `seq`-Allocation atomar über `(deviceId, docId)` erfolgen. Browser-Implementierungen SOLLEN Cross-Tab-Koordination verwenden.
 
 ### Signatur des Log-Eintrags
 

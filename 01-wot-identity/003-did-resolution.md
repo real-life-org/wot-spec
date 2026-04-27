@@ -40,7 +40,9 @@ Alle Protokoll-Operationen nutzen resolve()
 
 ## DID-Dokument-Struktur
 
-### Minimales WoT-DID-Dokument
+### Kommunikationsfähiges WoT-DID-Dokument
+
+Ein kommunikationsfähiges DID-Dokument enthält neben dem Signing Key auch den X25519-Key für ECIES und optional Service-Endpoints. Ein rein signaturfähiges Dokument (z.B. ein frisch aus `did:key` abgeleitetes Dokument ohne Erstkontakt) MUSS das Feld `keyAgreement` ebenfalls enthalten, DARF es aber als leeres Array setzen.
 
 ```json
 {
@@ -74,7 +76,7 @@ Alle Protokoll-Operationen nutzen resolve()
 | `verificationMethod` | Array | Mindestens ein Ed25519 Signing Key |
 | `authentication` | Array | Verweis auf verificationMethod — für Broker-Login, Challenge-Response |
 | `assertionMethod` | Array | Verweis auf verificationMethod — für Attestation-Signaturen, Capabilities |
-| `keyAgreement` | Array | Mindestens ein X25519 Encryption Key — für ECIES-Verschlüsselung |
+| `keyAgreement` | Array | X25519 Encryption Keys für ECIES-Verschlüsselung. Das Feld MUSS vorhanden sein, DARF bei rein signaturfähigen Dokumenten aber leer sein. |
 
 ### Optionale Felder
 

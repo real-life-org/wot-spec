@@ -76,7 +76,7 @@ Eine Implementierung ist `wot-sync@0.1`-konform, wenn sie zusaetzlich `wot-ident
 ### Log-Sync
 
 - JWS-signierte Log-Eintraege erzeugen und verifizieren.
-- `seq` pro `(deviceId, docId, keyGeneration)` strikt monoton fuehren.
+- `seq` pro `(deviceId, docId)` strikt monoton fuehren.
 - Restore/Clone-Erkennung bei `broker_seq > local_seq` umsetzen.
 - Kollisionen fuer `(docId, deviceId, seq)` erkennen und sicher behandeln.
 

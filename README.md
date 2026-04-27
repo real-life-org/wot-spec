@@ -90,7 +90,7 @@ Nicht WoT-spezifisch — jede Local-First-App könnte das nutzen.
 | # | Dokument | Beschreibung |
 |---|----------|-------------|
 | 001 | [Verschlüsselung](03-wot-sync/001-verschluesselung.md) | AES-256-GCM, ECIES, Gruppen-Verschlüsselung |
-| 002 | [Sync-Protokoll](03-wot-sync/002-sync-protokoll.md) | Append-only Logs, Sedimentree, RIBLT |
+| 002 | [Sync-Protokoll](03-wot-sync/002-sync-protokoll.md) | Phase 1: Append-only Logs; Phase 2/3: Kompression und Reconciliation als Roadmap |
 | 003 | [Transport und Broker](03-wot-sync/003-transport-und-broker.md) | Broker, Authentisierung, Capabilities, Inbox, Push |
 | 004 | [Discovery](03-wot-sync/004-discovery.md) | Broker-Discovery, Profil-Service |
 | 005 | [Gruppen und Mitgliedschaft](03-wot-sync/005-gruppen.md) | Rollen, Einladungen, Key Rotation |

@@ -59,7 +59,7 @@ Nicht-normative Abschnitte (z.B. `research/`) koennen bewusst freier formulieren
 | **WoT Envelope-JWS** | WoT-spezifisch signierter Envelope. Strukturell an DIDComm Signed Messages angelehnt, aber nicht als library-validierte DIDComm Signed Message beansprucht. |
 | **ECIES** | WoT-Verschluesselung fuer 1:1-Inbox-Nachrichten: X25519 + HKDF-SHA256 + AES-256-GCM. |
 | **Log-Eintrag** | JWS-signierter Datensatz im Append-only Log eines Dokuments. Enthaelt u.a. `seq`, `deviceId`, `docId`, `authorKid`, `keyGeneration`, `data`. |
-| **`seq`** | Monoton steigende Sequenznummer pro `(deviceId, docId, keyGeneration)`. Sicherheitskritisch fuer deterministische Nonces. |
+| **`seq`** | Monoton steigende Sequenznummer pro `(deviceId, docId)`. Sicherheitskritisch fuer deterministische Nonces. |
 | **`docId`** | Dokument-ID fuer Space- oder Personal-Doc-Logs. |
 
 ## Spaces und Gruppen

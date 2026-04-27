@@ -45,6 +45,28 @@ Release-Kriterien:
 - Personal Doc funktioniert mit Append-only Log und AES-GCM.
 - Restore/Clone- und `seq`-Kollisionsregeln sind getestet.
 
+### `v0.4.0-sync-compression`
+
+Erster Snapshot fuer deterministische Log-Kompression.
+
+Release-Kriterien:
+
+- Kompressionsmodell fuer alte Log-History ist spezifiziert.
+- Chunk-Grenzen sind deterministisch und koordinatorfrei berechenbar.
+- Broker koennen verschluesselte Chunks speichern und nach Hash ausliefern, ohne Klartext zu sehen.
+- Testvektoren fuer Chunk-Grenzen, Chunk-IDs und Rehydration liegen vor.
+
+### `v0.5.0-sync-reconciliation`
+
+Erster Snapshot fuer effiziente Set-Reconciliation.
+
+Release-Kriterien:
+
+- Reconciliation-Modell fuer stark divergierte Peers ist spezifiziert.
+- RIBLT oder ein gleichwertiges Verfahren ist als Interop-Profil beschrieben.
+- Peers koennen fehlende Eintraege oder Chunks proportional zur tatsaechlichen Differenz identifizieren.
+- Testvektoren fuer kleine und grosse Divergenzfaelle liegen vor.
+
 ### `v1.0.0-identity-trust`
 
 Stabiler Identity-/Trust-Snapshot.
@@ -117,6 +139,7 @@ Release-Kriterien:
 - Per-Device Keys als vollstaendiges Modell.
 - DID-Migration zu `did:webvh`.
 - Forward-Secrecy / Double Ratchet fuer Inbox.
-- Sedimentree und RIBLT.
+- Deterministische Log-Kompression (z.B. Sedimentree) — vorgesehen fuer Phase 2.
+- Effiziente Set-Reconciliation (z.B. RIBLT) — vorgesehen fuer Phase 3.
 - Feld-Level-Permissions im CRDT.
 - Tor/Cover-Traffic/Onion-Routing fuer Metadaten-Schutz.
