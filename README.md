@@ -118,6 +118,7 @@ Nicht WoT-spezifisch — jede Local-First-App könnte das nutzen.
 | [Sync-Architektur](research/sync-architektur.md) | Drei-Schichten-Modell |
 | [Identity Migration](research/identity-migration.md) | Schlüsselrotation bei DID-Wechsel |
 | [Device Keys](research/device-keys.md) | Multi-Device-Signaturen: Shared Seed, Delegation, Sigchain, Pre-Rotation |
+| [WoT Identity Vergleich](research/wot-identity-vergleich.md) | Related Work: DID-Methoden, KERI, OpenPGP, Keybase, SSI-Stacks und Abgrenzung |
 | [Identitäts-Alternativen](research/identitaet-alternativen.md) | Exploration: NextGraph, CryptPad, Argent, Jazz, Passkeys, Hybrid-Vorschlag mit Guardian-Recovery |
 | [Migrations-Roadmap](research/migration-roadmap.md) | Phasenplan für die Überführung der Implementierungen in die Spec |
 | [Positionierung](research/positionierung.md) | Wo wir in der Landschaft stehen — für interne Klarheit und Outreach |

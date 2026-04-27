@@ -51,7 +51,7 @@ Erster Snapshot fuer Per-Device Keys mit self-contained Delegation Proofs.
 
 Release-Kriterien:
 
-- DeviceKeyBinding ist als signiertes Objekt spezifiziert: Identity DID, Device Key, Capabilities, Gueltigkeitszeitraum.
+- DeviceKeyBinding ist als signiertes Objekt spezifiziert: Identity DID, Device Key, Capabilities, Signaturberechtigungszeitraum und Binding-`iat`.
 - Delegated-Attestation-Bundle als JSON-Container fuer Attestations und Verification-Attestations ist spezifiziert.
 - Verifikationsregeln fuer `issuer`/`iss` = Identity DID und `kid` = Device Key sind normativ beschrieben.
 - Capability-Scopes `sign-attestation`, `sign-verification`, `sign-log-entry`, `broker-auth` und `device-admin` sind definiert.
@@ -147,7 +147,7 @@ Release-Kriterien:
 
 ### E. Device-Key-Delegation spezifizieren
 
-- DeviceKeyBinding-Payload festlegen: `iss`, `sub`, `deviceKid`, `devicePublicKeyMultibase`, `capabilities`, `validFrom`, `validUntil`.
+- DeviceKeyBinding-Payload festlegen: `iss`, `sub`, `deviceKid`, `devicePublicKeyMultibase`, `capabilities`, `validFrom`, `validUntil`, `iat`.
 - Delegated-Attestation-Bundle als portables Offline-Verifikationsformat definieren.
 - Revocation-Semantik fuer Phase 2 klaeren: Best-effort-Revocation vs. Gueltigkeit zum Signaturzeitpunkt.
 - Admin-Delegation begrenzen: Welche Geraete duerfen weitere Device Keys delegieren oder widerrufen?

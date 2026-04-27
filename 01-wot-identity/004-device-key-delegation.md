@@ -86,7 +86,7 @@ Ein DeviceKeyBinding autorisiert einen Device Key, fuer eine Identity DID bestim
 | `validUntil` | Ja | Ende der Device-Signaturberechtigung |
 | `iat` | Ja | Ausstellungszeitpunkt des Bindings als Unix-Timestamp |
 
-`validUntil` begrenzt nur die Signaturberechtigung des Device Keys. Es ist kein Ablaufdatum fuer Attestations, die waehrend des Delegationszeitraums ausgestellt wurden.
+`validFrom` und `validUntil` begrenzen nur die Signaturberechtigung des Device Keys. Sie sind kein Gueltigkeitsfenster fuer Attestations, die waehrend des Delegationszeitraums ausgestellt wurden. `iat` im Binding ist der Ausstellungszeitpunkt des Bindings; `iat` in der Attestation ist der Ausstellungszeitpunkt der Attestation. Verifier MUESSEN Zeitvergleiche als Instant-Vergleich durchfuehren, also ISO-8601-Zeitpunkte und Unix-Timestamps vor dem Vergleich normalisieren.
 
 ### Capabilities
 
@@ -142,7 +142,7 @@ Ein Verifier einer delegierten Attestation MUSS:
 6. `devicePublicKeyMultibase` gegen den aus `deviceKid` aufgeloesten Public Key pruefen.
 7. Attestation-JWS mit dem Device Key verifizieren.
 8. `issuer` / `iss` der Attestation gegen `iss` des Bindings pruefen.
-9. `iat` der Attestation pruefen und sicherstellen, dass `validFrom <= iat <= validUntil` gilt.
+9. `iat` der Attestation pruefen und sicherstellen, dass `validFrom <= iat <= validUntil` als normalisierter Instant-Vergleich gilt.
 10. Benoetigte Capability pruefen: `sign-attestation` oder `sign-verification`.
 11. Die normalen Trust-001-Regeln fuer Attestation-Payload, `nbf`, optionales `exp` und optionales `credentialStatus` anwenden.
 
@@ -156,6 +156,7 @@ Darum gilt:
 
 - Phase 2 ist self-contained und einfach, aber Revocation ist best-effort.
 - Alte Signaturen bleiben nur so belastbar wie der mitgelieferte Delegation Proof und der Kenntnisstand des Verifiers.
+- Das `iat` der Attestation ist signiert, aber kein unabhaengig bezeugter Zeitstempel; ein kompromittierter Device Key kann ohne Phase-3-History zurueckdatierte Signaturen erzeugen.
 - Starke temporale Verifikation ist Aufgabe von Phase 3 (Sigchain oder DID-Methode mit verifiable History, z.B. `did:webvh`).
 
 ## Nicht Teil von `wot-identity@0.1`

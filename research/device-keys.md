@@ -162,7 +162,7 @@ Ein Verifier prueft:
 7. `devicePublicKeyMultibase` passt zum Public Key aus `deviceKid`.
 8. Attestation-JWS Signatur ist mit diesem Device Key gueltig.
 9. Binding enthaelt die benoetigte Capability (`sign-attestation` oder `sign-verification`).
-10. `validFrom` / `validUntil` des Bindings umfassen `iat` der Attestation.
+10. `validFrom` / `validUntil` des Bindings umfassen `iat` der Attestation, nach Normalisierung auf denselben Zeittyp.
 11. `issuer` / `iss` der Attestation bleibt die Identity DID aus dem Binding, nicht der Device Key.
 
 Damit bleibt die soziale Aussage bei der Person, waehrend das konkrete Geraet kryptographisch und auditierbar signiert. Die zeitliche Begrenzung des Bindings begrenzt nur die Signaturberechtigung des Device Keys; sie laesst die Attestation selbst nicht ablaufen.
@@ -190,7 +190,7 @@ BIP39 Seed
       }
 ```
 
-`validUntil` im Binding ist kein Ablaufdatum der Attestation. Es sagt nur: dieses Device durfte in diesem Zeitraum im Namen der Identity DID signieren.
+`validFrom` / `validUntil` im Binding sind kein Ablaufdatum der Attestation. Sie sagen nur: dieses Device durfte in diesem Zeitraum im Namen der Identity DID signieren. Zeitvergleiche muessen als Instant-Vergleich erfolgen; ISO-8601-Werte und Unix-Timestamps werden vor dem Vergleich normalisiert.
 
 **Signatur-Format:**
 
@@ -269,7 +269,7 @@ Jeder Eintrag ist JWS-signiert (vom Identity Key oder einem dafuer autorisierten
 
 1. Chain replayen: von `seq: 1` bis zum Zeitpunkt der Signatur
 2. Bei jedem Schritt den Key-State aktualisieren (add/revoke)
-3. Prüfen: war der Device Key zum Zeitpunkt `created_time` der Attestation autorisiert?
+3. Prüfen: war der Device Key zum `iat` / Signaturzeitpunkt der Attestation autorisiert?
 
 **Verteilung:** Die Sigchain wird über den Profil-Service bereitgestellt (`GET /p/{did}/keys`) und lokal gecacht. Bei Offline-Verifikation reicht der gecachte Stand.
 
@@ -324,7 +324,7 @@ Signiert mit dem **alten** Identity Key. Der Verifier prüft: `sha256(newIdentit
 | Temporale Verifikation | N/A | Nein | Ja | Ja |
 | Device-Revocation | Nein | Best-effort | Auditierbar | Auditierbar |
 | Identity-Key-Schutz | Nein | Nein | Nein | Pre-Rotation |
-| DID-Methode | did:key | did:key | did:key oder did:webvh | did:key oder did:webvh |
+| DID-Methode | did:key | did:key | did:key + WoT-Sigchain oder did:webvh | did:key + pre-rotating Sigchain, did:webvh oder KERI-artig |
 | Signaturgröße | 1 JWS | 2 JWS im JSON-Bundle | 1 JWS + Chain-Referenz | 1 JWS + Chain-Referenz |
 
 ## Empfehlung

@@ -104,7 +104,7 @@ Eine Implementierung ist `wot-sync@0.1`-konform, wenn sie zusaetzlich `wot-ident
 - `deviceKid`, `sub` und `devicePublicKeyMultibase` konsistent pruefen.
 - Capability-Scopes fuer Device Keys strikt pruefen.
 - Delegated-Attestation-Bundles als JSON-Container parsen.
-- Delegierte Attestations gegen Device Key, Identity-Key-Binding, `iat` und Delegationszeitraum verifizieren.
+- Delegierte Attestations gegen Device Key, Identity-Key-Binding, Attestation-`iat` und normalisierten Delegationszeitraum verifizieren.
 - Device-DIDs nicht als eigene soziale Identitaeten im Trust Graph behandeln.
 
 ## `wot-rls@0.1`
