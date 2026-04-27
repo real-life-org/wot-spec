@@ -11,7 +11,7 @@
 
 Attestations sind das Herzstück des Web of Trust. Eine Attestation ist eine signierte, kryptografisch verifizierbare Aussage einer Person über eine andere Person, ein Projekt, einen Ort oder ein Ereignis.
 
-Attestations im Web of Trust sind **W3C Verifiable Credentials 2.0** — sie folgen dem offenen Standard und sind damit interoperabel mit anderen Systemen. Als Proof-Format verwenden wir das **VC-JOSE-COSE Profil** (W3C) — die Attestation wird als JWS Compact Serialization transportiert, konsistent mit [Spec 002](002-signaturen-und-verifikation.md).
+Attestations im Web of Trust sind **W3C Verifiable Credentials 2.0** — sie folgen dem offenen Standard und sind damit interoperabel mit anderen Systemen. Als Proof-Format verwenden wir das **VC-JOSE-COSE Profil** (W3C) — die Attestation wird als JWS Compact Serialization transportiert, konsistent mit [Core 002](002-signaturen-und-verifikation.md).
 
 ## Referenzierte Standards
 
@@ -20,7 +20,7 @@ Attestations im Web of Trust sind **W3C Verifiable Credentials 2.0** — sie fol
 - **JWS** (RFC 7515) — JSON Web Signature
 - **DID Core** (W3C Recommendation) — Identifiers für Issuer und Subject
 - **Ed25519** (RFC 8032) — Signaturalgorithmus
-- **JCS** (RFC 8785) — Kanonisierung (siehe [Spec 002](002-signaturen-und-verifikation.md))
+- **JCS** (RFC 8785) — Kanonisierung (siehe [Core 002](002-signaturen-und-verifikation.md))
 
 ## Grundprinzip
 
@@ -84,7 +84,7 @@ eyJhbGciOiJFZERTQSIsInR5cCI6InZjK2p3dCJ9.eyJAY29udGV4dCI6WyJodHRwcz...fQ.signatu
 { "alg": "EdDSA", "typ": "vc+jwt", "kid": "did:key:z6Mk...alice#sig-0" }
 ```
 
-- `alg`: MUSS `"EdDSA"` sein (siehe [Spec 002](002-signaturen-und-verifikation.md), Algorithmus-Validierung)
+- `alg`: MUSS `"EdDSA"` sein (siehe [Core 002](002-signaturen-und-verifikation.md), Algorithmus-Validierung)
 - `typ`: MUSS `"vc+jwt"` sein — W3C VC-JOSE-COSE Standard Media Type
 - `kid`: Verification Method ID aus dem DID-Dokument des Issuers (siehe [Core 005](005-did-resolution.md)). Ermöglicht Key-Auflösung ohne den Payload zu parsen.
 
@@ -113,89 +113,15 @@ Es gibt kein eingebettetes `proof`-Objekt. Die Signatur ist der JWS selbst. Ein 
 | `id` | URI | Eindeutige ID der Attestation (z.B. `urn:uuid:...`) |
 | `credentialStatus` | Object | Widerrufs-Mechanismus (siehe Unveränderlichkeit) |
 
-Das ist der vollständige WoT Core. Keine weiteren Pflichtfelder. Extensions fügen Felder über eigene Contexts hinzu (siehe Abschnitt "Drei Schichten").
+Das ist der vollständige WoT Core. Keine weiteren Pflichtfelder. Extensions fügen Felder über eigene Contexts hinzu (siehe [Erweiterbarkeit](#erweiterbarkeit)).
 
-## Drei Schichten: Core + Extensions
+## Erweiterbarkeit
 
-```
-┌─────────────────────────────────────────────────────────────┐
-│  W3C Verifiable Credentials 2.0 + VC-JOSE-COSE             │
-│  @context, type, issuer, credentialSubject, validFrom       │
-├─────────────────────────────────────────────────────────────┤
-│  WoT Core (dieses Dokument)                                │
-│  WotAttestation, claim                                      │
-├──────────────────────────┬──────────────────────────────────┤
-│  Real Life Extension     │  Human Money Extension           │
-│  display (emoji, color,  │  trustLevel, liability,          │
-│  shape), event, location │  hopLimit, SD-JWT                │
-└──────────────────────────┴──────────────────────────────────┘
-```
+Jede Implementierung MUSS den VC-Payload aus dem Abschnitt [Format](#format) verstehen: `@context`, `type`, `issuer`, `credentialSubject.claim`, `validFrom` + die JWT Claims (`iss`, `sub`, `nbf`). Extensions DÜRFEN eigene Context-URIs, `type`-Werte und Felder ergänzen.
 
-### WoT Core
+Unbekannte Extension-Felder MÜSSEN ignoriert werden, solange JWS-Signatur und Core-Pflichtfelder gültig sind. Die JWS-Signatur ist über den gesamten Payload verifizierbar, unabhängig davon ob eine Implementierung alle Extension-Felder semantisch versteht.
 
-Jede Implementierung MUSS den VC-Payload aus dem Abschnitt [Format](#format) verstehen: `@context`, `type`, `issuer`, `credentialSubject.claim`, `validFrom` + die JWT Claims (`iss`, `sub`, `nbf`). Was man darüber hinaus nicht kennt, ignoriert man.
-
-### Real Life Extension
-
-Erweitert den WoT Core um visuelle Darstellung und Event-Bezüge:
-
-```json
-{
-  "@context": [
-    "https://www.w3.org/ns/credentials/v2",
-    "https://web-of-trust.de/vocab/v1",
-    "https://web-of-trust.de/vocab/rls/v1"
-  ],
-  "type": ["VerifiableCredential", "WotAttestation"],
-  "issuer": "did:key:z6Mk...alice",
-  "credentialSubject": {
-    "id": "did:key:z6Mk...bob",
-    "claim": "hat am Community-Workshop teilgenommen",
-    "display": {
-      "emoji": "🎓",
-      "color": "#5bc0eb",
-      "shape": "star"
-    },
-    "event": "event-uuid-123",
-    "location": { "lat": 48.7758, "lng": 9.1829 }
-  },
-  "validFrom": "2026-04-21T10:00:00Z"
-}
-```
-
-Sebastians App sieht: WotAttestation mit Claim "hat am Community-Workshop teilgenommen". Die Felder `display`, `event`, `location` kennt sie nicht — ignoriert sie. Der Claim ist trotzdem verifizierbar.
-
-### Human Money Extension
-
-Erweitert den WoT Core um Vertrauensstufen und Haftung:
-
-```json
-{
-  "@context": [
-    "https://www.w3.org/ns/credentials/v2",
-    "https://web-of-trust.de/vocab/v1",
-    "https://web-of-trust.de/vocab/hmc/v1"
-  ],
-  "type": ["VerifiableCredential", "WotAttestation", "TrustRating"],
-  "issuer": "did:key:z6Mk...alice",
-  "credentialSubject": {
-    "id": "did:key:z6Mk...bob",
-    "claim": "Vertrauensstufe 3",
-    "trustLevel": 3,
-    "liability": "4.0h",
-    "hopLimit": 2
-  },
-  "validFrom": "2026-04-21T10:00:00Z"
-}
-```
-
-Unsere App sieht: WotAttestation mit Claim "Vertrauensstufe 3". Die Felder `trustLevel`, `liability`, `hopLimit` kennen wir nicht — ignorieren wir. Der Claim ist trotzdem verifizierbar.
-
-Für die effiziente Propagation gebündelter Trust Lists nutzt Human Money Core **SD-JWT VC** (Selective Disclosure JWT). Damit kann die gesamte Trust List signiert und selektiv weitergegeben werden — ohne die Signatur zu brechen. SD-JWT VC ist als IETF-Standard kompatibel mit dem W3C VC-JOSE-COSE Profil. SD-JWT ist nicht Teil des WoT Core — der WoT Core definiert einzelne Attestations als JWS-signierte VCs. SD-JWT ist eine Optimierung für den spezifischen Use Case gebündelter Trust Lists.
-
-### Das Prinzip
-
-Jede App versteht den WoT Core. Was sie nicht kennt, ignoriert sie. Die JWS-Signatur ist immer verifizierbar — egal welche Extensions im Payload stecken. So bleiben alle Implementierungen interoperabel, ohne dass jeder alles verstehen muss.
+SD-JWT VC, Trust-Listen, visuelle Darstellung oder Event-Bezüge sind Extensions und nicht Teil des WoT Core. Für Phase 1 funktioniert `https://web-of-trust.de/vocab/v1` als Type-Identifier; ein auflösbares JSON-LD-Context-Dokument kann später ergänzt werden.
 
 ## Empfängerprinzip
 
@@ -238,7 +164,7 @@ Für **externe Interop** (z.B. wenn ein externer Verifier WoT-Attestations prüf
 
 Um eine Attestation zu verifizieren:
 
-1. JWS-Header dekodieren und `alg` prüfen — MUSS `"EdDSA"` sein (siehe [Spec 002](002-signaturen-und-verifikation.md))
+1. JWS-Header dekodieren und `alg` prüfen — MUSS `"EdDSA"` sein (siehe [Core 002](002-signaturen-und-verifikation.md))
 2. `kid` aus dem Header extrahieren → DID-Dokument via `resolve()` auflösen ([Core 005](005-did-resolution.md)) → Ed25519 Public Key aus `verificationMethod` / `assertionMethod`
 3. JWS-Signatur verifizieren gegen die exakt empfangenen Bytes `BASE64URL(header) + "." + BASE64URL(payload)` (keine Re-Kanonisierung)
 4. Payload dekodieren und parsen
@@ -250,65 +176,9 @@ Um eine Attestation zu verifizieren:
 
 Kein externer Service nötig für die Signatur-Verifikation. Alles lokal verifizierbar (DID-Dokument aus Cache). Nur die StatusList-Prüfung (Schritt 9) kann einen optionalen Online-Abruf erfordern.
 
-## Austausch-Szenarien
-
-### Freitext-Attestation
-
-Alice öffnet Bobs Profil, schreibt eine Attestation, wählt Emoji + Farbe + Form, signiert, schickt ab. Bob bekommt den JWS in seiner Inbox.
-
-### Gegenseitige Verifikation (In-Person)
-
-Alice und Bob treffen sich. Beide scannen den QR-Code des anderen (Challenge-Response mit Nonce). Jeder erstellt eine Verification-Attestation für den anderen. Bei Reconnect werden sie zugestellt.
-
-### Claim-Link (QR-Code für Events)
-
-Ein Event-Organisator erstellt ein Attestation-Template vorab:
-
-```json
-{
-  "claim": "hat am Community-Workshop 2026 teilgenommen",
-  "display": { "emoji": "🎓", "color": "#5bc0eb", "shape": "star" }
-}
-```
-
-Der Template wird als QR-Code angezeigt. Teilnehmer scannen ihn, authentifizieren sich mit ihrer DID, und der Organisator stellt die Attestation automatisch aus — signiert mit seiner DID, transportiert als JWS.
-
-### Badges / Quests
-
-Ein Quest-System definiert Attestation-Templates für Achievements. Wer ein Quest absolviert, bekommt automatisch die entsprechende Badge-Attestation — ausgestellt vom Quest-Ersteller.
-
 ## Subjects
 
 Das `credentialSubject.id` kann verschiedene Dinge identifizieren:
 
 - **Person:** `did:key:z6Mk...` — die häufigste Verwendung
 - **Projekt, Ort, Veranstaltung:** ID-Format wird in zukünftigen Dokumenten spezifiziert
-
-## Aktuelle Implementierungen
-
-| | WoT Core | Utopia Map | Human Money Core | Spec |
-|---|---|---|---|---|
-| **VC-Version** | 1.1 | — | — | ✅ VC 2.0 |
-| **Format** | Eigenes JSON | Directus API | SD-JWT Trust List | ✅ W3C VC 2.0 |
-| **Proof** | Ed25519Signature2020 | Keine (Directus Auth) | Ed25519 in SD-JWT | ✅ JWS (VC-JOSE-COSE) |
-| **Claim** | `claim: string` | `text: string` | Trust-Level 0-3 | ✅ `claim` Freitext |
-| **Visuell** | Keine | emoji + color + shape | Keine | ✅ `display` Objekt |
-| **Speicherort** | Empfänger | Server (Directus) | Lokale Trust List | ✅ Empfänger (Holder) |
-
-## Anpassungsbedarf
-
-**WoT Core (TypeScript):**
-- VC Context von `2018/credentials/v1` auf `ns/credentials/v2` umstellen
-- `issuanceDate` → `validFrom`
-- `proof`-Objekt entfernen — Attestation als JWS Compact transportieren
-- `typ: "vc+jwt"` und `kid` im JWS-Header setzen
-
-**Human Money Core (Rust):**
-- SD-JWT VC ist bereits JWS-basiert — kein grundlegender Formatwechsel nötig
-- VC Context auf v2 prüfen
-
-## Zukunft (nicht Phase 1)
-
-- **WoT Vocabulary URI:** JSON-LD Context-Dokument unter `https://web-of-trust.de/vocab/v1` hosten (definiert WotAttestation, claim, TrustRating etc.). Für Phase 1 funktioniert der URI als Type-Identifier ohne auflösbares Dokument.
-- **Subjects jenseits von Personen:** Projekte, Orte, Veranstaltungen als `credentialSubject.id` — Format wird bei Bedarf spezifiziert (UUIDs, URLs, DIDs).
-- **Claim-Link Protokoll:** QR-Codes für automatische Badge-Vergabe bei Events — separates Design-Thema.

@@ -226,24 +226,3 @@ Für Fälle wo kein Treffen möglich ist (z.B. Empfehlung durch einen gemeinsame
 4. Bob empfängt sie und kann gegenverifizieren (`counterVerify`)
 
 Die Verifikation ist schwächer als bei einem physischen Treffen — sie beweist nur die Empfehlung durch einen gemeinsamen Kontakt, nicht die physische Identität. Implementierungen DÜRFEN zwischen In-Person- und Remote-Verifikation unterscheiden (z.B. durch verschiedene Claim-Texte).
-
-## Aktuelle Implementierung
-
-| | Spec | WoT Core (aktuell) |
-|---|---|---|
-| **Online-Flow** | Ein QR-Scan → Nonce-Match → Gegen-Verifikation | ✅ Identisch |
-| **Offline-Flow** | Bidirektionaler QR-Scan | ✅ Identisch |
-| **QR-Code-Felder** | `did`, `name`, `enc`, `nonce`, `ts`, `broker` | `fromDid`, `fromPublicKey` (Ed25519), `fromName`, `nonce`, `timestamp` |
-| **Attestation-Format** | VC 2.0 + JWS (VC-JOSE-COSE) | Eigenes Format mit `Ed25519Signature2020` proof |
-| **Zustellung** | DIDComm über Broker | MessageEnvelope über Relay |
-
-## Anpassungsbedarf
-
-- `fromPublicKey` (Ed25519, redundant) durch `enc` (X25519) ersetzen
-- QR-Code-Feldnamen kürzen für QR-Code-Größe
-- Verification als JWS-signiertes VC 2.0 (statt eigenem Format)
-- Zustellung als DIDComm-Nachricht (statt eigenes MessageEnvelope)
-
-## Zukunft (nicht Phase 1)
-
-- **Claim-Link-Protokoll:** QR-Codes für automatische Badge-Vergabe bei Events — separates Design-Thema, siehe [Core 003](003-attestations.md#zukunft-nicht-phase-1).

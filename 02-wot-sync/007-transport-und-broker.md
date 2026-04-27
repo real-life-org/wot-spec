@@ -14,23 +14,23 @@ Dieses Dokument spezifiziert wie Daten zwischen Peers transportiert werden und w
 ## Referenzierte Standards
 
 - **WebSocket** (RFC 6455) — Primärer Transportkanal
-- **DIDComm v2** (DIF) — Plaintext Message Envelope (keine DIDComm-JWE/Authcrypt-Verschluesselung)
+- **DIDComm v2** (DIF) — Plaintext Message Envelope (keine DIDComm-JWE/Authcrypt-Verschlüsselung)
 - **Ed25519** (RFC 8032) — Signatur im Message Envelope
 - **ECIES** (siehe [Sync 005](005-verschluesselung.md)) — 1:1-Verschlüsselung für Inbox-Nachrichten
 
 ## Broker
 
-Ein Broker ist ein immer erreichbarer Peer fuer Store-and-Forward, Log-Sync, Device-Inboxen und Push-Signale. Broker speichern nur verschluesselte Inhalte und Autorisierungs-Metadaten:
+Ein Broker ist ein immer erreichbarer Peer für Store-and-Forward, Log-Sync, Device-Inboxen und Push-Signale. Broker speichern nur verschlüsselte Inhalte und Autorisierungs-Metadaten:
 
-- verschluesselte Log-Eintraege fuer Dokumente (siehe [Sync 006](006-sync-protokoll.md))
-- verschluesselte Inbox-Nachrichten pro Device
-- Capabilities fuer Dokumentzugriff
+- verschlüsselte Log-Einträge für Dokumente (siehe [Sync 006](006-sync-protokoll.md))
+- verschlüsselte Inbox-Nachrichten pro Device
+- Capabilities für Dokumentzugriff
 - Device-Registrierungen pro DID
 - Push-Endpoints
 
-Broker sehen keinen Klartext, keine Inbox-Inhalte und keine Space-Mitgliederlisten. Ein einzelner Broker kann Nachrichten zurueckhalten; Clients mit hoeheren Sicherheitsanforderungen SOLLTEN mehrere Broker parallel nutzen und Heads vergleichen (siehe [Sync 006](006-sync-protokoll.md#censorship--und-split-brain-detection)).
+Broker sehen keinen Klartext, keine Inbox-Inhalte und keine Space-Mitgliederlisten. Ein einzelner Broker kann Nachrichten zurückhalten; Clients mit höheren Sicherheitsanforderungen SOLLTEN mehrere Broker parallel nutzen und Heads vergleichen (siehe [Sync 006](006-sync-protokoll.md#censorship--und-split-brain-detection)).
 
-Das Sync-Protokoll selbst ist peer-agnostisch. Die Broker-Schicht ergaenzt Authentisierung, Capability-Pruefung, Store-and-Forward und Push. Im direkten P2P-Modus faellt diese Broker-Schicht weg; P2P-Authentisierung ist in [Direkter P2P-Sync](#direkter-p2p-sync) spezifiziert.
+Das Sync-Protokoll selbst ist peer-agnostisch. Die Broker-Schicht ergänzt Authentisierung, Capability-Prüfung, Store-and-Forward und Push. Im direkten P2P-Modus fällt diese Broker-Schicht weg; P2P-Authentisierung ist in [Direkter P2P-Sync](#direkter-p2p-sync) spezifiziert.
 
 ## Authentisierung
 
@@ -120,7 +120,7 @@ Der Broker speichert pro DID mindestens `deviceId`, `firstSeenAt`, `lastSeenAt`,
 
 ### Race Conditions
 
-Der Broker MUSS Revocations atomisch anwenden. Wenn Registrierung und Revocation fuer dieselbe `deviceId` konkurrieren, gewinnt die Revocation und die Registrierung wird mit `DEVICE_REVOKED` abgelehnt. Ist eine `deviceId` bereits fuer eine andere DID registriert, MUSS der Broker mit `DEVICE_ID_CONFLICT` ablehnen.
+Der Broker MUSS Revocations atomisch anwenden. Wenn Registrierung und Revocation für dieselbe `deviceId` konkurrieren, gewinnt die Revocation und die Registrierung wird mit `DEVICE_REVOKED` abgelehnt. Ist eine `deviceId` bereits für eine andere DID registriert, MUSS der Broker mit `DEVICE_ID_CONFLICT` ablehnen.
 
 ## Store-and-Forward pro Device
 
@@ -140,7 +140,7 @@ Inbox-Nachrichten werden **pro Device** zwischengespeichert, nicht pro DID. Das 
 - Wenn ein Device für längere Zeit (z.B. 90 Tage) nicht verbindet, DARF der Broker es als inaktiv behandeln und seine ausstehenden Nachrichten löschen
 - Für kritische Nachrichten (Space-Einladungen, Key-Rotationen) SOLLTE der Sender einen Liefernachweis implementieren (z.B. erneutes Senden nach Timeout)
 
-Der pro-Device-Zustellpfad stellt sicher, dass jedes aktive Device kritische Nachrichten wie Space-Einladungen und Key-Rotationen mindestens einmal erhaelt.
+Der pro-Device-Zustellpfad stellt sicher, dass jedes aktive Device kritische Nachrichten wie Space-Einladungen und Key-Rotationen mindestens einmal erhält.
 
 ## Autorisierung (Capabilities)
 
@@ -148,7 +148,7 @@ Der Broker ist E2EE — er kann die Mitgliederliste eines Space nicht lesen (ver
 
 ### Space-Schlüssel am Broker
 
-Der Broker kennt pro Space den `spaceCapabilityVerificationKey` fuer Capability-Pruefung und die `adminDid(s)` fuer Broker-Management-Nachrichten. Members signieren Capabilities mit dem geteilten `spaceCapabilitySigningKey`; Admins signieren Rotation und Admin-Wechsel mit ihrem abgeleiteten Admin Key (siehe [Sync 009](009-gruppen.md#admin-key-ableitung)).
+Der Broker kennt pro Space den `spaceCapabilityVerificationKey` für Capability-Prüfung und die `adminDid(s)` für Broker-Management-Nachrichten. Members signieren Capabilities mit dem geteilten `spaceCapabilitySigningKey`; Admins signieren Rotation und Admin-Wechsel mit ihrem abgeleiteten Admin Key (siehe [Sync 009](009-gruppen.md#admin-key-ableitung)).
 
 ### Capability-Format
 
@@ -177,7 +177,7 @@ Eine Capability ist ein JWS, signiert mit dem **Space Capability Signing Key**:
 | `issuedAt` | ISO 8601 | Ja | Erstellungszeitpunkt |
 | `validUntil` | ISO 8601 | Ja | Ablaufzeitpunkt — nach diesem Moment ist die Capability ungültig |
 
-Der JWS wird mit dem Space Capability Signing Key signiert. Der `kid` im JWS-Header MUSS den Space-Kontext und die Capability-Key-Generation referenzieren: `wot:space:<spaceId>#cap-<generation>`. Der Broker verifiziert mit dem aktuellen Space Capability Verification Key fuer genau diesen Space und diese Generation.
+Der JWS wird mit dem Space Capability Signing Key signiert. Der `kid` im JWS-Header MUSS den Space-Kontext und die Capability-Key-Generation referenzieren: `wot:space:<spaceId>#cap-<generation>`. Der Broker verifiziert mit dem aktuellen Space Capability Verification Key für genau diesen Space und diese Generation.
 
 **Empfohlene Gültigkeitsdauer:**
 
@@ -187,7 +187,7 @@ Der JWS wird mit dem Space Capability Signing Key signiert. Der `kid` im JWS-Hea
 
 ### Capability-Verteilung
 
-Capabilities werden zusammen mit den Space-Schluesseln verteilt:
+Capabilities werden zusammen mit den Space-Schlüsseln verteilt:
 
 - **Bei Einladung:** Der Einladende signiert eine Capability mit dem `spaceCapabilitySigningKey` für den Eingeladenen. Die `space-invite` Inbox-Nachricht enthält Space Content Key, Capability Signing Key und Capability ([Sync 009](009-gruppen.md)).
 - **Bei Key-Rotation (Member-Entfernung):** Der Admin generiert einen neuen Space Content Key und ein neues Capability Key Pair. Alle verbleibenden Members bekommen neuen Content Key + neuen Capability Signing Key + neue Capability.
@@ -255,10 +255,10 @@ Für das persönliche Dokument (Identität, Keys) stellt der User sich seine eig
 
 ## Broker-Kanäle
 
-Der Broker bietet zwei Kanaele:
+Der Broker bietet zwei Kanäle:
 
-- **Log-Sync:** Pull-basierter Austausch von Log-Eintraegen fuer Dokumente. Der Broker kann verbundene Clients ueber neue Eintraege informieren.
-- **Inbox:** Store-and-Forward fuer direkte verschluesselte Nachrichten. Inbox-Nachrichten werden pro aktivem Device vorgehalten und erst nach ACK des jeweiligen Devices geloescht.
+- **Log-Sync:** Pull-basierter Austausch von Log-Einträgen für Dokumente. Der Broker kann verbundene Clients über neue Einträge informieren.
+- **Inbox:** Store-and-Forward für direkte verschlüsselte Nachrichten. Inbox-Nachrichten werden pro aktivem Device vorgehalten und erst nach ACK des jeweiligen Devices gelöscht.
 
 ## Message Envelope (DIDComm-kompatibel)
 
@@ -329,7 +329,7 @@ Der Envelope wird NUR dann als **Signed Message** verpackt, wenn der Body nicht 
 
 ### Signatur (WoT Envelope-JWS)
 
-Wenn ein Envelope signiert wird, geschieht das als **JWS Compact Serialization** — identisch mit unseren Attestations ([Core 002](../01-wot-core/002-signaturen-und-verifikation.md)) und strukturell an DIDComm Signed Messages angelehnt. Anders als beim Plaintext Envelope beanspruchen WoT Envelope-JWS derzeit keine Library-validierte DIDComm-Signed-Message-Kompatibilitaet; dieser Anspruch wird erst mit eigenen Signed-Envelope-Testvektoren erhoben.
+Wenn ein Envelope signiert wird, geschieht das als **JWS Compact Serialization** — identisch mit unseren Attestations ([Core 002](../01-wot-core/002-signaturen-und-verifikation.md)) und strukturell an DIDComm Signed Messages angelehnt. Anders als beim Plaintext Envelope beanspruchen WoT Envelope-JWS derzeit keine Library-validierte DIDComm-Signed-Message-Kompatibilität; dieser Anspruch wird erst mit eigenen Signed-Envelope-Testvektoren erhoben.
 
 1. Plaintext Message mit JCS kanonisieren (RFC 8785)
 2. JCS-Bytes als Base64URL kodieren
@@ -535,19 +535,19 @@ Für die Hintergründe dieser Entscheidung siehe [Research: Interop und Zielgrup
 
 ## Broker-Zuordnung und Multi-Broker
 
-Persoenliche Dokumente werden auf alle Broker repliziert, bei denen der User registriert ist. Space-Dokumente werden auf den Heim-Broker(n) des Space repliziert; die Broker-URL(s) sind Teil der Space-Metadata und werden in Space-Einladungen transportiert.
+Persönliche Dokumente werden auf alle Broker repliziert, bei denen der User registriert ist. Space-Dokumente werden auf den Heim-Broker(n) des Space repliziert; die Broker-URL(s) sind Teil der Space-Metadata und werden in Space-Einladungen transportiert.
 
-Broker kommunizieren NICHT untereinander. Clients synchronisieren mit allen relevanten Brokern und fuehren Konvergenz lokal ueber das Sync-Protokoll und den CRDT-Merge herbei. Ein Space DARF mehrere Heim-Broker haben; alle Members eines Space MÜSSEN bei mindestens einem gemeinsamen Heim-Broker registriert sein.
+Broker kommunizieren NICHT untereinander. Clients synchronisieren mit allen relevanten Brokern und führen Konvergenz lokal über das Sync-Protokoll und den CRDT-Merge herbei. Ein Space DARF mehrere Heim-Broker haben; alle Members eines Space MÜSSEN bei mindestens einem gemeinsamen Heim-Broker registriert sein.
 
-Ein Space-Admin DARF Heim-Broker in der Space-Metadata aendern. Clients migrieren beim naechsten Sync.
+Ein Space-Admin DARF Heim-Broker in der Space-Metadata ändern. Clients migrieren beim nächsten Sync.
 
 ## Push-Notifications
 
-Broker DÜRFEN Push-Signale senden, wenn fuer ein offline Device neue Inbox-Nachrichten oder Log-Eintraege vorliegen. Push-Payloads DÜRFEN keinen Klartext und keine verschluesselten WoT-Payloads enthalten; sie signalisieren nur, dass der Client den Broker erneut abfragen soll.
+Broker DÜRFEN Push-Signale senden, wenn für ein offline Device neue Inbox-Nachrichten oder Log-Einträge vorliegen. Push-Payloads DÜRFEN keinen Klartext und keine verschlüsselten WoT-Payloads enthalten; sie signalisieren nur, dass der Client den Broker erneut abfragen soll.
 
 ## Transport-Agnostik
 
-Das Envelope-Format und die Body-Formate sind transportunabhaengig. WebSocket ist der primaere Phase-1-Transport; andere Transports koennen dieselben Payloads mit transport-spezifischem Framing verwenden.
+Das Envelope-Format und die Body-Formate sind transportunabhängig. WebSocket ist der primäre Phase-1-Transport; andere Transports können dieselben Payloads mit transport-spezifischem Framing verwenden.
 
 ## Direkter P2P-Sync
 
@@ -585,7 +585,7 @@ Im P2P-Modus gibt es keinen "Server" — beide Peers müssen sich gegenseitig au
 9. Beide authentifiziert → Sync kann beginnen
 ```
 
-Die Initiator/Responder-Rolle MUSS vor der Signatur eindeutig festgelegt und in den signierten Input aufgenommen werden. Alle DIDs, Device-IDs und Nonces MÜSSEN Teil des Transcripts sein. Nach erfolgreicher Verifikation kennt jeder Peer die authentische DID und `deviceId` des Gegenuebers.
+Die Initiator/Responder-Rolle MUSS vor der Signatur eindeutig festgelegt und in den signierten Input aufgenommen werden. Alle DIDs, Device-IDs und Nonces MÜSSEN Teil des Transcripts sein. Nach erfolgreicher Verifikation kennt jeder Peer die authentische DID und `deviceId` des Gegenübers.
 
 ### Nonce-Anforderungen
 
@@ -610,7 +610,7 @@ Nur erlaubt zwischen Devices desselben Users (gleiche DID im Handshake).
 
 ### Entfernte Members im P2P-Modus
 
-Im Offline-P2P-Modus gibt es keinen autoritativen Broker-Check fuer aktuelle Membership. Clients SOLLEN Peers als verdaechtig markieren, wenn diese nur Log-Eintraege mit alter `keyGeneration` liefern, und solche Daten nicht mergen, bis Membership ueber eine vertraute Quelle bestaetigt wurde.
+Im Offline-P2P-Modus gibt es keinen autoritativen Broker-Check für aktuelle Membership. Clients SOLLEN Peers als verdächtig markieren, wenn diese nur Log-Einträge mit alter `keyGeneration` liefern, und solche Daten nicht mergen, bis Membership über eine vertraute Quelle bestätigt wurde.
 
 ### Transport-Framing
 

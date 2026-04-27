@@ -78,9 +78,9 @@ Wir verfolgen **selektive DIDComm-Compliance** auf Envelope- und Utility-Ebene, 
 | Schicht | Status | Details |
 |---|---|---|
 | Plaintext Message Format | Library-validiert kompatibel | `id`, `typ`, `type` (URI), `from`, `to`, `created_time`, `body` ([Sync 007](../02-wot-sync/007-transport-und-broker.md#message-envelope-didcomm-kompatibel)); validiert mit `didcomm-node` und `@veramo/did-comm` |
-| JWS Signaturen | WoT-Profil | JWS Compact fuer persistente WoT-Daten. Signierte WoT-Envelopes sind strukturell an DIDComm angelehnt, aber noch nicht als DIDComm Signed Messages library-validiert. |
+| JWS Signaturen | WoT-Profil | JWS Compact für persistente WoT-Daten. Signierte WoT-Envelopes sind strukturell an DIDComm angelehnt, aber noch nicht als DIDComm Signed Messages library-validiert. |
 | Krypto-Primitive | Kompatibel | X25519, AES-256-GCM, Ed25519 |
-| Verschlüsselung | Eigenes Profil (ECIES) | ECIES statt DIDComm Authcrypt (ECDH-1PU). Begründung: siehe [Sync 005](../02-wot-sync/005-verschluesselung.md#warum-ecies-statt-didcomm-authcrypt) |
+| Verschlüsselung | Eigenes Profil (ECIES) | ECIES statt DIDComm Authcrypt (ECDH-1PU). Begründung: siehe [Sync 005](../02-wot-sync/005-verschluesselung.md#didcomm-abgrenzung) |
 | Type-URIs | Kompatibel | `https://web-of-trust.de/protocols/.../1.0` |
 | Message Threading | **Spezifiziert (2026-04-19)** | `thid` und `pthid` optional im Envelope ([Sync 007](../02-wot-sync/007-transport-und-broker.md#threading)) |
 | Trust Ping | Entfernt (2026-04-22) | Presence-Abfrage über Broker, nicht per Peer-Ping |

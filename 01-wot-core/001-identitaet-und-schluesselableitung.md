@@ -3,7 +3,7 @@
 - **Status:** Entwurf
 - **Autoren:** Anton Tranelis, Sebastian Galek
 - **Datum:** 2026-04-23
-- **Scope:** Seed-, Key- und DID-Key-Ableitung fuer WoT Core
+- **Scope:** Seed-, Key- und DID-Key-Ableitung für WoT Core
 - **Depends on:** BIP39, HKDF, Ed25519, X25519
 - **Conformance profile:** `wot-core@0.1`
 
@@ -57,7 +57,7 @@ HKDF-SHA256 mit:
 - **Info:** `"wot/identity/ed25519/v1"`
 - **Ausgabe:** 32 Bytes (Ed25519-Seed)
 
-Kein zusätzliches Key-Stretching — BIP39-PBKDF2 ist ausreichend (siehe [Entschiedene Fragen](#entschiedene-fragen)).
+Kein zusätzliches Key-Stretching — BIP39-PBKDF2 ist bei mindestens 128 Bit Entropie ausreichend und bleibt der einzige Stretching-Schritt.
 
 ### Schlüsselpaar
 
@@ -73,10 +73,10 @@ Aus demselben Seed werden weitere Schlüssel abgeleitet. Jeder Schlüssel verwen
 
 | Schlüssel | HKDF Info | Zweck | Spezifiziert in |
 |-----------|-----------|-------|----------------|
-| Signatur (Master) | `"wot/identity/ed25519/v1"` | Identität, Attestations | Dieses Dokument |
-| Verschlüsselung | `"wot/encryption/x25519/v1"` | Asymmetrische Verschlüsselung (X25519) | [Spec 005](../02-wot-sync/005-verschluesselung.md) |
-| Personal Doc | `"wot/personal-doc/v1"` | Symmetrische Verschlüsselung des Personal Doc (AES-256) | [Spec 010](../02-wot-sync/010-personal-doc.md) |
-| Space Admin (pro Space) | `"wot/space-admin/<canonical-lowercase-uuid>/v1"` | Space-spezifischer Admin Key (Ed25519). Nur für Admins eines Spaces. IKM ist der 64-Byte BIP39-Seed (nicht der Ed25519-Identity-Seed). | [Spec 005](../02-wot-sync/005-verschluesselung.md#admin-key-abgeleitet) |
+| Identity Key | `"wot/identity/ed25519/v1"` | Identität, Attestations | Dieses Dokument |
+| Verschlüsselung | `"wot/encryption/x25519/v1"` | Asymmetrische Verschlüsselung (X25519) | [Sync 005](../02-wot-sync/005-verschluesselung.md) |
+| Personal Doc | `"wot/personal-doc/v1"` | Symmetrische Verschlüsselung des Personal Doc (AES-256) | [Sync 010](../02-wot-sync/010-personal-doc.md) |
+| Space Admin (pro Space) | `"wot/space-admin/<canonical-lowercase-uuid>/v1"` | Space-spezifischer Admin Key (Ed25519). Nur für Admins eines Spaces. IKM ist der 64-Byte BIP39-Seed (nicht der Ed25519-Identity-Seed). | [Sync 005](../02-wot-sync/005-verschluesselung.md#admin-key-abgeleitet) |
 
 Alle Schlüssel sind deterministisch aus demselben Seed ableitbar. Durch die verschiedenen Info-Strings sind sie kryptographisch unabhängig voneinander.
 
@@ -84,12 +84,12 @@ Alle Schlüssel sind deterministisch aus demselben Seed ableitbar. Durch die ver
 
 ### Multi-Device — Shared-Seed-Modell
 
-In der aktuellen Spec-Version verwenden **alle Geräte eines Users denselben Seed**. Geräte werden über zufällige Device-UUIDs unterschieden, nicht über eigene Schlüsselpaare. Jedes Gerät generiert beim ersten Start eine UUID und nutzt den Master-Schlüssel für alle Signaturen.
+In der aktuellen Spec-Version verwenden **alle Geräte eines Users denselben Seed**. Geräte werden über zufällige Device-UUIDs unterschieden, nicht über eigene Schlüsselpaare. Jedes Gerät generiert beim ersten Start eine UUID und nutzt den Identity Key für alle Signaturen.
 
 **Konsequenzen dieses Modells:**
 
 - **Einfaches Onboarding:** Mnemonic eingeben, Seed wiederherstellen, Gerät ist vollwertig
-- **Kein Master-Gerät nötig:** Alle Geräte sind kryptographisch gleichwertig
+- **Kein primäres Gerät nötig:** Alle Geräte sind kryptographisch gleichwertig
 - **Cross-Device-Sync direkt möglich:** Alle Geräte können alles entschlüsseln und signieren
 - **Device-Revocation ist kosmetisch:** Wer den Seed extrahiert, kann jede beliebige Device-UUID generieren — eine widerrufene UUID wird durch eine neue ersetzt
 - **Seed-Diebstahl ist katastrophal:** Ein kompromittiertes Gerät bedeutet Kompromittierung aller Geräte
@@ -117,26 +117,3 @@ Wie der Schutz konkret umgesetzt wird — Verschlüsselung at rest, Biometrie, H
 ## Migration (Schlüsselrotation)
 
 Wenn eine Implementierung ihren Ableitungspfad ändern muss um dieser Spec zu entsprechen, werden bestehende Identitäten über Schlüsselrotation migriert. Siehe [Identity Migration](../research/identity-migration.md) (Entwurf).
-
-## Aktuelle Implementierungen
-
-Beide Implementierungen müssen Änderungen vornehmen um dieser Spec zu entsprechen:
-
-| | WoT Core | Human Money Core | Spec |
-|---|---|---|---|
-| **Wortliste** | Deutsch (custom) | Englisch (Standard) | Beliebige gültige BIP39 |
-| **Entropie** | 128 Bit | Konfigurierbar | Mindestens 128 Bit |
-| **Seed-Bytes** | Erste 32 Bytes | Volle 64 Bytes | **Volle 64 Bytes** |
-| **Passphrase** | `""` (leer) | `""` (leer) | `""` (immer leer) |
-| **Stretching** | Keines | PBKDF2 100k Runden | **Keines** (BIP39-PBKDF2 reicht) |
-| **HKDF Info** | `"wot-identity-v1"` | `"human-money-core/ed25519"` | **`"wot/identity/ed25519/v1"`** |
-| **Ed25519** | @noble/ed25519 | ed25519_dalek | Beliebige konforme Impl. |
-| **DID** | did:key + 0xed01 + Base58 | did:key + 0xed01 + Base58 | did:key + 0xed01 + Base58 |
-
-## Entschiedene Fragen
-
-### Key-Stretching — kein Extra-Stretching
-
-Human Money Core verwendet PBKDF2 mit 100k Runden zusätzlich zum BIP39-PBKDF2. **Die Spec verzichtet darauf.** Begründung: Bei 128 Bit Entropie aus einem korrekten BIP39-Mnemonic sind 2^128 Kombinationen physikalisch nicht durchprobierbar — zusätzliches Stretching bringt keinen realen Sicherheitsgewinn. Die Kosten (~500ms Unlock-Verzögerung auf Mobilgeräten) überwiegen den Nutzen. Sebastian stimmt zu.
-
-**Anpassungsbedarf HMC:** Sebastian entfernt das zusätzliche PBKDF2. Das ändert die abgeleiteten Keys — eine Migration bestehender HMC-Identitäten ist nötig.

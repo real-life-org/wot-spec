@@ -3,7 +3,7 @@
 - **Status:** Entwurf
 - **Autoren:** Anton Tranelis
 - **Datum:** 2026-04-23
-- **Scope:** DID-Dokumente, Resolution-Interface und DID-Methoden-Profile fuer WoT
+- **Scope:** DID-Dokumente, Resolution-Interface und DID-Methoden-Profile für WoT
 - **Depends on:** Core 001, DID Core, did:key
 - **Conformance profile:** `wot-core@0.1`
 
@@ -125,7 +125,7 @@ Ein DID-Dokument kann in zwei Zuständen vorliegen:
 | Zustand | Felder | Wann | Was geht |
 |---|---|---|---|
 | **Signaturfähig** | `verificationMethod`, `authentication`, `assertionMethod` | Immer — für did:key aus der DID ableitbar | Signatur-Verifikation, Broker-Auth |
-| **Kommunikationsfähig** | Zusätzlich: `keyAgreement`, `service` | Erst nach Erstkonakt (QR-Scan oder Profil-Service) | Verschlüsselung, Inbox-Zustellung |
+| **Kommunikationsfähig** | Zusätzlich: `keyAgreement`, `service` | Erst nach Erstkontakt (QR-Scan oder Profil-Service) | Verschlüsselung, Inbox-Zustellung |
 
 Für did:key ohne vorherigen Kontakt liefert `resolve()` ein **signaturfähiges** Dokument — `keyAgreement` ist leer weil der X25519-Key nicht aus der DID ableitbar ist (separater HKDF-Pfad). Das reicht um Attestations zu **verifizieren**, aber nicht um Nachrichten zu **verschlüsseln**.
 
@@ -231,8 +231,8 @@ Der Client prüft die JWS-Signatur und die `version`-Monotonie (siehe [Sync 008 
 
 | Situation | Quelle | Was der Client bekommt |
 |---|---|---|
-| Erstkonakt offline (QR-Scan) | QR-Code-Felder | Bootstrap-Dokument (Provisorium) |
-| Erstkonakt online (Empfehlung) | Profil-Service | Vollständiges Profil + DID-Dokument |
+| Erstkontakt offline (QR-Scan) | QR-Code-Felder | Bootstrap-Dokument (Provisorium) |
+| Erstkontakt online (Empfehlung) | Profil-Service | Vollständiges Profil + DID-Dokument |
 | Bekannter Kontakt | Lokaler Cache | Gecachtes DID-Dokument |
 | Profil-Änderung (Name, Bio) | Profil-Service (Pull) oder Inbox (Push) | Aktualisiertes Profil |
 | Key-Rotation (Phase 2) | Inbox (Push) + Profil-Service (Pull) | Neues DID-Dokument |
@@ -289,7 +289,7 @@ resolve("did:webvh:example.com:user:alice")
 | HTTPS (Profil-Service) | Standard-Resolution | Ja (did:webvh-Spec) |
 | Sync-Layer (bilateral) | Offline-Sync zwischen Peers | WoT-Extension |
 | Inbox-Nachricht | Key-Rotation-Benachrichtigung | WoT-Extension |
-| QR-Code | Genesis-Dokument beim Erstkonakt | WoT-Extension |
+| QR-Code | Genesis-Dokument beim Erstkontakt | WoT-Extension |
 
 Solange das Log **auch** über HTTPS auf dem Profil-Service verfügbar ist, bleibt die Nutzung did:webvh-spec-konform. Die zusätzlichen Kanäle (Sync, Inbox, QR) sind WoT-spezifische Erweiterungen für Offline-Szenarien.
 
@@ -325,45 +325,3 @@ Space-Admin-Keys (siehe [Sync 005](../02-wot-sync/005-verschluesselung.md#admin-
 - Nicht verknüpfbar mit der Haupt-DID (Privacy)
 
 Für Admin-Keys gibt es keinen Grund für DID-Dokumente oder Key-Rotation — sie werden bei Space-Rotation einfach neu abgeleitet.
-
-## Auswirkungen auf andere Spec-Dokumente
-
-| Dokument | Änderung |
-|---|---|
-| **Core 001** | Erzeugt Schlüsselmaterial. DID-Encoding wandert hierher. Referenziert dieses Dokument für "wie wird daraus eine DID". |
-| **Core 002** | Signatur-Verifikation nutzt `resolve(did).verificationMethod` statt direktem `didToPublicKeyBytes()`. |
-| **Core 003** | Issuer-Verifikation über `resolve()`. |
-| **Core 004** | QR-Code-Felder (`enc`, `broker`) dienen als Bootstrap für den Resolver. Werden ab Phase 2 optional. |
-| **Sync 005** | Encryption Key Discovery: primär über `resolve(did).keyAgreement`. Die bisherigen Transport-Hacks (enc-Feld, encryptionPublicKey) werden Resolver-Quellen. |
-| **Sync 007** | Broker-Auth und Inbox-Routing über `resolve()`. |
-| **Sync 008** | Profil-Service wird eine DID-Dokument-Quelle neben dem Profil. Neuer Endpoint `/p/{did}/did` für DID-Dokumente. |
-
-## Aktuelle Implementierung
-
-| | WoT Core (aktuell) | Spec (dieses Dokument) |
-|---|---|---|
-| **DID-Methode** | did:key (hardcoded) | DID-Methoden-agnostisch via resolve() |
-| **DID-Auflösung** | `didToPublicKeyBytes()` — extrahiert Key direkt aus DID | `resolve()` → DID-Dokument → Key aus Dokument |
-| **Encryption Key** | `getEncryptionPublicKeyBytes()` separat | `resolve(did).keyAgreement[0]` |
-| **Broker-URL** | Profil-Service `brokers`-Feld | `resolve(did).service[0].serviceEndpoint` |
-| **Admin-Keys** | did:key | did:key (bleibt) |
-
-## Anpassungsbedarf
-
-**In der Implementierung:**
-
-1. `crypto/did.ts` → `resolve()`-Funktion die DID-Dokumente liefert
-2. `didToPublicKeyBytes()` → intern `resolve()` aufrufen, Key aus Dokument extrahieren (Rückwärtskompatibilität)
-3. Encryption Key über `resolve().keyAgreement` statt separatem Lookup
-4. Broker-URL über `resolve().service` statt separatem Profil-Feld
-
-**In der Spec:**
-
-- Core 001: DID-Encoding-Details entfernen, auf dieses Dokument verweisen
-- BIP39-Wortlisten-Semantik in Core 001 korrigieren (siehe unten)
-
-## Zukunft (Phase 2)
-
-- **DID-Methode:** Kandidaten sind did:webvh (verifiable History, JSONL-Log) und did:keri (Key Event Log, Pre-Rotation). Entscheidung wenn Phase-1-Implementierung läuft. Die resolve()-Abstraktion ermöglicht den Wechsel ohne Breaking Change. Siehe [identity-migration.md](../research/identity-migration.md) und [identitaet-alternativen.md](../research/identitaet-alternativen.md).
-- **DID-Dokument-Signatur:** Für did:key nicht nötig (deterministisch). Für did:webvh Teil des Logs. Für den Profil-Service bereits als JWS spezifiziert.
-- **DID-Dokument-Versionierung:** Für did:key gibt es keine Versionen (statisch). Für did:webvh monoton und hash-verkettet (Teil der Methoden-Spec).

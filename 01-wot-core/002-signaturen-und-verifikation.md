@@ -29,7 +29,7 @@ Dieses Dokument spezifiziert wie Daten im Web of Trust signiert und verifiziert 
 ## Signaturalgorithmus
 
 - **Algorithmus:** Ed25519 (RFC 8032)
-- **Schlüssel:** Abgeleitet wie in [Spec 001](001-identitaet-und-schluesselableitung.md) spezifiziert
+- **Schlüssel:** Abgeleitet wie in [Core 001](001-identitaet-und-schluesselableitung.md) spezifiziert
 - **Signaturgröße:** 64 Bytes
 
 ## Signaturformat: JWS Compact Serialization (RFC 7515)
@@ -46,9 +46,9 @@ BASE64URL(header) . BASE64URL(payload) . BASE64URL(signature)
 { "alg": "EdDSA", "typ": "<kontextspezifisch>", "kid": "<DID-URL>" }
 ```
 
-`kid` (Key Identifier) ist **PFLICHT** in jedem WoT-JWS. Es identifiziert welcher konkrete Key die Signatur erzeugt hat. Fuer DID-gebundene Signaturen ist `kid` eine DID-URL mit Fragment (z.B. `did:key:z6Mk...#sig-0`). Der Verifier nutzt `kid` um ueber `resolve()` ([Core 005](005-did-resolution.md)) den richtigen Public Key zu finden. In Phase 1 ist das Fragment immer `#sig-0` (einziger Key). In Phase 2 (Per-Device-Keys) zeigt es auf den spezifischen Device-Key.
+`kid` (Key Identifier) ist **PFLICHT** in jedem WoT-JWS. Es identifiziert welcher konkrete Key die Signatur erzeugt hat. Für DID-gebundene Signaturen ist `kid` eine DID-URL mit Fragment (z.B. `did:key:z6Mk...#sig-0`). Der Verifier nutzt `kid` um über `resolve()` ([Core 005](005-did-resolution.md)) den richtigen Public Key zu finden. In Phase 1 ist das Fragment immer `#sig-0` (einziger Key). In Phase 2 (Per-Device-Keys) zeigt es auf den spezifischen Device-Key.
 
-Fuer nicht-DID-gebundene Signaturen DARF `kid` ein kontextspezifischer Key-Identifier sein. Beispiel: Space-Capabilities werden mit dem `spaceCapabilitySigningKey` signiert; ihr `kid` ist `wot:space:<spaceId>#cap-<generation>` und wird gegen den beim Broker registrierten Space Capability Verification Key geprueft, nicht ueber DID-Resolution.
+Für nicht-DID-gebundene Signaturen DARF `kid` ein kontextspezifischer Key-Identifier sein. Beispiel: Space-Capabilities werden mit dem `spaceCapabilitySigningKey` signiert; ihr `kid` ist `wot:space:<spaceId>#cap-<generation>` und wird gegen den beim Broker registrierten Space Capability Verification Key geprüft, nicht über DID-Resolution.
 
 Das `typ`-Feld identifiziert den Inhalt des JWS. Kontextspezifische Werte:
 
@@ -77,7 +77,7 @@ Der Payload wird als Byte-Folge behandelt — nicht neu serialisiert. Der Sender
 - Selbstbeschreibend — Header enthält den Algorithmus
 - W3C-kompatibel (Verifiable Credentials nutzen JWS)
 - Empfänger braucht keine Vorab-Kenntnis über das Format
-- SD-JWT (Selective Disclosure) baut auf JWS auf — Sebastians Trust Lists sind damit eine natürliche Erweiterung
+- SD-JWT (Selective Disclosure) baut auf JWS auf und bleibt damit als Extension anschlussfähig
 
 JWS ist das **einzige Signaturformat** im WoT-Protokoll. Attestations, Message Envelopes und Log-Einträge verwenden alle JWS Compact Serialization. Ein Format, eine Toolchain.
 
@@ -123,13 +123,13 @@ Für die Verifikation werden benötigt:
 
 1. Die signierten Daten (oder deren JWS-Repräsentation)
 2. Das `kid` aus dem JWS-Header
-3. Den zum `typ` passenden Key-Resolver (DID-Resolution fuer DID-gebundene Signaturen, Space-Key-Registry fuer Space-Capabilities)
+3. Den zum `typ` passenden Key-Resolver (DID-Resolution für DID-gebundene Signaturen, Space-Key-Registry für Space-Capabilities)
 
 **Ablauf:**
 
 1. JWS in drei Segmente splitten: `headerB64.payloadB64.signatureB64`
 2. Header dekodieren und `alg`-Feld prüfen — siehe Algorithmus-Validierung unten
-3. Public Key ueber `kid` aufloesen: DID-URL → `resolve(did)` → `verificationMethod`; Space-Capability → registrierter Space Capability Verification Key
+3. Public Key über `kid` auflösen: DID-URL → `resolve(did)` → `verificationMethod`; Space-Capability → registrierter Space Capability Verification Key
 4. Signing Input: **exakt die empfangenen Bytes** `headerB64 + "." + payloadB64` — keine Re-Serialisierung, keine Re-Kanonisierung
 5. Signatur aus Base64URL dekodieren
 6. Ed25519-Signatur gegen Signing Input und Public Key verifizieren
@@ -140,13 +140,13 @@ Kein externer Key-Server oder Zertifikatskette nötig — die DID selbst enthäl
 
 ### kid-Konsistenz (MUSS)
 
-Der Verifier MUSS pruefen, dass `kid` mit dem Signierer- oder Kontext-Identifier im Payload konsistent ist. Konkret:
+Der Verifier MUSS prüfen, dass `kid` mit dem Signierer- oder Kontext-Identifier im Payload konsistent ist. Konkret:
 
 - Bei Attestations: `kid` MUSS zur DID in `iss` / `issuer` passen
 - Bei Log-Einträgen: `kid` MUSS zur DID in `authorKid` passen
 - Bei Space-Capabilities: `kid` MUSS `spaceId` und `generation` referenzieren (Format: `wot:space:<spaceId>#cap-<generation>`)
 
-"Passen" bedeutet bei DID-gebundenen Signaturen: die DID im `kid` (ohne Fragment) MUSS identisch sein mit der DID im Payload. Bei Space-Capabilities MUSS der Space-Kontext im `kid` mit dem Payload uebereinstimmen. Andernfalls MUSS der Verifier den JWS ablehnen — ein Mismatch deutet auf Manipulation hin.
+"Passen" bedeutet bei DID-gebundenen Signaturen: die DID im `kid` (ohne Fragment) MUSS identisch sein mit der DID im Payload. Bei Space-Capabilities MUSS der Space-Kontext im `kid` mit dem Payload übereinstimmen. Andernfalls MUSS der Verifier den JWS ablehnen — ein Mismatch deutet auf Manipulation hin.
 
 ### Algorithmus-Validierung (MUSS)
 
@@ -187,27 +187,5 @@ Vollständige, verifizierbare Test-Vektoren mit konkreten Krypto-Werten finden s
 Eine konforme Implementierung MUSS alle drei Test-Vektoren reproduzieren können.
 
 **Wichtig:** Ed25519 signiert direkt die Bytes des Signing Input — kein SHA-256 Hash dazwischen. Ed25519 hasht intern mit SHA-512. SHA-256 wird nur für andere Zwecke im Protokoll verwendet (z.B. Content-Adressierung), nicht für die JWS-Signatur selbst.
-
-## Aktuelle Implementierungen
-
-| | WoT Core | Human Money Core | Spec |
-|---|---|---|---|
-| **Signaturformat** | JWS Compact | Detached Signature | ✅ JWS Compact (Detached als Extension) |
-| **Kanonisierung** | JSON.stringify | JCS (RFC 8785) | ✅ JCS (RFC 8785) |
-| **Hash** | SHA-256 | SHA3-256 | ✅ SHA-256 |
-| **Signatur-Encoding** | Base64URL | Base58 | ✅ Base64URL |
-| **Crypto-Bibliothek** | Web Crypto + @noble | ed25519_dalek | ✅ Beliebige konforme Impl. |
-
-## Anpassungsbedarf
-
-**WoT Core (TypeScript):**
-- Kanonisierung von `JSON.stringify` auf JCS (RFC 8785) umstellen
-
-**Human Money Core (Rust):**
-- Hash von SHA3-256 auf SHA-256 umstellen
-- Signatur-Encoding von Base58 auf Base64URL umstellen
-- JWS als Core-Signaturformat implementieren (Detached bleibt für Payment-Extension)
-
-Diese Änderungen betreffen die Signatur-Formate, nicht die Schlüsselableitung — bestehende DIDs bleiben gültig.
 
 Das Message Envelope Format wird in [Sync 007](../02-wot-sync/007-transport-und-broker.md) spezifiziert.
