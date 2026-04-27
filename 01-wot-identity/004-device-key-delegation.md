@@ -148,6 +148,44 @@ Ein Verifier einer delegierten Attestation MUSS:
 
 Delegierte Attestations MUESSEN einen `iat`-Claim enthalten. Ohne `iat` kann der Verifier nicht pruefen, ob das Device zum Signaturzeitpunkt autorisiert war.
 
+### Pseudocode
+
+```text
+verifyDelegatedAttestationBundle(bundle, requiredCapability):
+  require bundle.type == "wot-delegated-attestation-bundle/v1"
+
+  attHeader, attPayload = decodeJws(bundle.attestationJws)
+  bindingHeader, bindingPayload = decodeJws(bundle.deviceKeyBindingJws)
+
+  require bindingHeader.alg == "EdDSA"
+  require bindingHeader.typ == "wot-device-key-binding+jwt"
+  require bindingPayload.type == "device-key-binding"
+
+  identityDid = didFromKid(bindingHeader.kid)
+  require bindingPayload.iss == identityDid
+  verifyJws(bundle.deviceKeyBindingJws, resolve(identityDid, bindingHeader.kid))
+
+  require bindingPayload.sub == bindingPayload.deviceKid
+  require attHeader.kid == bindingPayload.deviceKid
+  require bindingPayload.devicePublicKeyMultibase == publicKeyFromKid(bindingPayload.deviceKid)
+
+  verifyJws(bundle.attestationJws, publicKeyFromKid(bindingPayload.deviceKid))
+
+  require attPayload.iss == bindingPayload.iss
+  require attPayload.issuer == bindingPayload.iss
+  require requiredCapability in bindingPayload.capabilities
+  require attPayload.iat exists
+
+  attestationTime = instantFromUnix(attPayload.iat)
+  require instantFromIso(bindingPayload.validFrom) <= attestationTime
+  require attestationTime <= instantFromIso(bindingPayload.validUntil)
+
+  apply Trust-001 verification rules to attPayload
+  return ok
+```
+
+Fuer normale Attestations ist `requiredCapability = "sign-attestation"`; fuer Verification-Attestations ist `requiredCapability = "sign-verification"`.
+
 ## Revocation
 
 Phase 2 hat keine starke temporale Revocation. Widerrufe von Device Keys koennen ueber Profil-Service, Inbox oder Personal Doc verteilt werden, aber Offline-Verifier erfahren sie erst beim naechsten Update.

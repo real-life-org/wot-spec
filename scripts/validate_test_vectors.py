@@ -12,6 +12,7 @@ from cryptography.hazmat.primitives.kdf.hkdf import HKDF
 
 ROOT = Path(__file__).resolve().parents[1]
 VECTOR = ROOT / "test-vectors" / "phase-1-interop.json"
+DEVICE_VECTOR = ROOT / "test-vectors" / "device-delegation.json"
 B58_ALPHABET = "123456789ABCDEFGHJKLMNPQRSTUVWXYZabcdefghijkmnopqrstuvwxyz"
 
 
@@ -31,6 +32,15 @@ def b58encode(data: bytes) -> str:
         out = B58_ALPHABET[rem] + out
     pad = len(data) - len(data.lstrip(b"\x00"))
     return "1" * pad + (out or "1")
+
+
+def b58decode(value: str) -> bytes:
+    num = 0
+    for char in value:
+        num = num * 58 + B58_ALPHABET.index(char)
+    data = num.to_bytes((num.bit_length() + 7) // 8, "big")
+    pad = len(value) - len(value.lstrip("1"))
+    return b"\x00" * pad + data
 
 
 def jcs(value) -> bytes:
@@ -68,6 +78,16 @@ def multibase_ed(public_key: bytes) -> str:
     return "z" + b58encode(bytes.fromhex("ed01") + public_key)
 
 
+def ed_public_from_did_key(did_or_kid: str) -> bytes:
+    did = did_or_kid.split("#", 1)[0]
+    if not did.startswith("did:key:z"):
+        raise ValueError("expected did:key")
+    decoded = b58decode(did[len("did:key:z") :])
+    if not decoded.startswith(bytes.fromhex("ed01")):
+        raise ValueError("expected Ed25519 did:key")
+    return decoded[2:]
+
+
 def multibase_x(public_key: bytes) -> str:
     return "z" + b58encode(bytes.fromhex("ec01") + public_key)
 
@@ -77,6 +97,45 @@ def verify_jws(jws: str, public_key: bytes) -> None:
     ed25519.Ed25519PublicKey.from_public_bytes(public_key).verify(
         b64u_decode(sig_b64), f"{header_b64}.{payload_b64}".encode("ascii")
     )
+
+
+def decode_jws(jws: str) -> tuple[dict, dict]:
+    header_b64, payload_b64, _ = jws.split(".")
+    return json.loads(b64u_decode(header_b64)), json.loads(b64u_decode(payload_b64))
+
+
+def iso_to_unix(value: str) -> int:
+    from datetime import datetime
+
+    return int(datetime.fromisoformat(value.replace("Z", "+00:00")).timestamp())
+
+
+def verify_delegated_attestation_bundle(bundle: dict, required_capability: str = "sign-attestation") -> None:
+    assert bundle["type"] == "wot-delegated-attestation-bundle/v1"
+
+    att_header, att_payload = decode_jws(bundle["attestationJws"])
+    binding_header, binding_payload = decode_jws(bundle["deviceKeyBindingJws"])
+
+    assert binding_header["alg"] == "EdDSA"
+    assert binding_header["typ"] == "wot-device-key-binding+jwt"
+    assert binding_payload["type"] == "device-key-binding"
+    assert binding_header["kid"].split("#", 1)[0] == binding_payload["iss"]
+
+    identity_pub = ed_public_from_did_key(binding_header["kid"])
+    verify_jws(bundle["deviceKeyBindingJws"], identity_pub)
+
+    assert binding_payload["sub"] == binding_payload["deviceKid"]
+    assert att_header["kid"] == binding_payload["deviceKid"]
+    assert binding_payload["devicePublicKeyMultibase"] == multibase_ed(ed_public_from_did_key(binding_payload["deviceKid"]))
+
+    device_pub = ed_public_from_did_key(binding_payload["deviceKid"])
+    verify_jws(bundle["attestationJws"], device_pub)
+
+    assert att_payload["issuer"] == binding_payload["iss"]
+    assert att_payload["iss"] == binding_payload["iss"]
+    assert required_capability in binding_payload["capabilities"]
+    assert "iat" in att_payload
+    assert iso_to_unix(binding_payload["validFrom"]) <= att_payload["iat"] <= iso_to_unix(binding_payload["validUntil"])
 
 
 def main() -> None:
@@ -173,6 +232,33 @@ def main() -> None:
     verify_jws(sd["issuer_signed_jwt"], ed_pub)
     assert sd["sd_jwt_compact"] == f"{sd['issuer_signed_jwt']}~{disclosure.decode('ascii')}~"
     print("sd-jwt vc ok")
+
+    device_data = json.loads(DEVICE_VECTOR.read_text(encoding="utf-8"))
+    device = device_data["device"]
+    device_seed = bytes.fromhex(device["seed_hex"])
+    device_pub = ed_public(device_seed)
+    assert device_pub.hex() == device["ed25519_public_hex"]
+    assert did_key_ed(device_pub) == device["did"]
+    assert multibase_ed(device_pub) == device["publicKeyMultibase"]
+
+    binding = device_data["device_key_binding_jws"]
+    assert decode_jws(binding["jws"]) == (binding["header"], binding["payload"])
+    assert hashlib.sha256(jcs(binding["payload"])).hexdigest() == binding["payload_jcs_sha256"]
+    verify_jws(binding["jws"], ed_pub)
+    print("device key binding jws ok")
+
+    delegated = device_data["delegated_attestation_bundle"]
+    assert decode_jws(delegated["attestationJws"]) == (delegated["attestationHeader"], delegated["attestationPayload"])
+    verify_delegated_attestation_bundle(delegated["bundle"])
+    print("delegated attestation bundle ok")
+
+    for name, invalid in device_data["invalid_cases"].items():
+        try:
+            verify_delegated_attestation_bundle(invalid["bundle"])
+        except Exception:
+            continue
+        raise AssertionError(f"invalid delegated-attestation case accepted: {name}")
+    print("delegated attestation invalid cases ok")
 
 
 if __name__ == "__main__":

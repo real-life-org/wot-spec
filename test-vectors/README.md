@@ -241,6 +241,7 @@ Eine konforme Implementierung MUSS:
 4. Fuer alle JCS-Test-Vektoren dieselben SHA-256 Hashes erzeugen.
 5. Den Attestation-VC-JWS aus den Phase-1-Interop-Vektoren verifizieren koennen.
 6. Die Phase-1-Interop-Vektoren in [`phase-1-interop.md`](phase-1-interop.md) reproduzieren koennen.
+7. Die Device-Delegation-Vektoren in [`device-delegation.json`](device-delegation.json) verifizieren und die Negativfaelle ablehnen koennen.
 
 Wenn diese Tests bestehen, ist die kryptographische Basis interoperabel.
 
@@ -257,3 +258,4 @@ Die folgenden Vektoren sind in [`phase-1-interop.md`](phase-1-interop.md) dokume
 - **Admin Key Ableitung** - HKDF mit Space-ID im Info-String.
 - **Personal Doc Key** - deterministische Document-ID.
 - **SD-JWT VC** (HMC) - Trust-List-Signatur, Disclosure-Hashes, Selective Disclosure.
+- **Device Delegation** - DeviceKeyBinding-JWS, Delegated-Attestation-Bundle und Negativfaelle fuer abgelaufene Delegation, fehlende Capability und `kid`-Mismatch.

@@ -85,7 +85,12 @@
         "schemas/device-key-binding.schema.json",
         "schemas/delegated-attestation-bundle.schema.json"
       ],
-      "test_vectors": []
+      "test_vectors": [
+        {
+          "file": "test-vectors/device-delegation.json",
+          "sections": ["device_key_binding_jws", "delegated_attestation_bundle", "invalid_cases"]
+        }
+      ]
     },
     "wot-rls@0.1": {
       "description": "Real-Life-Extension-Felder für visuelle Badges, Events und Orte.",
