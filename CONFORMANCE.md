@@ -82,9 +82,9 @@ Eine Implementierung ist `wot-sync@0.1`-konform, wenn sie zusaetzlich `wot-ident
 
 ### Transport und Broker
 
-- DIDComm-v2-kompatible Plaintext Messages mit `typ: "application/didcomm-plain+json"` erzeugen und parsen.
-- Envelope-Testvektoren mit mindestens einer etablierten DIDComm-v2-Library validieren.
-- DIDComm-Envelopes nur als ephemeres Transport-Framing behandeln; persistente WoT-Objekte bleiben JWS-/Payload-Objekte im Body.
+- WoT Plaintext Envelopes erzeugen und parsen, deren JSON-Shape DIDComm-v2-Plaintext-kompatibel ist und `typ: "application/didcomm-plain+json"` setzt.
+- Envelope-Testvektoren mit mindestens einer etablierten DIDComm-v2-Library validieren. Diese Validierung prueft nur die Envelope-Kompatibilitaet, nicht DIDComm-JWE/Authcrypt oder DIDComm-Mediator-Protokolle.
+- WoT Envelopes nur als ephemeres Transport-Framing behandeln; persistente WoT-Objekte bleiben JWS-/Payload-Objekte im Body.
 - Broker-Challenge-Response mit DID-Signaturen umsetzen.
 - Capabilities als JWS verifizieren.
 - Inbox-Nachrichten pro Device zustellen und ACKs verarbeiten.

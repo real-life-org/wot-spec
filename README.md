@@ -14,13 +14,13 @@ Das Protokoll besteht aus drei Schichten:
 
 **WoT Sync** — Verschlüsselter Local-First Sync mit E2EE, Append-only Logs und Broker-as-Peer.
 
-WoT definiert keine neuen Standards — es kombiniert bestehende zu einem interoperablen Profil:
+WoT definiert keine neuen Standards — es kombiniert bestehende Standards und bewusst begrenzte Kompatibilitaetsprofile:
 
 | Standard | Verwendung |
 |----------|-----------|
 | [DID](https://www.w3.org/TR/did-core/) (W3C) | Dezentrale Identität (DID-Methoden-agnostisch, Phase 1: `did:key`) |
 | [Verifiable Credentials](https://www.w3.org/TR/vc-data-model-2.0/) (W3C) | Signierte Aussagen (Attestations) |
-| [DIDComm v2.1](https://identity.foundation/didcomm-messaging/spec/v2.1/) (DIF) | Selektives Plaintext-Transport-Framing in WoT Sync; Details und Grenzen in [Sync 003](03-wot-sync/003-transport-und-broker.md) |
+| [DIDComm v2.1](https://identity.foundation/didcomm-messaging/spec/v2.1/) (DIF) | Kompatibles Plaintext-Transport-Framing in WoT Sync. Der Anspruch gilt nur fuer ephemere Envelopes, nicht fuer DIDComm-JWE/Authcrypt oder persistente WoT-Objekte. Details in [Sync 003](03-wot-sync/003-transport-und-broker.md). |
 | [Ed25519](https://datatracker.ietf.org/doc/html/rfc8032) (RFC 8032) | Signaturen |
 | [JWS](https://datatracker.ietf.org/doc/html/rfc7515) (RFC 7515) | Signaturformat |
 | [JCS](https://datatracker.ietf.org/doc/html/rfc8785) (RFC 8785) | Kanonisierung |
@@ -56,7 +56,7 @@ WoT definiert keine neuen Standards — es kombiniert bestehende zu einem intero
 | [Conformance Kit](conformance/) | Maschinenlesbares Profil-Manifest und Validierungsbefehle |
 | [GLOSSARY](GLOSSARY.md) | Normative Begriffe und konsistente Terminologie |
 | [CONTRIBUTING](CONTRIBUTING.md) | Beitragsregeln und PR-Erwartungen |
-| [Test-Vektoren](test-vectors/) | Normative Krypto-Werte und DIDComm-Envelope-Validierung fuer Interoperabilitaets-Tests |
+| [Test-Vektoren](test-vectors/) | Normative Krypto-Werte und Transport-Envelope-Validierung fuer Interoperabilitaets-Tests |
 
 ## Dokumente
 

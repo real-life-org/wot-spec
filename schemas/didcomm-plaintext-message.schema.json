@@ -1,7 +1,7 @@
 {
   "$schema": "https://json-schema.org/draft/2020-12/schema",
   "$id": "https://web-of-trust.de/schemas/didcomm-plaintext-message.schema.json",
-  "title": "WoT DIDComm Plaintext Message",
+  "title": "WoT Plaintext Transport Envelope",
   "type": "object",
   "required": ["id", "typ", "type", "from", "created_time", "body"],
   "additionalProperties": true,

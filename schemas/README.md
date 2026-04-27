@@ -19,7 +19,7 @@ Status: initialer Draft. Die Schemas decken die in den Spec-Dokumenten beschrieb
 | `device-key-binding.schema.json` | Identity 004 | DeviceKeyBinding Payload fuer Phase-2-Delegation |
 | `delegated-attestation-bundle.schema.json` | Identity 004 | JSON-Container fuer delegierte Attestation + Binding-JWS |
 | `attestation-vc-payload.schema.json` | Trust 001 | WotAttestation VC 2.0 Payload |
-| `didcomm-plaintext-message.schema.json` | Sync 003 | DIDComm-kompatible Envelope-Struktur |
+| `didcomm-plaintext-message.schema.json` | Sync 003 | WoT Plaintext Envelope mit DIDComm-kompatiblem Shape |
 | `log-entry-payload.schema.json` | Sync 002 | JWS-Payload eines Log-Eintrags |
 | `capability-payload.schema.json` | Sync 003 | Broker-Capability JWS-Payload |
 | `profile-service-response.schema.json` | Sync 004 | Profil-Service Antwort mit DID-Dokument |

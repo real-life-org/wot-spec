@@ -73,21 +73,21 @@ Drei Protokolle auf Basis von OpenID Connect: OpenID4VCI (Credentials ausstellen
 | Komplexität | Hoch | Mittel | Niedrig |
 | Adoption | Nische (SSI) | Mainstream (EU) | Nur wir |
 
-DIDComm teilt unsere Werte (P2P, offline, dezentral). OpenID4VC ist für die Welt die wir als Alternative bauen.
+DIDComm teilt einige unserer Werte (P2P, offline, dezentral). OpenID4VC ist fuer die Welt die wir als Alternative bauen.
 
 ## Überlappung: Unser Protokoll und DIDComm
 
-Wir haben im Kern ein eigenes DIDComm gebaut:
+Wir haben im Kern eigene WoT-Objekte und einen Transport-Envelope, der DIDComm aehnelt:
 
 | Unser Konzept | DIDComm-Äquivalent |
 |---|---|
-| Message Envelope (JWS) | DIDComm Plaintext + Signed Message |
-| ECIES-Verschlüsselung | DIDComm Authcrypt (ECDH-1PU) |
-| Broker (Store-and-Forward) | DIDComm Mediator |
-| Inbox-Nachrichten | DIDComm Messages |
-| Challenge-Response | DIDComm Protocol |
+| WoT Plaintext Envelope | DIDComm Plaintext Message |
+| ECIES-Verschlüsselung | DIDComm Authcrypt (ECDH-1PU), aber bewusst nicht uebernommen |
+| Broker (Store-and-Forward) | DIDComm Mediator, aber ohne Mediator-Protokolle |
+| Inbox-Nachrichten | DIDComm Messages, aber mit WoT-spezifischen Body-Objekten |
+| Challenge-Response | DIDComm Protocol, aber als WoT-spezifischer Flow |
 
-DIDComm könnte unseren **Inbox-Kanal** ersetzen (1:1-Nachrichten: Attestations, Einladungen, Verifikation). Der **Log-Sync** (CRDT-Replikation) hat kein DIDComm-Äquivalent — das bleibt unser eigenes Protokoll.
+DIDComm koennte hoechstens als Adapter fuer den **Inbox-Kanal** dienen (1:1-Nachrichten: Attestations, Einladungen, Verifikation). Der **Log-Sync** (CRDT-Replikation) hat kein DIDComm-Aequivalent — das bleibt unser eigenes Protokoll.
 
 ## Projekte die ein WoT brauchen
 

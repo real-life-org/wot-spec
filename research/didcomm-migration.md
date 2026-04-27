@@ -1,4 +1,4 @@
-# DIDComm v2 Migration — Analyse und Roadmap
+# DIDComm Envelope Compatibility — Analyse und Roadmap
 
 > **Nicht normativ:** Dieses Dokument ist Hintergrund, Analyse oder Planung. Normative Anforderungen stehen in den Spec-Dokumenten und in `CONFORMANCE.md`.
 
@@ -6,7 +6,7 @@
 
 ## Was ist DIDComm?
 
-DIDComm v2 ist ein Messaging-Protokoll der Decentralized Identity Foundation (DIF) für sichere, private Kommunikation zwischen DIDs. Man kann es sich als TCP/IP für dezentrale Identität vorstellen — ein Transportlayer auf dem höhere Protokolle aufbauen.
+DIDComm v2 ist ein Messaging-Protokoll der Decentralized Identity Foundation (DIF) für sichere, private Kommunikation zwischen DIDs. WoT uebernimmt davon nicht den gesamten Messaging-Stack, sondern nur eine eng begrenzte Kompatibilitaet auf der Plaintext-Envelope-Ebene.
 
 Kernprinzipien:
 - **Message-basiert, asynchron** — kein Request-Response, kein Server nötig
@@ -14,18 +14,18 @@ Kernprinzipien:
 - **Message-Level Security** — Verschlüsselung ist in der Nachricht, nicht im Transport (anders als TLS)
 - **Offline-fähig** — Nachrichten werden gespeichert und zugestellt wenn der Peer online kommt
 
-## Warum DIDComm für unser WoT? — ehrliche Einordnung
+## Warum DIDComm-kompatible Envelopes? — ehrliche Einordnung
 
 ### Was DIDComm wirklich bringt
 
 **Design-Disziplin und konzeptionelle Klarheit:**
-DIDComm ist ein durchdachter Stack mit klarer Layer-Trennung (Envelope / Protokoll / Anwendung), formaler Security-Analyse (ACM CCS 2024) und einem durchdachten Threading-Modell. Wer DIDComm-konform spezifiziert, vermeidet viele typische Fehler.
+DIDComm ist ein durchdachter Stack mit klarer Layer-Trennung (Envelope / Protokoll / Anwendung), formaler Security-Analyse (ACM CCS 2024) und einem durchdachten Threading-Modell. WoT nutzt diese Design-Disziplin am Transportrand, ohne den DIDComm-Crypto- oder Mediator-Stack in den Kern zu ziehen.
 
 **Library-Kompatibilität für die SSI-Nische:**
 `didcomm-rust`/`didcomm-node` (SICPA) und Veramo DIDComm existieren und werden gepflegt. Unser Anspruch ist aktuell enger: WoT-Plaintext-Envelopes sollen von diesen Bibliotheken geparst und geroutet werden koennen. Verschluesselung und signierte WoT-Envelopes beanspruchen derzeit keine volle DIDComm-Wire-Kompatibilitaet.
 
 **Architektonische Übereinstimmung:**
-DIDComm teilt unsere Werte: P2P, offline-fähig, dezentral, keine zentrale Autorität. Das macht DIDComm zu einem natürlichen Envelope-Standard für uns.
+DIDComm teilt einige unserer Werte: P2P, offline-fähig, dezentral, keine zentrale Autorität. Das macht sein Plaintext-Format zu einem brauchbaren Envelope-Vokabular fuer WoT, aber nicht zu einer Kernabhaengigkeit.
 
 ### Was DIDComm NICHT bringt — Mythen und Realität
 
@@ -58,7 +58,7 @@ Wenn wir auf diesen Ebenen die richtigen Wahlen treffen, sind wir auch dann inte
 
 ### Was wir daraus konkret ableiten
 
-- **Envelope-Ebene: DIDComm-Plaintext-kompatibel bleiben** — billig, gibt uns Aries-Nischen-Interop und Design-Disziplin
+- **Envelope-Ebene: DIDComm-Plaintext-kompatibel bleiben** — billig, gibt uns Aries-Nischen-Interop und Design-Disziplin, bleibt aber eine Transportgrenze
 - **Format-Ebene: SD-JWT VC adoptieren** — für Trust-Lists (H01) und als Option für Attestations. Das ist der strategisch wichtige Interop-Baustein.
 - **NICHT verfolgen: Forward Routing, Mediator Coordination, Pickup Protocol** — das sind Aries-spezifische Protokolle für Enterprise-Mediator-Szenarien, die uns Komplexität einbringen ohne klaren Gewinn für unser P2P-Modell.
 - **NICHT verfolgen als Haupt-Pfad: Issue Credential 3.0, Present Proof 3.0 über DIDComm** — hier läuft der Mainstream über OpenID4VC. Wenn wir breitere Exchange-Interop wollen, wäre OpenID4VCI/VP strategisch wichtiger.
@@ -71,7 +71,7 @@ Gleichzeitig: selbst wenn DIDComm nicht zum breiten Standard wird, verlieren wir
 
 ## Aktueller Stand unserer Kompatibilität
 
-Wir verfolgen **selektive DIDComm-Compliance** auf Envelope- und Utility-Ebene, nicht volle Compliance. Die folgenden Tabellen zeigen, was spezifiziert ist und was bewusst nicht verfolgt wird.
+Wir verfolgen **selektive DIDComm-Plaintext-Kompatibilitaet** auf Envelope-Ebene, nicht volle DIDComm-Compliance. Die folgenden Tabellen zeigen, was spezifiziert ist und was bewusst nicht verfolgt wird.
 
 ### Was spezifiziert ist
 

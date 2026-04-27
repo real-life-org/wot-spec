@@ -18,7 +18,7 @@ X25519 Public Key (Base64URL): yFB4c_1SqTGolVBTKhCBJShSWf-NzXr4XCyDF3FKeUQ
 X25519 Public Key (Multibase): z6LSqA7sbKGK3WVHP9SBcmv9ikp19iDNb1P5Q315kRPQrcTV
 ```
 
-## 1. DIDComm Plaintext Envelope (Sync 003)
+## 1. WoT Plaintext Envelope (DIDComm-kompatibel, Sync 003)
 
 Dieser Vektor prueft nur die Envelope-Ebene. ECIES ist bewusst kein DIDComm-JWE und wird separat getestet.
 

@@ -249,7 +249,7 @@ Wenn diese Tests bestehen, ist die kryptographische Basis interoperabel.
 
 Die folgenden Vektoren sind in [`phase-1-interop.md`](phase-1-interop.md) dokumentiert:
 
-- **DIDComm Plaintext Envelope** - validiert mit etablierten DIDComm-v2-Libraries.
+- **WoT Plaintext Envelope** - DIDComm-v2-kompatibler Envelope, validiert mit etablierten DIDComm-v2-Libraries.
 - **Attestation VC-JWS** - W3C VC 2.0 Payload mit `typ: "vc+jwt"` und `kid`.
 - **ECIES** - X25519 ECDH + HKDF + AES-256-GCM (Peer-to-Peer-Verschluesselung).
 - **Space Content Key** - Deterministische Nonce aus `(deviceId, seq)`, Verschluesselung/Entschluesselung.

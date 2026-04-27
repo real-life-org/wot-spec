@@ -55,8 +55,8 @@ Nicht-normative Abschnitte (z.B. `research/`) koennen bewusst freier formulieren
 | **Broker** | Immer-online Peer fuer Store-and-Forward, Inbox, Log-Sync und Push-Notifications. Kein vertrauenswuerdiger Klartext-Server. |
 | **Inbox-Broker** | Broker fuer direkte 1:1-Nachrichten an eine DID. Kann im DID-Dokument oder Profil-Service veroeffentlicht werden. |
 | **Space-Broker** | Broker fuer ein bestimmtes Space-Dokument. Wird in Space-Einladungen transportiert und nicht oeffentlich im DID-Dokument veroeffentlicht. |
-| **DIDComm Plaintext Envelope** | DIDComm-v2-kompatible Plaintext Message mit `typ: "application/didcomm-plain+json"`. Der Anspruch gilt nur auf ephemerer Envelope-Ebene, nicht fuer persistente WoT-Objekte und nicht fuer DIDComm-JWE/Authcrypt. |
-| **WoT Envelope-JWS** | WoT-spezifisch signierter Envelope. Strukturell an DIDComm Signed Messages angelehnt, aber nicht als library-validierte DIDComm Signed Message beansprucht. |
+| **WoT Plaintext Envelope** | Ephemerer WoT Transport Envelope mit DIDComm-v2-kompatiblem Plaintext-Shape und `typ: "application/didcomm-plain+json"`. Der Anspruch gilt nur auf Envelope-Ebene, nicht fuer persistente WoT-Objekte und nicht fuer DIDComm-JWE/Authcrypt. |
+| **WoT Envelope-JWS** | WoT-spezifisch signierter Envelope. Er beansprucht keine DIDComm-Signed-Message-Kompatibilitaet. |
 | **ECIES** | WoT-Verschluesselung fuer 1:1-Inbox-Nachrichten: X25519 + HKDF-SHA256 + AES-256-GCM. |
 | **Log-Eintrag** | JWS-signierter Datensatz im Append-only Log eines Dokuments. Enthaelt u.a. `seq`, `deviceId`, `docId`, `authorKid`, `keyGeneration`, `data`. |
 | **`seq`** | Monoton steigende Sequenznummer pro `(deviceId, docId)`. Sicherheitskritisch fuer deterministische Nonces. |

@@ -122,7 +122,7 @@ Release-Kriterien:
 ### C. Testvektoren erweitern
 
 - ECIES: X25519 ECDH + HKDF + AES-256-GCM.
-- DIDComm Plaintext Envelope gegen etablierte DIDComm-v2-Libraries validieren.
+- WoT Plaintext Envelope gegen etablierte DIDComm-v2-Libraries validieren.
 - Deterministische Nonce fuer Space/Personal-Doc Payloads.
 - `resolve(did:key)` zu DID-Dokument.
 - Log-Entry JWS.
@@ -137,7 +137,7 @@ Release-Kriterien:
 - QR Challenge.
 - DID Document Profil.
 - Attestation VC Payload.
-- DIDComm Plaintext Message.
+- WoT Plaintext Envelope.
 - Log Entry Payload.
 - Capability Payload.
 - Profile-Service Response.

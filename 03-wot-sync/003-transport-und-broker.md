@@ -3,7 +3,7 @@
 - **Status:** Entwurf
 - **Autoren:** Anton Tranelis
 - **Datum:** 2026-04-13
-- **Scope:** Broker, Transport, Capabilities, DIDComm Plaintext Envelopes und P2P-Sync
+- **Scope:** Broker, Transport, Capabilities, DIDComm-kompatible Plaintext Envelopes und P2P-Sync
 - **Depends on:** Identity 002, Trust 002, Identity 003, Sync 001, Sync 002, Sync 005, Sync 006
 - **Conformance profile:** `wot-sync@0.1`
 
@@ -14,7 +14,7 @@ Dieses Dokument spezifiziert wie Daten zwischen Peers transportiert werden und w
 ## Referenzierte Standards
 
 - **WebSocket** (RFC 6455) — Primärer Transportkanal
-- **DIDComm v2** (DIF) — Plaintext Message Envelope (keine DIDComm-JWE/Authcrypt-Verschlüsselung)
+- **DIDComm v2** (DIF) — kompatibler Plaintext Message Envelope am Transportrand (keine DIDComm-JWE/Authcrypt-Verschlüsselung)
 - **Ed25519** (RFC 8032) — Signatur im Message Envelope
 - **ECIES** (siehe [Sync 001](001-verschluesselung.md)) — 1:1-Verschlüsselung für Inbox-Nachrichten
 
@@ -260,11 +260,11 @@ Der Broker bietet zwei Kanäle:
 - **Log-Sync:** Pull-basierter Austausch von Log-Einträgen für Dokumente. Der Broker kann verbundene Clients über neue Einträge informieren.
 - **Inbox:** Store-and-Forward für direkte verschlüsselte Nachrichten. Inbox-Nachrichten werden pro aktivem Device vorgehalten und erst nach ACK des jeweiligen Devices gelöscht.
 
-## Message Envelope (DIDComm-kompatibel)
+## WoT Message Envelope (DIDComm-kompatibel)
 
-WoT-Peer-Nachrichten (über Broker oder direkt) verwenden das **DIDComm v2 Plaintext Message Format** ([DIF DIDComm Messaging v2](https://identity.foundation/didcomm-messaging/spec/v2.0/)) als ephemeren Transport-Envelope. Das stellt Interoperabilität auf der Envelope-Ebene sicher: etablierte DIDComm-v2-Libraries können WoT-Plaintext-Messages parsen und routen. Die Verschlüsselung bleibt WoT-spezifisch (ECIES statt DIDComm-JWE/Authcrypt).
+WoT-Peer-Nachrichten (über Broker oder direkt) verwenden einen eigenen **WoT Message Envelope**, dessen Plaintext-Form absichtlich mit dem DIDComm v2 Plaintext Message Format ([DIF DIDComm Messaging v2](https://identity.foundation/didcomm-messaging/spec/v2.0/)) kompatibel ist. Der Kompatibilitaetsanspruch ist bewusst eng: etablierte DIDComm-v2-Libraries sollen Plaintext-Envelopes parsen und routen koennen. WoT uebernimmt nicht den DIDComm-Crypto-Stack, keine DIDComm-JWE/Authcrypt-Verschluesselung und keine Mediator-Protokolle.
 
-Persistente WoT-Objekte (Attestation-JWS, Capability-JWS, Log-Entry-JWS, verschlüsselte Dokument-Payloads) sind **keine DIDComm Messages**. Sie DÜRFEN im `body` einer DIDComm Plaintext Message transportiert werden. Ihre Autorität und Integrität ergeben sich aus dem inneren JWS, der Capability, Broker-Authentisierung oder der dokumentenspezifischen Verschlüsselung — nicht aus `from`, `to` oder anderen Envelope-Feldern.
+Persistente WoT-Objekte (Attestation-JWS, Capability-JWS, Log-Entry-JWS, verschlüsselte Dokument-Payloads) sind **keine DIDComm Messages**. Sie DÜRFEN im `body` eines WoT Plaintext Envelopes transportiert werden. Ihre Autorität und Integrität ergeben sich aus dem inneren JWS, der Capability, Broker-Authentisierung oder der dokumentenspezifischen Verschlüsselung — nicht aus `from`, `to` oder anderen Envelope-Feldern.
 
 ### Plaintext Message
 
@@ -294,14 +294,14 @@ Persistente WoT-Objekte (Attestation-JWS, Capability-JWS, Log-Entry-JWS, verschl
 | `type` | URI | Ja | Nachrichtentyp als URI (siehe Tabelle unten) |
 | `from` | DID | Ja | Absender-DID |
 | `to` | Array von DIDs | Bedingt | Empfänger-DID(s). Pflicht bei Inbox-Nachrichten. |
-| `created_time` | Integer (Unix-Seconds) | Ja | Erstellungszeitpunkt (UTC Epoch Seconds). DIDComm v2.1 konform. |
+| `created_time` | Integer (Unix-Seconds) | Ja | Erstellungszeitpunkt (UTC Epoch Seconds), kompatibel mit DIDComm v2.1. |
 | `thid` | UUID v4 | Optional | Thread-ID. Verknüpft Nachrichten die zu einer Konversation gehören (z.B. Request + Response). Die erste Nachricht eines Threads setzt `thid = id`; Folgenachrichten tragen denselben `thid`. |
 | `pthid` | UUID v4 | Optional | Parent-Thread-ID. Verweist auf einen übergeordneten Thread — für verschachtelte Konversationen (z.B. ein Sub-Protokoll das innerhalb eines größeren Flows läuft). |
 | `body` | Object | Ja | Nachrichteninhalt. Struktur abhängig vom `type`. |
 
 ### Autoritätsgrenze (MUSS)
 
-Implementierungen MÜSSEN DIDComm-Felder als Transport- und Routing-Metadaten behandeln. Insbesondere:
+Implementierungen MÜSSEN Envelope-Felder als Transport- und Routing-Metadaten behandeln. Insbesondere:
 
 - `from` im Envelope DARF NICHT als Autor des enthaltenen Log-Eintrags oder der enthaltenen Attestation gewertet werden.
 - Log-Einträge MÜSSEN über das innere Log-Entry-JWS und `authorKid` verifiziert werden.
@@ -321,7 +321,7 @@ Nachrichten ohne `thid` sind Einzelnachrichten ohne Konversationskontext. Nachri
 
 ### Authentifizierung: drei Envelope-Varianten
 
-Unser Message-Envelope kann in drei Formen vorliegen (analog zu DIDComm v2, aber mit unserer eigenen Verschlüsselung):
+Unser Message-Envelope kann in drei WoT-Formen vorliegen. Nur die Plaintext-Form beansprucht DIDComm-v2-Parser-Kompatibilitaet; Signatur und Verschluesselung sind WoT-spezifisch:
 
 1. **Plaintext Message** — nackte JSON, keine Envelope-Signatur, keine Envelope-Verschlüsselung
 2. **Signed Message** — Plaintext in JWS verpackt (Envelope-Signatur)
@@ -341,7 +341,7 @@ Der Envelope wird NUR dann als **Signed Message** verpackt, wenn der Body nicht 
 
 ### Signatur (WoT Envelope-JWS)
 
-Wenn ein Envelope signiert wird, geschieht das als **JWS Compact Serialization** — identisch mit unseren Attestations ([Identity 002](../01-wot-identity/002-signaturen-und-verifikation.md)) und strukturell an DIDComm Signed Messages angelehnt. Anders als beim Plaintext Envelope beanspruchen WoT Envelope-JWS derzeit keine Library-validierte DIDComm-Signed-Message-Kompatibilität; dieser Anspruch wird erst mit eigenen Signed-Envelope-Testvektoren erhoben.
+Wenn ein Envelope signiert wird, geschieht das als **JWS Compact Serialization** — identisch mit unseren Attestations ([Identity 002](../01-wot-identity/002-signaturen-und-verifikation.md)). Anders als beim Plaintext Envelope beanspruchen WoT Envelope-JWS keine DIDComm-Signed-Message-Kompatibilität; sie sind ein WoT-spezifisches Signaturprofil.
 
 1. Plaintext Message mit JCS kanonisieren (RFC 8785)
 2. JCS-Bytes als Base64URL kodieren
@@ -359,7 +359,7 @@ Ablauf:
 2. Sender signiert den Body mit seinem Identity Key → innerer JWS
 3. Sender verschlüsselt den JWS-String mit ECIES für den X25519-Key des Empfängers
 4. Ausgabe: `{ epk, nonce, ciphertext }` (siehe [Sync 001](001-verschluesselung.md#verschlüsseltes-nachrichtenformat))
-5. Transport als Body der DIDComm-Envelope-Nachricht (type = `inbox/1.0`, `space-invite/1.0`, etc.)
+5. Transport als Body der WoT-Envelope-Nachricht (type = `inbox/1.0`, `space-invite/1.0`, etc.)
 
 **Pflichtfelder im inneren JWS-Payload (MUSS):**
 
@@ -539,9 +539,9 @@ Clients SOLLEN bei `CAPABILITY_EXPIRED` eine neue Capability anfordern (via Peer
 
 Neue Nachrichtentypen DÜRFEN von Extensions definiert werden. Ein Client der einen unbekannten Typ empfängt MUSS die Nachricht ignorieren (nicht verwerfen — der Broker speichert sie weiterhin für andere Clients die den Typ verstehen).
 
-### DIDComm-Kompatibilität
+### Envelope-Kompatibilität
 
-Das Nachrichtenformat ist **DIDComm v2.1 konform** auf Envelope-Ebene: `id`, `typ`, `type`, `from`, `to`, `created_time` (Unix-Seconds), `body`, `thid`/`pthid`. DIDComm-Bibliotheken können unsere Plaintext-Messages lesen und routen. Die Verschlüsselung (ECIES statt DIDComm Authcrypt) ist eine bewusste Abweichung auf Crypto-Ebene — sie betrifft nicht die Envelope-Struktur.
+Das Plaintext-Envelope-Format ist **DIDComm-v2.1-kompatibel** auf Envelope-Ebene: `id`, `typ`, `type`, `from`, `to`, `created_time` (Unix-Seconds), `body`, `thid`/`pthid`. DIDComm-Bibliotheken können unsere Plaintext-Messages lesen und routen. Dieser Anspruch endet an der Envelope-Grenze: Verschlüsselung, Signaturen, persistente WoT-Objekte, Broker-Authentisierung und Sync-Semantik bleiben WoT-spezifisch.
 
 Für die Hintergründe dieser Entscheidung siehe [Research: Interop und Zielgruppe](../research/interop-und-zielgruppe.md).
 
