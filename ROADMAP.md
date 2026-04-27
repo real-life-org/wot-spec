@@ -45,7 +45,31 @@ Release-Kriterien:
 - Personal Doc funktioniert mit Append-only Log und AES-GCM.
 - Restore/Clone- und `seq`-Kollisionsregeln sind getestet.
 
-### `v0.4.0-sync-compression`
+### `v0.4.0-device-delegation`
+
+Erster Snapshot fuer Per-Device Keys mit self-contained Delegation Proofs.
+
+Release-Kriterien:
+
+- DeviceKeyBinding ist als signiertes Objekt spezifiziert: Identity DID, Device Key, Capabilities, Gueltigkeitszeitraum.
+- Delegated-Attestation-Bundle als JSON-Container fuer Attestations und Verification-Attestations ist spezifiziert.
+- Verifikationsregeln fuer `issuer`/`iss` = Identity DID und `kid` = Device Key sind normativ beschrieben.
+- Capability-Scopes `sign-attestation`, `sign-verification`, `sign-log-entry`, `broker-auth` und `device-admin` sind definiert.
+- Testvektoren fuer gueltige, abgelaufene Delegation und capability-falsche Device-Key-Signaturen liegen vor.
+
+### `v0.5.0-temporal-key-history`
+
+Erster Snapshot fuer temporale Verifikation von Device-Key-Signaturen.
+
+Release-Kriterien:
+
+- Key-History-Modell ist spezifiziert: Add Device, Revoke Device, Rotate Identity Key.
+- Verifikation gegen den Key-State zum Signaturzeitpunkt ist normativ beschrieben.
+- `did:key` + WoT-Sigchain und `did:webvh` sind als moegliche History-Traeger abgegrenzt.
+- Offline-Export enthaelt die noetigen Chain-Segmente oder eine aequivalente verifizierbare History.
+- Testvektoren fuer alte gueltige Signaturen nach spaeterem Device-Revocation liegen vor.
+
+### `v0.6.0-sync-compression`
 
 Erster Snapshot fuer deterministische Log-Kompression.
 
@@ -56,7 +80,7 @@ Release-Kriterien:
 - Broker koennen verschluesselte Chunks speichern und nach Hash ausliefern, ohne Klartext zu sehen.
 - Testvektoren fuer Chunk-Grenzen, Chunk-IDs und Rehydration liegen vor.
 
-### `v0.5.0-sync-reconciliation`
+### `v0.7.0-sync-reconciliation`
 
 Erster Snapshot fuer effiziente Set-Reconciliation.
 
@@ -93,6 +117,7 @@ Release-Kriterien:
 - Inner-JWS-Pflichtfelder fuer Inbox-Nachrichten normativ machen.
 - `kid`, `authorKid`, `deviceKid` und Zweckbindung durch alle relevanten Dokumente konsistent halten.
 - Capability `kid`/Issuer/Audience-Semantik praezisieren.
+- Delegierte Device-Key-Signaturen von Identity-Key-Signaturen sauber abgrenzen.
 
 ### C. Testvektoren erweitern
 
@@ -101,6 +126,8 @@ Release-Kriterien:
 - Deterministische Nonce fuer Space/Personal-Doc Payloads.
 - `resolve(did:key)` zu DID-Dokument.
 - Log-Entry JWS.
+- DeviceKeyBinding JWS.
+- Delegated-Attestation-Bundle.
 - Space Capability JWS.
 - Admin-Key-Ableitung aus BIP39 Seed + Space-ID.
 - SD-JWT VC Trust List mit Disclosures.
@@ -116,8 +143,25 @@ Release-Kriterien:
 - Profile-Service Response.
 - Space Invite und Key Rotation.
 - Trust List Delta.
+- DeviceKeyBinding / Delegation Proof.
 
-### E. HMC-Extension konkretisieren
+### E. Device-Key-Delegation spezifizieren
+
+- DeviceKeyBinding-Payload festlegen: `iss`, `sub`, `deviceKid`, `devicePublicKeyMultibase`, `capabilities`, `validFrom`, `validUntil`.
+- Delegated-Attestation-Bundle als portables Offline-Verifikationsformat definieren.
+- Revocation-Semantik fuer Phase 2 klaeren: Best-effort-Revocation vs. Gueltigkeit zum Signaturzeitpunkt.
+- Admin-Delegation begrenzen: Welche Geraete duerfen weitere Device Keys delegieren oder widerrufen?
+- Migrationspfad zu Phase 3 Temporal Key History festlegen.
+
+### F. Temporal Key History spezifizieren
+
+- Key-History-Events festlegen: Inception, Add Device, Revoke Device, Rotate Identity Key.
+- Replay-Regeln definieren: Welcher Device Key war zu welchem Signaturzeitpunkt autorisiert?
+- `did:key` + WoT-Sigchain gegen `did:webvh` als History-Traeger abgrenzen.
+- Offline-Bundle fuer Chain-Segmente oder DID-History definieren.
+- Phase-4-Pfad zu Pre-Rotation / Mini-KERI dokumentieren.
+
+### G. HMC-Extension konkretisieren
 
 - Trust-Score-Algorithmus formal spezifizieren.
 - Multipath mit Zyklen und Pfadabhaengigkeiten klaeren.
@@ -126,20 +170,21 @@ Release-Kriterien:
 - SD-JWT `cnf` / Key-Binding entscheiden.
 - Widerruf / StatusList2021 fuer Trust Lists klaeren.
 
-### F. Implementierung nachziehen
+### H. Implementierung nachziehen
 
 - TypeScript-Implementierung auf neue Testvektoren bringen.
 - Rust/HMC-Ableitungen gegen dieselben Testvektoren pruefen.
 - Attestations auf VC-JWS umstellen.
 - Verification-Flow auf QR-Felder und VC-JWS umstellen.
 - Minimalen Broker/Personal-Doc-Sync implementieren.
+- Device-Key-Delegation in TypeScript prototypisieren und gegen Testvektoren pruefen.
 
 ## Nicht Phase 1
 
-- Per-Device Keys als vollstaendiges Modell.
+- Per-Device Keys und Device-Key-Delegation als vollstaendiges Modell.
 - DID-Migration zu `did:webvh`.
 - Forward-Secrecy / Double Ratchet fuer Inbox.
-- Deterministische Log-Kompression (z.B. Sedimentree) — vorgesehen fuer Phase 2.
-- Effiziente Set-Reconciliation (z.B. RIBLT) — vorgesehen fuer Phase 3.
+- Deterministische Log-Kompression (z.B. Sedimentree) — vorgesehen fuer Sync Phase 2.
+- Effiziente Set-Reconciliation (z.B. RIBLT) — vorgesehen fuer Sync Phase 3.
 - Feld-Level-Permissions im CRDT.
 - Tor/Cover-Traffic/Onion-Routing fuer Metadaten-Schutz.

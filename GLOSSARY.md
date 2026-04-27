@@ -35,7 +35,7 @@ Nicht-normative Abschnitte (z.B. `research/`) koennen bewusst freier formulieren
 | **`kid`** | Key Identifier im JWS-Header. Fuer DID-gebundene Signaturen ist `kid` eine DID-URL. Fuer Space-Capabilities ist `kid` ein Space-Kontext wie `wot:space:<spaceId>#cap-<generation>`. |
 | **`authorKid`** | Verification Method ID des Autors eines Log-Eintrags. Ersetzt alte `authorDid`-Formulierungen. |
 | **`deviceId`** | Zufaellige UUID eines lokalen Devices. Dient als Sequenz- und Nonce-Namespace, ist aber kein kryptographischer Key. |
-| **`deviceKid`** | Zukuenftige DID-URL eines Per-Device-Keys. In Phase 1 optional/vorbereitet, aber noch nicht sicherheitskritisch. |
+| **`deviceKid`** | Zukuenftige DID-URL eines Per-Device-Signing-Keys. Phase 2 nutzt kanonisch eine technische Device-DID wie `did:key:<device>#sig-0`, die per DeviceKeyBinding an die primaere Identity DID delegiert wird. Spaetere DID-Methoden koennen Device Keys als Verification Methods der Identity DID fuehren. In Phase 1 optional/vorbereitet, aber noch nicht sicherheitskritisch. |
 | **Identity Key** | Ed25519-Key der Hauptidentitaet. Aus `wot/identity/ed25519/v1` abgeleitet. Normative Texte SOLLTEN nicht mehr pauschal von "Master Key" sprechen. |
 | **Encryption Key** | X25519-Key fuer ECIES-Inbox-Nachrichten. Aus `wot/encryption/x25519/v1` abgeleitet und nicht aus der `did:key` ableitbar. |
 

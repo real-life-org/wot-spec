@@ -103,15 +103,17 @@ Es gibt kein eingebettetes `proof`-Objekt. Die Signatur ist der JWS selbst. Ein 
 | `issuer` | DID | Wer macht die Aussage |
 | `credentialSubject.id` | DID oder URI | Über wen/was die Aussage ist |
 | `credentialSubject.claim` | String | Die Aussage (Freitext) |
-| `validFrom` | ISO 8601 | Ab wann die Attestation gültig ist |
+| `validFrom` | ISO 8601 | Ausstellungs- bzw. Gueltigkeitsbeginn der Attestation |
 
 ### Optionale Felder
 
 | Feld | Typ | Beschreibung |
 |------|-----|-------------|
-| `validUntil` | ISO 8601 | Ablaufdatum (wenn die Attestation zeitlich begrenzt ist) |
+| `validUntil` | ISO 8601 | Nur fuer explizit zeitlich begrenzte Aussagen; fehlt bei unbefristeten Attestations |
 | `id` | URI | Eindeutige ID der Attestation (z.B. `urn:uuid:...`) |
 | `credentialStatus` | Object | Widerrufs-Mechanismus (siehe Unveränderlichkeit) |
+
+Attestations sind standardmaessig unbefristet. Aussagen ueber historische Ereignisse oder Erfahrungen (z.B. "Person A hat X getan") laufen nicht ab; sie koennen nur durch spaetere, zusaetzliche Attestations ergaenzt, relativiert oder widersprochen werden. `validUntil` bzw. `exp` wird nur fuer Aussagen verwendet, die fachlich selbst zeitlich begrenzt sind.
 
 Das ist der vollständige WoT-Trust-Kern. Keine weiteren Pflichtfelder. Extensions fügen Felder über eigene Contexts hinzu (siehe [Erweiterbarkeit](#erweiterbarkeit)).
 
@@ -169,12 +171,14 @@ Um eine Attestation zu verifizieren:
 3. JWS-Signatur verifizieren gegen die exakt empfangenen Bytes `BASE64URL(header) + "." + BASE64URL(payload)` (keine Re-Kanonisierung)
 4. Payload dekodieren und parsen
 5. `@context` und `type` prüfen — enthält es `"WotAttestation"`?
-6. `iss` im Payload MUSS zur DID im `kid`-Header passen
+6. Fuer `wot-trust@0.1`: `iss` im Payload MUSS zur DID im `kid`-Header passen
 7. `nbf` prüfen — liegt in der Vergangenheit?
-8. Falls `exp` vorhanden — noch nicht abgelaufen?
+8. Falls `exp` vorhanden — ist die explizit zeitlich begrenzte Aussage noch gueltig?
 9. Falls `credentialStatus` vorhanden — StatusList prüfen (nicht widerrufen?)
 
 Kein externer Service nötig für die Signatur-Verifikation. Alles lokal verifizierbar (DID-Dokument aus Cache). Nur die StatusList-Prüfung (Schritt 9) kann einen optionalen Online-Abruf erfordern.
+
+**Geplante Phase-2-Erweiterung:** Attestations koennen spaeter auch mit einem delegierten Device Key signiert werden. Dann bleibt `iss` die Identity DID, der JWS-Header `kid` zeigt auf den Device Key, und der Verifier prueft zusaetzlich einen vom Identity Key signierten Delegation Proof. Der Proof begrenzt die Signaturberechtigung des Device Keys, nicht die Gueltigkeit der Attestation selbst. Er bindet Device Key, Identity DID, Ausstellungszeitpunkt und die Capability `sign-attestation` bzw. `sign-verification`. Das geplante Bundle ist ein JSON-Container mit Attestation-JWS und DeviceKeyBinding-JWS; es ist nicht Teil von `wot-trust@0.1`. Siehe [Device Keys](../research/device-keys.md).
 
 ## Subjects
 

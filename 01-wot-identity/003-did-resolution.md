@@ -147,11 +147,11 @@ Für did:key ohne vorherigen Kontakt liefert `resolve()` ein **signaturfähiges*
 
 Ein Verifier MUSS prüfen dass der verwendete Key für den jeweiligen Zweck autorisiert ist:
 
-- **Attestations und Trust-Lists** MÜSSEN mit einem Key signiert sein der in `assertionMethod` gelistet ist — das sind öffentliche Aussagen die an die Identität gebunden sind, nicht an ein Gerät
+- **Attestations und Trust-Lists** MÜSSEN an die Identität gebunden sein. In `wot-identity@0.1` bedeutet das: sie werden mit einem Key signiert der in `assertionMethod` gelistet ist. Eine geplante Phase-2-Erweiterung erlaubt Device-Key-Signaturen nur mit einem vom Identity Key signierten Delegation Proof fuer die Capability `sign-attestation` bzw. `sign-verification`.
 - **Broker-Login und Sync** DÜRFEN mit einem Key aus `authentication` signiert werden — das sind Session-bezogene Aktionen
 - **Device-Enrollment und Admin-Delegation** SOLLEN mit einem Key aus `capabilityDelegation` signiert werden (Phase 2)
 
-In Phase 1 verweisen `authentication`, `assertionMethod` und `capabilityDelegation` alle auf denselben Key (`#sig-0`). Die Trennung hat aktuell keine praktische Auswirkung, bereitet aber den Wechsel zu Per-Device-Keys vor: Device-Keys werden dann in `authentication` stehen (dürfen Sync/Login), aber NICHT in `assertionMethod` (dürfen keine Attestations signieren).
+In Phase 1 verweisen `authentication`, `assertionMethod` und `capabilityDelegation` alle auf denselben Key (`#sig-0`). Die Trennung hat aktuell keine praktische Auswirkung, bereitet aber den Wechsel zu Per-Device-Keys vor: Device Keys stehen dann typischerweise in `authentication` und koennen ueber Delegation Proofs zusaetzliche, capability-gebundene Signaturrechte erhalten. Das Delegation-Modell ist noch nicht Teil von `wot-identity@0.1`; siehe [Device Keys](../research/device-keys.md).
 
 ## DID-Dokument-Quellen
 

@@ -104,9 +104,9 @@ Eine sauberere Architektur wären **Per-Device Keys** — jedes Gerät hat ein e
 - Device-Revocation kryptographisch bedeutungsvoll werden
 - Gerätekompromittierung auf ein Gerät begrenzbar sein
 
-**Warum wir das jetzt nicht einführen:** `did:key` kann per Design nur einen einzigen Schlüssel ausdrücken — die DID *ist* der Public Key. Ein Trust-Anchor-Dokument mit mehreren Device-Keys setzt eine andere DID-Methode voraus ([did:peer:4](https://identity.foundation/peer-did-method-spec/) oder [did:webvh](https://identity.foundation/didwebvh/)), die zu einem DID-Dokument mit mehreren `verificationMethod`-Einträgen aufgelöst wird.
+**Warum wir das jetzt nicht einführen:** `did:key` kann per Design nur einen einzigen Schlüssel ausdrücken — die DID *ist* der Public Key. Mehrere Device Keys im DID-Dokument setzen eine andere DID-Methode voraus ([did:peer:4](https://identity.foundation/peer-did-method-spec/) oder [did:webvh](https://identity.foundation/didwebvh/)).
 
-Der Wechsel zu Per-Device Keys wird **gemeinsam mit der DID-Methoden-Migration** erfolgen — beide Themen gehören architektonisch zusammen. Siehe [Identitäts-Alternativen](../research/identitaet-alternativen.md) und [Identity Migration](../research/identity-migration.md) für den geplanten Pfad.
+Der geplante Upgrade-Pfad ist deshalb stufenweise: Phase 2 erlaubt Device Keys über einen vom Identity Key signierten Delegation Proof, der zusammen mit der Signatur transportiert wird. Phase 3 migriert diese Autorisierung in eine Sigchain oder eine DID-Methode mit verifiable History wie `did:webvh`. Siehe [Device Keys](../research/device-keys.md), [Identitäts-Alternativen](../research/identitaet-alternativen.md) und [Identity Migration](../research/identity-migration.md) für den geplanten Pfad.
 
 ### Seed-Schutz auf dem Gerät
 

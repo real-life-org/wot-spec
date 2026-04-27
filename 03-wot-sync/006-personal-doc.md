@@ -87,7 +87,7 @@ Liste der registrierten Geräte des Users:
 **Begriffliche Trennung:**
 
 - **`deviceId`** (UUID) — lokaler Sequenz-/Nonce-Namespace. Identifiziert das Gerät im Sync-Protokoll. Existiert immer.
-- **`deviceKid`** (DID-URL, optional) — kryptographischer Device-Key als Verification Method ID (z.B. `did:peer:4z...#device-phone-1`). In Phase 1 ist `deviceKid` immer `null` (Shared-Seed-Modell, kein eigener Device-Key). In Phase 2 (Per-Device-Keys) wird hier die DID-URL des Device-Keys eingetragen.
+- **`deviceKid`** (DID-URL, optional) — kryptographischer Device-Key als Verification Method ID. In Phase 1 ist `deviceKid` immer `null` (Shared-Seed-Modell, kein eigener Device-Key). Phase 2 nutzt kanonisch eine technische Device-DID wie `did:key:<device>#sig-0`, die per DeviceKeyBinding an die primaere Identity DID delegiert wird. Spaetere DID-Methoden koennen Device Keys als Verification Methods der Identity DID fuehren (z.B. `did:webvh:...#device-phone-1`).
 
 Jedes Gerät trägt sich beim ersten Start selbst ein. Der User kann Geräte deaktivieren (siehe [Device-Verlust](#device-verlust)).
 
