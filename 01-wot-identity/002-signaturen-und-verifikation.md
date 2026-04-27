@@ -56,6 +56,7 @@ Das `typ`-Feld identifiziert den Inhalt des JWS. Kontextspezifische Werte:
 |---|---|---|
 | Attestation (VC 2.0) | `"vc+jwt"` | W3C VC-JOSE-COSE Standard. Payload enthält JWT Claims (`iss`, `sub`, `nbf`) neben VC-Feldern. |
 | SD-JWT VC (Trust-Lists) | `"vc+sd-jwt"` | IETF SD-JWT VC Draft |
+| DeviceKeyBinding | `"wot-device-key-binding+jwt"` | Geplante Phase-2-Delegation eines Device Keys durch den Identity Key |
 | Capability | `"wot-capability+jwt"` | WoT-spezifisch |
 | WoT Envelope-JWS | `"wot-envelope+jwt"` | WoT-spezifischer signierter Envelope, strukturell an DIDComm angelehnt |
 | Log-Eintrag, interne Nachricht | `typ` kann weggelassen werden | Protokoll-intern |

@@ -1,0 +1,4 @@
+{
+  "type": "wot-delegated-attestation-bundle/v1",
+  "attestationJws": "not-a-jws"
+}

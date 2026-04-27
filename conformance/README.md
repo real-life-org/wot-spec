@@ -4,7 +4,7 @@ Dieses Verzeichnis ist der maschinenlesbare Einstieg für Implementierer. Es bes
 
 ## Artefakte
 
-- [`manifest.json`](manifest.json) ordnet Profile wie `wot-identity@0.1`, `wot-trust@0.1` und `wot-sync@0.1` ihren Pflichtartefakten zu.
+- [`manifest.json`](manifest.json) ordnet Profile wie `wot-identity@0.1`, `wot-trust@0.1`, `wot-sync@0.1` und geplante Erweiterungsprofile ihren Pflichtartefakten zu.
 - `schemas/` enthält JSON Schemas plus gültige und ungültige Beispiele.
 - `test-vectors/` enthält reproduzierbare Krypto- und Interop-Vektoren.
 

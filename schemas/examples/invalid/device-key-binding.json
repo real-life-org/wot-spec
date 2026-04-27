@@ -1,0 +1,11 @@
+{
+  "type": "device-key-binding",
+  "iss": "not-a-did",
+  "sub": "did:key:z6MkvLMiE11z8wXjNScxqjcMJHNfNyc8XqDT4aGzry4pFTTd#sig-0",
+  "deviceKid": "did:key:z6MkvLMiE11z8wXjNScxqjcMJHNfNyc8XqDT4aGzry4pFTTd#sig-0",
+  "devicePublicKeyMultibase": "not-multibase",
+  "capabilities": ["unknown-capability"],
+  "validFrom": "not-a-date",
+  "validUntil": "2027-04-27T10:00:00Z",
+  "iat": -1
+}

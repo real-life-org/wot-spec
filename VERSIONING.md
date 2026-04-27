@@ -30,6 +30,7 @@ Implementierungen geben an, welche Profile sie unterstuetzen:
 | `wot-identity@0.1` | Identitaet, Key-Derivation, Signaturen, JWS/JCS, DID-Resolution |
 | `wot-trust@0.1` | Attestations, Verification-Attestations, QR-/Nonce-Verifikation |
 | `wot-sync@0.1` | Verschluesselung, Append-only Log, Broker, Discovery, Gruppen, Personal Doc |
+| `wot-device-delegation@0.1` | Geplante Phase-2-Erweiterung: DeviceKeyBinding und delegierte Attestations |
 | `wot-rls@0.1` | Real-Life-Stack-spezifische Erweiterungen |
 | `wot-hmc@0.1` | Human-Money-Core-spezifische Erweiterungen |
 

@@ -77,6 +77,16 @@
         }
       ]
     },
+    "wot-device-delegation@0.1": {
+      "description": "Geplante Phase-2-Erweiterung: DeviceKeyBinding und Delegated-Attestation-Bundle.",
+      "requires": ["wot-identity@0.1", "wot-trust@0.1"],
+      "spec_documents": ["01-wot-identity/004-device-key-delegation.md"],
+      "schemas": [
+        "schemas/device-key-binding.schema.json",
+        "schemas/delegated-attestation-bundle.schema.json"
+      ],
+      "test_vectors": []
+    },
     "wot-rls@0.1": {
       "description": "Real-Life-Extension-Felder für visuelle Badges, Events und Orte.",
       "requires": ["wot-trust@0.1"],

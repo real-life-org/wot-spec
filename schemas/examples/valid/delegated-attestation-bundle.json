@@ -1,0 +1,5 @@
+{
+  "type": "wot-delegated-attestation-bundle/v1",
+  "attestationJws": "eyJhbGciOiJFZERTQSIsImtpZCI6ImRpZDprZXk6ejZNa3ZMTWlFMTE6c2lnLTAifQ.eyJpc3MiOiJkaWQ6a2V5Ono2TWsiLCJpYXQiOjE3NzcyODQwMDB9.signature",
+  "deviceKeyBindingJws": "eyJhbGciOiJFZERTQSIsInR5cCI6IndvdC1kZXZpY2Uta2V5LWJpbmRpbmcranN3Iiwia2lkIjoiZGlkOmtleTp6Nk1rbyNzaWctMCJ9.eyJ0eXBlIjoiZGV2aWNlLWtleS1iaW5kaW5nIn0.signature"
+}

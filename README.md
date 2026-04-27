@@ -73,6 +73,7 @@ Was jede Implementierung braucht, die WoT-DIDs, Signaturen oder DID-Dokumente ve
 | 001 | [Identität und Schlüsselableitung](01-wot-identity/001-identitaet-und-schluesselableitung.md) | BIP39 → HKDF → Ed25519 + X25519 Schlüsselpaare |
 | 002 | [Signaturen und Verifikation](01-wot-identity/002-signaturen-und-verifikation.md) | Ed25519, JWS, JCS, SHA-256 |
 | 003 | [DID-Dokument und Resolution](01-wot-identity/003-did-resolution.md) | DID-Methoden-agnostisch, resolve()-Interface, did:key + did:webvh |
+| 004 | [Device-Key-Delegation](01-wot-identity/004-device-key-delegation.md) | Geplante Phase-2-Erweiterung: DeviceKeyBinding und Delegated-Attestation-Bundle |
 
 ### WoT Trust — Vertrauenssemantik
 

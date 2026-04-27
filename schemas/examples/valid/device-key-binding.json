@@ -1,0 +1,12 @@
+{
+  "type": "device-key-binding",
+  "iss": "did:key:z6Mko3ZEjKJWQAM5nDXKoZ9jErvvxbWbYgS8KJXYpC5Hbu8a",
+  "sub": "did:key:z6MkvLMiE11z8wXjNScxqjcMJHNfNyc8XqDT4aGzry4pFTTd#sig-0",
+  "deviceKid": "did:key:z6MkvLMiE11z8wXjNScxqjcMJHNfNyc8XqDT4aGzry4pFTTd#sig-0",
+  "devicePublicKeyMultibase": "z6MkvLMiE11z8wXjNScxqjcMJHNfNyc8XqDT4aGzry4pFTTd",
+  "deviceName": "Alice's Phone",
+  "capabilities": ["sign-attestation", "sign-verification", "sign-log-entry", "broker-auth"],
+  "validFrom": "2026-04-27T10:00:00Z",
+  "validUntil": "2027-04-27T10:00:00Z",
+  "iat": 1777284000
+}

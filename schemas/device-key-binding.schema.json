@@ -1,0 +1,44 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://web-of-trust.de/schemas/device-key-binding.schema.json",
+  "title": "WoT DeviceKeyBinding Payload",
+  "type": "object",
+  "required": [
+    "type",
+    "iss",
+    "sub",
+    "deviceKid",
+    "devicePublicKeyMultibase",
+    "capabilities",
+    "validFrom",
+    "validUntil",
+    "iat"
+  ],
+  "additionalProperties": true,
+  "properties": {
+    "type": { "const": "device-key-binding" },
+    "iss": { "type": "string", "pattern": "^did:[a-z0-9]+:.+" },
+    "sub": { "type": "string", "pattern": "^did:[a-z0-9]+:.+#.+" },
+    "deviceKid": { "type": "string", "pattern": "^did:[a-z0-9]+:.+#.+" },
+    "devicePublicKeyMultibase": { "type": "string", "pattern": "^z[1-9A-HJ-NP-Za-km-z]+$" },
+    "deviceName": { "type": "string", "minLength": 1 },
+    "capabilities": {
+      "type": "array",
+      "minItems": 1,
+      "uniqueItems": true,
+      "items": {
+        "type": "string",
+        "enum": [
+          "sign-log-entry",
+          "sign-verification",
+          "sign-attestation",
+          "broker-auth",
+          "device-admin"
+        ]
+      }
+    },
+    "validFrom": { "type": "string", "format": "date-time" },
+    "validUntil": { "type": "string", "format": "date-time" },
+    "iat": { "type": "integer", "minimum": 0 }
+  }
+}

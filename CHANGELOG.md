@@ -15,6 +15,7 @@ Das Format folgt grob [Keep a Changelog](https://keepachangelog.com/en/1.1.0/). 
 
 - Erste Terminologie-Korrekturen in Sync-Dokumenten: `Master Key`/`Space Private Key`/`authorDid` durch aktuelle Begriffe ersetzt.
 - Normative Dokumente in profilbezogene Ordner verschoben und Nummerierung pro Profil neu gestartet (`01-wot-identity/`, `02-wot-trust/`, `03-wot-sync/`).
+- `wot-device-delegation@0.1` als geplantes Phase-2-Profil mit Identity 004, DeviceKeyBinding- und Delegated-Attestation-Bundle-Schemas vorbereitet.
 
 ## v0.1.0-draft - 2026-04-24
 

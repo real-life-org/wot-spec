@@ -12,6 +12,8 @@ Dieses Dokument untersucht, wie mehrere Geräte für eine Identität Signaturen 
 
 Phase 1 verwendet Shared Seed: alle Geräte leiten denselben Ed25519-Key deterministisch aus dem BIP39-Seed ab. Dieses Dokument beschreibt die Optionen für den Übergang zu Device-spezifischen Keys.
 
+Der aktuelle Draft fuer Phase 2 steht in [Identity 004: Device-Key-Delegation](../01-wot-identity/004-device-key-delegation.md).
+
 ## Das fundamentale Problem
 
 WoT-Attestations sind langlebige, portable, offline-verifizierbare Dokumente. Wenn Alice mit ihrem Tablet eine Attestation für Bob signiert, muss Carol diese Attestation drei Jahre später auf ihrem Handy verifizieren können — ohne Server, ohne Netzwerk, ohne Ledger.

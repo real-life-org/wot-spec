@@ -1,0 +1,19 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://web-of-trust.de/schemas/delegated-attestation-bundle.schema.json",
+  "title": "WoT Delegated Attestation Bundle",
+  "type": "object",
+  "required": ["type", "attestationJws", "deviceKeyBindingJws"],
+  "additionalProperties": false,
+  "properties": {
+    "type": { "const": "wot-delegated-attestation-bundle/v1" },
+    "attestationJws": {
+      "type": "string",
+      "pattern": "^[A-Za-z0-9_-]+\\.[A-Za-z0-9_-]+\\.[A-Za-z0-9_-]+$"
+    },
+    "deviceKeyBindingJws": {
+      "type": "string",
+      "pattern": "^[A-Za-z0-9_-]+\\.[A-Za-z0-9_-]+\\.[A-Za-z0-9_-]+$"
+    }
+  }
+}

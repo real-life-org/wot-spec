@@ -96,6 +96,17 @@ Eine Implementierung ist `wot-sync@0.1`-konform, wenn sie zusaetzlich `wot-ident
 - Space Content Keys und Capability Keys gemaess Sync 001/005 verwalten.
 - Key-Rotation bei Member-Entfernung verarbeiten.
 
+## `wot-device-delegation@0.1` (geplant)
+
+`wot-device-delegation@0.1` ist ein geplantes Phase-2-Profil. Eine Implementierung ist konform, wenn sie zusaetzlich `wot-identity@0.1` und `wot-trust@0.1` erfuellt und die folgenden Faehigkeiten besitzt.
+
+- DeviceKeyBinding-JWS mit `typ: "wot-device-key-binding+jwt"` erzeugen und verifizieren.
+- `deviceKid`, `sub` und `devicePublicKeyMultibase` konsistent pruefen.
+- Capability-Scopes fuer Device Keys strikt pruefen.
+- Delegated-Attestation-Bundles als JSON-Container parsen.
+- Delegierte Attestations gegen Device Key, Identity-Key-Binding, `iat` und Delegationszeitraum verifizieren.
+- Device-DIDs nicht als eigene soziale Identitaeten im Trust Graph behandeln.
+
 ## `wot-rls@0.1`
 
 Eine Implementierung ist `wot-rls@0.1`-konform, wenn sie `wot-trust@0.1` erfuellt und RLS-spezifische Attestation-Felder gemaess `04-rls-extensions/` erzeugt oder sicher ignoriert.
