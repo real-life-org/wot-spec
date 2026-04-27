@@ -120,6 +120,7 @@ Nicht WoT-spezifisch — jede Local-First-App könnte das nutzen.
 | [Sync-Alternativen](research/sync-alternativen.md) | Landschafts-Recherche: 13+ Sync-Protokolle und Systeme als Inspirationsquellen |
 | [Sync-Architektur](research/sync-architektur.md) | Drei-Schichten-Modell |
 | [Identity Migration](research/identity-migration.md) | Schlüsselrotation bei DID-Wechsel |
+| [Device Keys](research/device-keys.md) | Multi-Device-Signaturen: Shared Seed, Delegation, Sigchain, Pre-Rotation |
 | [Identitäts-Alternativen](research/identitaet-alternativen.md) | Exploration: NextGraph, CryptPad, Argent, Jazz, Passkeys, Hybrid-Vorschlag mit Guardian-Recovery |
 | [Migrations-Roadmap](research/migration-roadmap.md) | Phasenplan für die Überführung der Implementierungen in die Spec |
 | [Positionierung](research/positionierung.md) | Wo wir in der Landschaft stehen — für interne Klarheit und Outreach |
