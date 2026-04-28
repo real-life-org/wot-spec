@@ -403,6 +403,8 @@ Log-Einträge werden NICHT mit ECIES verschlüsselt — sie sind bereits mit dem
 
 Alle Type-URIs verwenden den Präfix `https://web-of-trust.de/protocols/`.
 
+Die Body-Formate fuer `space-invite/1.0`, `key-rotation/1.0` und `member-update/1.0` sind in [Sync 005](005-gruppen.md) spezifiziert und werden durch die Schemas `space-invite`, `key-rotation` und `member-update` beschrieben. Alle drei Nachrichtentypen sind Inbox-Nachrichten und MUESSEN nach [Sync 001 ECIES](001-verschluesselung.md#peer-to-peer-verschlüsselung-ecies) fuer den jeweiligen Empfaenger verschluesselt werden.
+
 ### Wire-Formate der Sync-Nachrichten
 
 #### `log-entry/1.0` — Neuer verschlüsselter Log-Eintrag

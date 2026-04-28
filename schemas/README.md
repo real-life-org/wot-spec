@@ -25,6 +25,7 @@ Status: initialer Draft. Die Schemas decken die in den Spec-Dokumenten beschrieb
 | `profile-service-response.schema.json` | Sync 004 | Profil-Service Antwort mit DID-Dokument |
 | `space-invite.schema.json` | Sync 005 | Space-Einladung ueber Inbox |
 | `key-rotation.schema.json` | Sync 005 | Key-Rotation Nachricht |
+| `member-update.schema.json` | Sync 005 | Mitgliedschafts-Aenderung ueber Inbox |
 | `trust-list-delta.schema.json` | H03 | HMC Trust-List-Gossip Nachricht |
 
 ## Regeln

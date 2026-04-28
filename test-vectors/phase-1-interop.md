@@ -132,7 +132,35 @@ JWS Compact:
 eyJhbGciOiJFZERTQSIsImtpZCI6IndvdDpzcGFjZTo3ZjNhMmIxMC00YzVkLTRlNmYtOGE3Yi05YzBkMWUyZjNhNGIjY2FwLTMiLCJ0eXAiOiJ3b3QtY2FwYWJpbGl0eStqd3QifQ.eyJhdWRpZW5jZSI6ImRpZDprZXk6ejZNa28zWkVqS0pXUUFNNW5EWEtvWjlqRXJ2dnhiV2JZZ1M4S0pYWXBDNUhidThhIiwiZ2VuZXJhdGlvbiI6MywiaXNzdWVkQXQiOiIyMDI2LTA0LTIyVDEwOjAwOjAwWiIsInBlcm1pc3Npb25zIjpbInJlYWQiLCJ3cml0ZSJdLCJzcGFjZUlkIjoiN2YzYTJiMTAtNGM1ZC00ZTZmLThhN2ItOWMwZDFlMmYzYTRiIiwidHlwZSI6ImNhcGFiaWxpdHkiLCJ2YWxpZFVudGlsIjoiMjAyNi0xMC0yMlQxMDowMDowMFoifQ.lqBuMxntI15vmJCnT9UTavTQqM_sxbL4fcrt_n_cSakXE4fy-EFvnXWAngNq5uFYqPbX_r8W-TE16Md97pfWAQ
 ```
 
-## 8. Admin-Key-Ableitung (Sync 001/005)
+## 8. Space Membership Messages (Sync 005)
+
+Diese Vektoren fixieren die Feldnamen fuer Space-Invite, Member-Update, Key-Rotation und Invite-Key-Discovery. Die Beispiel-Keys `abc_123` / `def_456` sind Platzhalter fuer Base64URL-kodiertes Key-Material; kryptographische Gueltigkeit der Capability wird im Space-Capability-Vektor separat geprueft.
+
+Invite-Key-Discovery:
+
+```json
+{"canonical_key_agreement_id":"#enc-0","profile_encryption_public_key_alias_must_match":true,"x25519_public_b64":"yFB4c_1SqTGolVBTKhCBJShSWf-NzXr4XCyDF3FKeUQ","x25519_public_multibase":"z6LSqA7sbKGK3WVHP9SBcmv9ikp19iDNb1P5Q315kRPQrcTV"}
+```
+
+Space-Invite Body:
+
+```json
+{"adminDids":["did:key:z6MkvLMiE11z8wXjNScxqjcMJHNfNyc8XqDT4aGzry4pFTTd"],"brokerUrls":["wss://broker.example.com"],"capability":"aaa.bbb.ccc","currentKeyGeneration":3,"spaceCapabilitySigningKey":"def_456","spaceContentKeys":[{"generation":3,"key":"abc_123"}],"spaceId":"7f3a2b10-4c5d-4e6f-8a7b-9c0d1e2f3a4b"}
+```
+
+Member-Update Body:
+
+```json
+{"action":"removed","effectiveKeyGeneration":4,"memberDid":"did:key:z6MkpTHR8VNsBxYAAWHut2Geadd9jSwuBV8xRoAnwWsdvktH","members":["did:key:z6Mko3ZEjKJWQAM5nDXKoZ9jErvvxbWbYgS8KJXYpC5Hbu8a"],"spaceId":"7f3a2b10-4c5d-4e6f-8a7b-9c0d1e2f3a4b"}
+```
+
+Key-Rotation Body:
+
+```json
+{"capability":"aaa.bbb.ccc","generation":4,"spaceCapabilitySigningKey":"def_456","spaceContentKey":"abc_123","spaceId":"7f3a2b10-4c5d-4e6f-8a7b-9c0d1e2f3a4b"}
+```
+
+## 9. Admin-Key-Ableitung (Sync 001/005)
 
 ```
 spaceId: 7f3a2b10-4c5d-4e6f-8a7b-9c0d1e2f3a4b
@@ -142,7 +170,7 @@ Admin Public Key: ebf654f331fdbf131ca46ce2f28b269ceee064244e521b557a3e919bffe32c
 Admin DID: did:key:z6MkvLMiE11z8wXjNScxqjcMJHNfNyc8XqDT4aGzry4pFTTd
 ```
 
-## 9. Personal-Doc-Key und Document-ID (Sync 006)
+## 10. Personal-Doc-Key und Document-ID (Sync 006)
 
 ```
 HKDF Info: wot/personal-doc/v1
@@ -150,7 +178,7 @@ Personal Doc Key: ed3b3cbec944063041a15cf14be4c2aecd87ec30f2085cd9f2f82333cfcd43
 Document-ID: ed3b3cbe-c944-0630-41a1-5cf14be4c2ae
 ```
 
-## 10. SD-JWT VC Trust List (H01/H03)
+## 11. SD-JWT VC Trust List (H01/H03)
 
 Minimaler Draft-Vektor fuer eine Trust-List mit einem selectively-disclosable Eintrag.
 
