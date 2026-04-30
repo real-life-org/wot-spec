@@ -139,7 +139,7 @@ Diese Vektoren fixieren die Feldnamen fuer Space-Invite, Member-Update, Key-Rota
 Invite-Key-Discovery:
 
 ```json
-{"canonical_key_agreement_id":"#enc-0","profile_encryption_public_key_alias_must_match":true,"x25519_public_b64":"yFB4c_1SqTGolVBTKhCBJShSWf-NzXr4XCyDF3FKeUQ","x25519_public_multibase":"z6LSqA7sbKGK3WVHP9SBcmv9ikp19iDNb1P5Q315kRPQrcTV"}
+{"canonical_key_agreement_id":"#enc-0","x25519_public_b64":"yFB4c_1SqTGolVBTKhCBJShSWf-NzXr4XCyDF3FKeUQ","x25519_public_multibase":"z6LSqA7sbKGK3WVHP9SBcmv9ikp19iDNb1P5Q315kRPQrcTV"}
 ```
 
 Space-Invite Body:
@@ -151,7 +151,7 @@ Space-Invite Body:
 Member-Update Body:
 
 ```json
-{"action":"removed","effectiveKeyGeneration":4,"memberDid":"did:key:z6MkpTHR8VNsBxYAAWHut2Geadd9jSwuBV8xRoAnwWsdvktH","members":["did:key:z6Mko3ZEjKJWQAM5nDXKoZ9jErvvxbWbYgS8KJXYpC5Hbu8a"],"spaceId":"7f3a2b10-4c5d-4e6f-8a7b-9c0d1e2f3a4b"}
+{"action":"removed","effectiveKeyGeneration":4,"memberDid":"did:key:z6MkpTHR8VNsBxYAAWHut2Geadd9jSwuBV8xRoAnwWsdvktH","spaceId":"7f3a2b10-4c5d-4e6f-8a7b-9c0d1e2f3a4b"}
 ```
 
 Key-Rotation Body:

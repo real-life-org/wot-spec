@@ -95,7 +95,7 @@ Eine Implementierung ist `wot-sync@0.1`-konform, wenn sie zusaetzlich `wot-ident
 - Personal Doc Key aus `wot/personal-doc/v1` ableiten.
 - Personal Doc mit derselben Log-Infrastruktur wie Spaces synchronisieren.
 - Space Content Keys und Capability Keys gemaess Sync 001/005 verwalten.
-- Invitee Encryption Keys ueber QR-Cache, DID-Dokument `keyAgreement` oder konsistenten Profil-Alias aufloesen und fehlende Keys als Invite-Fehler behandeln.
+- Invitee Encryption Keys ueber QR-Cache oder DID-Dokument `keyAgreement` aufloesen und fehlende Keys als Invite-Fehler behandeln.
 - `space-invite`, `member-update` und `key-rotation` Inbox-Nachrichten erzeugen, parsen und gegen die Space-Membership-Regeln pruefen.
 - Key-Rotation bei Member-Entfernung verarbeiten.
 

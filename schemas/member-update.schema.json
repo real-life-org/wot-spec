@@ -20,16 +20,12 @@
     "pthid": { "type": "string", "format": "uuid" },
     "body": {
       "type": "object",
-      "required": ["spaceId", "action", "memberDid", "members", "effectiveKeyGeneration"],
+      "required": ["spaceId", "action", "memberDid", "effectiveKeyGeneration"],
       "additionalProperties": false,
       "properties": {
         "spaceId": { "type": "string", "format": "uuid" },
         "action": { "enum": ["added", "removed"] },
         "memberDid": { "type": "string", "pattern": "^did:[a-z0-9]+:.+" },
-        "members": {
-          "type": "array",
-          "items": { "type": "string", "pattern": "^did:[a-z0-9]+:.+" }
-        },
         "effectiveKeyGeneration": { "type": "integer", "minimum": 0 },
         "reason": { "type": "string" }
       }

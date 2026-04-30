@@ -13,11 +13,11 @@
       "type": "object",
       "required": ["name"],
       "additionalProperties": true,
+      "not": { "required": ["encryptionPublicKey"] },
       "properties": {
         "name": { "type": "string", "minLength": 1 },
         "bio": { "type": "string" },
         "avatar": { "type": "string" },
-        "encryptionPublicKey": { "type": "string", "pattern": "^[A-Za-z0-9_-]+$" },
         "protocols": { "type": "array", "items": { "type": "string", "format": "uri" } }
       }
     },

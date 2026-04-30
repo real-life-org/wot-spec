@@ -23,11 +23,13 @@ Der Profil-Service verwaltet pro DID drei separate, aber zusammengehörige JWS-D
 
 | Ressource | Pfad | Inhalt |
 |---|---|---|
-| **Profil** | `/p/{did}` | Öffentliches Profil (Name, Bio, Avatar, Encryption Key, Broker-URLs, Protokolle) |
+| **Profil** | `/p/{did}` | DID-Dokument plus öffentliches Profil (Name, Bio, Avatar, Protokolle) |
 | **Verifikationen** | `/p/{did}/v` | Liste empfangener In-Person-Verifikationen (Beweis des Web-of-Trust-Graphen) |
-| **Attestations** | `/p/{did}/a` | Liste akzeptierter Attestations (öffentliche Aussagen die der Holder zeigen möchte) |
+| **Attestations** | `/p/{did}/a` | Liste bewusst veröffentlichter Attestations (öffentliche Aussagen die der Holder zeigen möchte) |
 
 Die Ressourcen werden unabhängig versioniert und aktualisiert.
+
+Empfangene Attestations landen zuerst in der privaten Wallet bzw. im Personal Doc des Holders. `/p/{did}/a` enthaelt nur Attestations, die der Holder bewusst veroeffentlicht hat. Der Profil-Service veroeffentlicht keine empfangenen Attestations automatisch.
 
 ### HTTP-API
 
@@ -95,7 +97,6 @@ Das Profil enthält das DID-Dokument und soziale Profil-Daten in einem signierte
     "name": "Alice",
     "bio": "Nachbarschaftsgarten",
     "avatar": "data:image/png;base64,...",
-    "encryptionPublicKey": "<Base64URL-kodierter X25519 Public Key, optionaler Alias>",
     "protocols": ["https://web-of-trust.de/protocols/attestation/1.0"]
   },
   "updatedAt": "2026-04-23T10:00:00Z"
@@ -147,10 +148,9 @@ Jede Ressource hat ihre eigene `version` (monoton, unabhängig von der Profil-Ve
 | `name` | String | Ja | Anzeigename |
 | `bio` | String | Nein | Kurzbeschreibung |
 | `avatar` | String | Nein | Avatar-Bild (Data-URL oder HTTPS-URL) |
-| `encryptionPublicKey` | String | Nein | Optionaler denormalisierter Alias fuer den X25519-Key aus `didDocument.keyAgreement`. Wenn vorhanden, MUSS er bytegleich dem `#enc-0` Key im DID-Dokument entsprechen. |
 | `protocols` | Array | Nein | Unterstützte Protokoll-URIs. Ermöglicht Clients zu erkennen, welche Extensions der Peer unterstützt. |
 
-Kanonische Quelle fuer Keys und Broker-URLs ist das `didDocument` (`keyAgreement` und `service`). Der optionale `profile.encryptionPublicKey` Alias existiert nur fuer einfache Discovery-Implementierungen und darf nicht als unabhaengige Quelle betrachtet werden. Wenn Alias und DID-Dokument widersprechen, MUSS der Client das Profil als inkonsistent behandeln und den Invite- oder Verschluesselungsversuch abbrechen.
+Kanonische Quelle fuer Keys und Broker-URLs ist ausschliesslich das `didDocument` (`keyAgreement` und `service`). Das `profile`-Objekt enthaelt soziale Metadaten und Protokoll-Hinweise, aber keine redundanten kryptographischen Schluessel. Clients MUESSEN Encryption-Key-Discovery ueber `didDocument.keyAgreement` durchfuehren.
 
 ### Signatur-Prüfung beim PUT
 

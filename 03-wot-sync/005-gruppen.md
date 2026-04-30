@@ -53,10 +53,9 @@ Vor dem Erstellen einer Space-Einladung MUSS der Einladende den X25519 Encryptio
 
 1. ein zuvor gescannter QR-Code (`enc`, siehe [Trust 002](../02-wot-trust/002-verifikation.md)),
 2. ein lokal gecachter Contact-Key aus einer frueheren Begegnung,
-3. das DID-Dokument des Eingeladenen (`keyAgreement`, siehe [Identity 003](../01-wot-identity/003-did-resolution.md)),
-4. der optionale Profil-Service-Alias `profile.encryptionPublicKey`, falls er mit `didDocument.keyAgreement` uebereinstimmt (siehe [Sync 004](004-discovery.md)).
+3. das DID-Dokument des Eingeladenen (`keyAgreement`, siehe [Identity 003](../01-wot-identity/003-did-resolution.md) und [Sync 004](004-discovery.md)).
 
-Wenn kein Encryption Key aufloesbar ist oder Alias und DID-Dokument widersprechen, MUSS die Einladung abbrechen. Ein Client DARF in diesem Fall keine Space Content Keys unverschluesselt oder an eine falsche DID senden.
+Wenn kein Encryption Key aufloesbar ist, MUSS die Einladung abbrechen. Ein Client DARF in diesem Fall keine Space Content Keys unverschluesselt oder an eine falsche DID senden.
 
 ### Ablauf
 
@@ -146,7 +145,6 @@ Inbox-Nachrichtentyp `member-update`, verschluesselt mit ECIES und mit innerem J
     "spaceId": "uuid",
     "action": "added",
     "memberDid": "did:key:z6Mk...bob",
-    "members": ["did:key:z6Mk...alice", "did:key:z6Mk...bob"],
     "effectiveKeyGeneration": 3
   }
 }
@@ -157,11 +155,10 @@ Inbox-Nachrichtentyp `member-update`, verschluesselt mit ECIES und mit innerem J
 | `spaceId` | UUID | Ja | Betroffener Space |
 | `action` | `added` \| `removed` | Ja | Art der Aenderung |
 | `memberDid` | DID | Ja | Betroffener Member |
-| `members` | Array<DID> | Ja | Mitgliederliste nach der Aenderung aus Sicht des Senders |
 | `effectiveKeyGeneration` | Integer | Ja | Key-Generation, ab der diese Aenderung wirksam ist |
 | `reason` | String | Nein | Optionale menschenlesbare Begruendung |
 
-Empfaenger MÜSSEN `member-update` gegen den naechsten Space-Sync verifizieren. Wenn die lokale CRDT-Mitgliederliste der Nachricht widerspricht, gewinnt das signierte und synchronisierte Space-Dokument. `member-update` allein DARF keine dauerhafte Membership-State-Aenderung erzwingen.
+Empfaenger MÜSSEN `member-update` gegen den naechsten Space-Sync verifizieren. Die kanonische Mitgliederliste bleibt das signierte und synchronisierte Space-Dokument. `member-update` allein DARF keine dauerhafte Membership-State-Aenderung erzwingen.
 
 ## Neue Admins hinzufügen
 
@@ -222,6 +219,12 @@ Alte Daten bleiben mit alten Space Content Keys lesbar. Rotation schuetzt nur zu
 - Der Broker MUSS nach erfolgreicher `space-rotate` Verarbeitung alte Capabilities ablehnen (`CAPABILITY_GENERATION_STALE`).
 - Clients MUESSEN neue Log-Eintraege nach Rotation mit der neuen `keyGeneration` schreiben.
 - Clients MUESSEN alte Log-Eintraege weiter mit der jeweils im Log-Eintrag angegebenen historischen `keyGeneration` entschluesseln.
+
+Clients MUESSEN Key-Rotations anhand ihrer lokal bekannten Space-Key-Generation anwenden:
+
+- Wenn `generation` der lokal bekannten Generation plus eins entspricht, DARF die Rotation angewendet werden.
+- Wenn `generation` kleiner oder gleich der lokal bekannten Generation ist, MUSS die Rotation als doppelt oder veraltet ignoriert werden.
+- Wenn `generation` groesser als die lokal bekannte Generation plus eins ist, MUSS der Client die Rotation als zukuenftige Rotation behandeln. Er DARF sie puffern, MUSS fehlende Rotationen oder einen aktuellen Snapshot/Full-State nachladen und DARF die zukuenftige Rotation nicht anwenden, bevor die Luecke geschlossen ist.
 
 ## Concurrent-Verhalten
 

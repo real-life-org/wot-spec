@@ -3,13 +3,12 @@
   "typ": "application/didcomm-plain+json",
   "type": "https://web-of-trust.de/protocols/member-update/1.0",
   "from": "did:key:z6Mko3ZEjKJWQAM5nDXKoZ9jErvvxbWbYgS8KJXYpC5Hbu8a",
-  "to": [],
+  "to": ["did:key:z6MkpTHR8VNsBxYAAWHut2Geadd9jSwuBV8xRoAnwWsdvktH"],
   "created_time": 1776945600,
   "body": {
-    "spaceId": "not-a-uuid",
+    "spaceId": "7f3a2b10-4c5d-4e6f-8a7b-9c0d1e2f3a4b",
     "action": "joined",
-    "memberDid": "not-a-did",
-    "members": ["did:key:z6Mko3ZEjKJWQAM5nDXKoZ9jErvvxbWbYgS8KJXYpC5Hbu8a"],
-    "effectiveKeyGeneration": -1
+    "memberDid": "did:key:z6MkpTHR8VNsBxYAAWHut2Geadd9jSwuBV8xRoAnwWsdvktH",
+    "effectiveKeyGeneration": 3
   }
 }

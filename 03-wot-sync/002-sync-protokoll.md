@@ -151,7 +151,7 @@ Wenn eine Implementierung einen Snapshot oder Full-State-Payload uebertraegt, ge
 - Ein Empfaenger DARF einen Snapshot nur mergen, wenn er zur erwarteten `docId` und `keyGeneration` passt.
 - Peers MUESSEN weiterhin Log-Eintraege mit `authorKid`, `seq`, `deviceId` und `keyGeneration` verifizieren koennen.
 
-Snapshots sind damit eine optionale Performance-Schicht, nicht das normative Sync-Wire-Format.
+Snapshots sind damit eine optionale Performance-Schicht, nicht das normative Sync-Wire-Format. Ein Snapshot ist nicht autoritativ gegenueber bereits bekannten gueltigen CRDT-Operationen: Clients MUESSEN einen Snapshot ueber den jeweiligen CRDT mergen und DUERFEN ihn nicht verwenden, um lokal bekannte gueltige Log-Eintraege zurueckzurollen oder zu ersetzen. Wenn der CRDT-Import oder Merge eines Snapshots fehlschlaegt, MUSS der Client den Snapshot ignorieren und mit Log-/State-Sync fortfahren.
 
 ## Sync-Modi
 

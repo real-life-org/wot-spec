@@ -131,13 +131,13 @@ Die Attestation gehört dem Subject. Konkret:
 
 - Der Issuer erstellt und signiert die Attestation (als JWS)
 - Die Attestation wird verschlüsselt an den Subject/Holder übermittelt
-- Der Holder speichert den JWS lokal
-- Der Holder entscheidet ob er sie veröffentlicht
+- Der Holder speichert den JWS lokal in seiner Wallet bzw. im Personal Doc
+- Der Holder entscheidet ob er sie veröffentlicht, z.B. über das öffentliche Profil (`/p/{did}/a`, siehe [Sync 004](../03-wot-sync/004-discovery.md))
 - Der Issuer behält keine Kopie (kann aber natürlich eine behalten)
 
 ### Akzeptanz
 
-Der Holder hat ein lokales `public`-Flag pro Attestation. Nicht veröffentlichte Attestations sind unsichtbar für Dritte (nicht im Profil-Service). Das Flag ist **nicht Teil des VC** und wird **nicht signiert** — es ist eine reine lokale Entscheidung, gespeichert als Metadaten neben dem JWS im Personal Doc.
+Der Holder hat ein lokales `public`-Flag pro Attestation. Nicht veröffentlichte Attestations bleiben in der Wallet bzw. im Personal Doc und sind unsichtbar für Dritte (nicht im Profil-Service). Das Flag ist **nicht Teil des VC** und wird **nicht signiert** — es ist eine reine lokale Entscheidung, gespeichert als Metadaten neben dem JWS im Personal Doc.
 
 ## Unveränderlichkeit
 

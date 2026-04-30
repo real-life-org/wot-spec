@@ -24,7 +24,6 @@
   },
   "profile": {
     "name": "Alice",
-    "encryptionPublicKey": "yFB4c_1SqTGolVBTKhCBJShSWf-NzXr4XCyDF3FKeUQ",
     "protocols": ["https://web-of-trust.de/protocols/log-entry/1.0"]
   },
   "updatedAt": "2026-04-17T10:00:00Z"

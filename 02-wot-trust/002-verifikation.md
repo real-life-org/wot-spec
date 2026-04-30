@@ -224,7 +224,7 @@ Die Verification-Attestation wird als DIDComm-Nachricht über den Broker zugeste
 Der X25519 Encryption Public Key erreicht andere Teilnehmer auf zwei Wegen:
 
 1. **QR-Code (In-Person):** Das `enc`-Feld im QR-Code — sofort verfügbar, auch offline
-2. **Profil-Service (Online):** Kanonisch über `didDocument.keyAgreement`; optional zusätzlich als `profile.encryptionPublicKey` Alias — für Kontakte die nicht per QR-Code ausgetauscht wurden (z.B. Space-Einladungen über Dritte)
+2. **Profil-Service (Online):** Über `didDocument.keyAgreement` — für Kontakte die nicht per QR-Code ausgetauscht wurden (z.B. Space-Einladungen über Dritte)
 
 Siehe [Sync 001: Encryption Key Discovery](../03-wot-sync/001-verschluesselung.md#encryption-key-discovery) für Details.
 
