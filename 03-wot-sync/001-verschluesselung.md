@@ -52,7 +52,7 @@ Die birationale Abbildung (Ed25519 → Curve25519 → X25519) ist NICHT erlaubt 
 
 Der X25519 Encryption Public Key ist **nicht** aus der `did:key` ableitbar — die DID kodiert nur den Ed25519 Signing Key. Der Encryption Key wird über einen separaten HKDF-Pfad abgeleitet und muss explizit transportiert werden.
 
-Der Key wird entweder im `enc`-Feld der QR-Challenge ([Trust 002](../02-wot-trust/002-verifikation.md)) oder als `keyAgreement` im DID-Dokument/Profil-Service ([Identity 003](../01-wot-identity/003-did-resolution.md), [Sync 004](004-discovery.md)) transportiert.
+Der Key wird entweder im `enc`-Feld der QR-Challenge ([Trust 002](../02-wot-trust/002-verifikation.md)) oder als `keyAgreement` im DID-Dokument des Profil-Service ([Identity 003](../01-wot-identity/003-did-resolution.md), [Sync 004](004-discovery.md)) transportiert. Das soziale Profil enthaelt keine redundanten kryptographischen Schluessel.
 
 Clients MÜSSEN den Encryption Key nach dem ersten Empfang lokal cachen. In JWE-Headern (`kid`, `skid`) wird die DID ohne Fragment verwendet — die Auflösung zum X25519-Key geschieht protokollintern über den lokalen Cache, nicht über did:key-Fragment-Auflösung.
 

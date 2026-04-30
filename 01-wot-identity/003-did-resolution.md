@@ -267,7 +267,7 @@ Der X25519 Encryption Key wird über einen separaten HKDF-Pfad abgeleitet (siehe
 Der Resolver befüllt `keyAgreement` aus externen Quellen:
 
 - **QR-Code:** Das `enc`-Feld (siehe [Trust 002](../02-wot-trust/002-verifikation.md)) wird in `keyAgreement` eingetragen
-- **Profil-Service:** Das `encryptionPublicKey`-Feld (siehe [Sync 004](../03-wot-sync/004-discovery.md)) wird in `keyAgreement` eingetragen
+- **Profil-Service:** Das eingebettete DID-Dokument (siehe [Sync 004](../03-wot-sync/004-discovery.md)) liefert `keyAgreement`
 
 Dies ist ein **bekannter Workaround** für die Phase-1-Architektur. In Phase 2 (did:webvh) steht der Encryption Key direkt im DID-Dokument.
 

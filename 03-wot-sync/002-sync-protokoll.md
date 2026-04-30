@@ -139,6 +139,20 @@ Klartext (CRDT-Update, z.B. Yjs-Binary)
 
 Der entschlüsselte Payload ist opak. Der CRDT-Typ steht in der Space-Metadata, nicht im Log-Eintrag. Peers schreiben nur in den Log ihrer eigenen `deviceId`; empfangene Einträge bleiben unter der `deviceId` des Autors gespeichert.
 
+### Snapshots und Full-State-Nachrichten
+
+`wot-sync@0.1` normiert den Append-only Log als Interop-Baseline. Implementierungen DÜRFEN zusaetzlich Snapshots, Full-State-Nachrichten oder Vault-Backups verwenden, um Restore und Multi-Device-Catch-Up zu beschleunigen. Solche Optimierungen ersetzen den Log nicht als Konformitaetsanforderung.
+
+Wenn eine Implementierung einen Snapshot oder Full-State-Payload uebertraegt, gelten dieselben Sicherheitsregeln wie fuer Log-Payloads:
+
+- Der Payload MUSS mit dem Space Content Key der angegebenen `keyGeneration` verschluesselt sein.
+- Das verschluesselte Format MUSS `Nonce | Ciphertext | Auth Tag` oder eine aequivalente eindeutig parsebare Form transportieren.
+- Die Autorenschaft oder Transportberechtigung MUSS separat authentifiziert sein (z.B. Envelope-JWS, authentifizierte Broker-Verbindung plus Capability, oder inneres JWS).
+- Ein Empfaenger DARF einen Snapshot nur mergen, wenn er zur erwarteten `docId` und `keyGeneration` passt.
+- Peers MUESSEN weiterhin Log-Eintraege mit `authorKid`, `seq`, `deviceId` und `keyGeneration` verifizieren koennen.
+
+Snapshots sind damit eine optionale Performance-Schicht, nicht das normative Sync-Wire-Format. Ein Snapshot ist nicht autoritativ gegenueber bereits bekannten gueltigen CRDT-Operationen: Clients MUESSEN einen Snapshot ueber den jeweiligen CRDT mergen und DUERFEN ihn nicht verwenden, um lokal bekannte gueltige Log-Eintraege zurueckzurollen oder zu ersetzen. Wenn der CRDT-Import oder Merge eines Snapshots fehlschlaegt, MUSS der Client den Snapshot ignorieren und mit Log-/State-Sync fortfahren.
+
 ## Sync-Modi
 
 Das Log-Protokoll unterstützt Live-Sync und Catch-Up. Peers tauschen Heads pro `(docId, deviceId)` aus und senden fehlende Einträge. Push-Notifications sind nur ein Wecksignal; der Client holt fehlende Einträge danach über normalen Catch-Up (siehe [Sync 003](003-transport-und-broker.md#push-notifications)).

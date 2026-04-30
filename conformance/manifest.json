@@ -52,6 +52,7 @@
         "schemas/didcomm-plaintext-message.schema.json",
         "schemas/key-rotation.schema.json",
         "schemas/log-entry-payload.schema.json",
+        "schemas/member-update.schema.json",
         "schemas/profile-service-response.schema.json",
         "schemas/space-invite.schema.json"
       ],
@@ -64,6 +65,7 @@
             "log_payload_encryption",
             "log_entry_jws",
             "space_capability_jws",
+            "space_membership_messages",
             "admin_key_derivation",
             "personal_doc"
           ]

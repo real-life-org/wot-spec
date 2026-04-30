@@ -1,7 +1,27 @@
 {
   "did": "did:key:z6Mko3ZEjKJWQAM5nDXKoZ9jErvvxbWbYgS8KJXYpC5Hbu8a",
   "version": 1,
-  "didDocument": {},
+  "didDocument": {
+    "id": "did:key:z6Mko3ZEjKJWQAM5nDXKoZ9jErvvxbWbYgS8KJXYpC5Hbu8a",
+    "verificationMethod": [
+      {
+        "id": "#sig-0",
+        "type": "Ed25519VerificationKey2020",
+        "controller": "did:key:z6Mko3ZEjKJWQAM5nDXKoZ9jErvvxbWbYgS8KJXYpC5Hbu8a",
+        "publicKeyMultibase": "z6Mko3ZEjKJWQAM5nDXKoZ9jErvvxbWbYgS8KJXYpC5Hbu8a"
+      }
+    ],
+    "authentication": ["#sig-0"],
+    "assertionMethod": ["#sig-0"],
+    "keyAgreement": [
+      {
+        "id": "#enc-0",
+        "type": "X25519KeyAgreementKey2020",
+        "controller": "did:key:z6Mko3ZEjKJWQAM5nDXKoZ9jErvvxbWbYgS8KJXYpC5Hbu8a",
+        "publicKeyMultibase": "z6LSqA7sbKGK3WVHP9SBcmv9ikp19iDNb1P5Q315kRPQrcTV"
+      }
+    ]
+  },
   "profile": {
     "name": "Alice",
     "protocols": ["https://web-of-trust.de/protocols/log-entry/1.0"]

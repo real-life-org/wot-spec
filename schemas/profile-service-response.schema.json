@@ -13,6 +13,7 @@
       "type": "object",
       "required": ["name"],
       "additionalProperties": true,
+      "not": { "required": ["encryptionPublicKey"] },
       "properties": {
         "name": { "type": "string", "minLength": 1 },
         "bio": { "type": "string" },

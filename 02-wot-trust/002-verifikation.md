@@ -123,6 +123,18 @@ Der Empfänger einer Verification-Attestation prüft:
 
 Die aktive Challenge (mindestens `nonce` und `ts`) MUSS nur bis zur Verifikation oder Regenerierung des QR-Codes lokal gehalten werden. Sie MUSS nicht dauerhaft persistiert werden. Bei App-Neustart ist der sichere Fallback, alte aktive Challenges zu verwerfen und einen neuen QR-Code zu erzeugen.
 
+### Acceptance Gate fuer Online-Verifikation (MUSS)
+
+Eine eingehende Verification-Attestation DARF im Online-Ein-QR-Scan-Flow nur dann als In-Person-Verifikation akzeptiert oder automatisch zur Gegen-Verifikation angeboten werden, wenn alle Bedingungen erfuellt sind:
+
+1. Die Signatur der Attestation ist gueltig.
+2. Die Attestation richtet sich an die lokale DID.
+3. Die Attestation-ID (`jti`) enthaelt eine lokal aktive, noch nicht verbrauchte Challenge-Nonce.
+4. Die aktive Challenge ist zeitlich gueltig.
+5. Die Nonce wurde noch nicht in der Nonce-History konsumiert.
+
+Fehlt eine aktive Challenge-Nonce, MUSS die Attestation als ungebundene Remote-Verifikation behandelt werden. Sie DARF gespeichert oder dem User als separate Remote-Anfrage angezeigt werden, aber sie DARF NICHT als Beweis fuer eine physische Begegnung gelten. Damit wird verhindert, dass beliebige signierte Verification-Attestations als In-Person-Begegnung in den Trust Graph gelangen.
+
 ### Nonce-History (MUSS)
 
 Empfänger MÜSSEN eine Liste bereits verwendeter Nonces führen um Replay-Angriffe zu verhindern. Ohne diese Prüfung könnte ein Angreifer eine aufgezeichnete gültige Attestation erneut vorlegen.
@@ -212,7 +224,7 @@ Die Verification-Attestation wird als DIDComm-Nachricht über den Broker zugeste
 Der X25519 Encryption Public Key erreicht andere Teilnehmer auf zwei Wegen:
 
 1. **QR-Code (In-Person):** Das `enc`-Feld im QR-Code — sofort verfügbar, auch offline
-2. **Profil-Service (Online):** Veröffentlicht im Nutzerprofil unter `encryptionPublicKey` — für Kontakte die nicht per QR-Code ausgetauscht wurden (z.B. Space-Einladungen über Dritte)
+2. **Profil-Service (Online):** Über `didDocument.keyAgreement` — für Kontakte die nicht per QR-Code ausgetauscht wurden (z.B. Space-Einladungen über Dritte)
 
 Siehe [Sync 001: Encryption Key Discovery](../03-wot-sync/001-verschluesselung.md#encryption-key-discovery) für Details.
 

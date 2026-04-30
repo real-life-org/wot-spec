@@ -47,6 +47,16 @@ Beim Erstellen eines Spaces erzeugt der Client einen Space Content Key, ein Spac
 
 ## Einladung
 
+### Invitee-Key-Discovery (MUSS)
+
+Vor dem Erstellen einer Space-Einladung MUSS der Einladende den X25519 Encryption Public Key des Eingeladenen kennen. Erlaubte Quellen sind:
+
+1. ein zuvor gescannter QR-Code (`enc`, siehe [Trust 002](../02-wot-trust/002-verifikation.md)),
+2. ein lokal gecachter Contact-Key aus einer frueheren Begegnung,
+3. das DID-Dokument des Eingeladenen (`keyAgreement`, siehe [Identity 003](../01-wot-identity/003-did-resolution.md) und [Sync 004](004-discovery.md)).
+
+Wenn kein Encryption Key aufloesbar ist, MUSS die Einladung abbrechen. Ein Client DARF in diesem Fall keine Space Content Keys unverschluesselt oder an eine falsche DID senden.
+
 ### Ablauf
 
 Einladungen werden als ECIES-verschlüsselte Inbox-Nachrichten transportiert. Jeder Member DARF eine Capability mit dem `spaceCapabilitySigningKey` für den Eingeladenen signieren; eine Admin-Signatur ist für Einladungen nicht erforderlich.
@@ -82,6 +92,14 @@ Inbox-Nachrichtentyp `space-invite`, verschlüsselt mit ECIES:
 }
 ```
 
+### Einladungs-Invarianten (MUSS)
+
+- `currentKeyGeneration` MUSS der hoechsten Generation in `spaceContentKeys` entsprechen.
+- Die `capability.generation` MUSS `currentKeyGeneration` entsprechen.
+- Die `capability.audience` MUSS der DID des Eingeladenen entsprechen.
+- `spaceContentKeys` MUSS alle Generationen enthalten, die der Eingeladene zum Entschluesseln der aktuell verfuegbaren Space-History benoetigt. Implementierungen duerfen alte Generationen weglassen, wenn sie dem Eingeladenen nur Zugriff ab einem spaeteren Snapshot geben; dann MUSS dieser Snapshot mit `currentKeyGeneration` entschluesselbar sein.
+- Der `spaceCapabilitySigningKey` DARF nur zur Ausstellung weiterer Broker-Capabilities verwendet werden, nicht zur Autoren-Authentifizierung.
+
 ### Annahme und Ablehnung
 
 Bei Annahme speichert der Empfänger Space Content Key, Space Capability Signing Key und Capability lokal, verbindet sich mit dem Heim-Broker und synchronisiert das Space-Dokument. Bei Ablehnung verwirft er die Nachricht.
@@ -109,6 +127,39 @@ Die Mitgliederliste wird als Teil der Sync-Daten gepflegt:
 
 Änderungen an der Mitgliederliste sind reguläre CRDT-Operationen.
 
+## Member-Update Nachricht
+
+`member-update/1.0` informiert bestehende oder entfernte Members ueber eine Mitgliedschaftsaenderung. Die authoritative Mitgliederliste bleibt das verschluesselte Space-Dokument; `member-update` ist ein Zustell- und UX-Signal, damit Clients sofort reagieren koennen.
+
+Inbox-Nachrichtentyp `member-update`, verschluesselt mit ECIES und mit innerem JWS signiert:
+
+```json
+{
+  "id": "uuid",
+  "typ": "application/didcomm-plain+json",
+  "type": "https://web-of-trust.de/protocols/member-update/1.0",
+  "from": "did:key:z6Mk...alice",
+  "to": ["did:key:z6Mk...bob"],
+  "created_time": 1776945600,
+  "body": {
+    "spaceId": "uuid",
+    "action": "added",
+    "memberDid": "did:key:z6Mk...bob",
+    "effectiveKeyGeneration": 3
+  }
+}
+```
+
+| Feld | Typ | Pflicht | Beschreibung |
+|------|-----|---------|-------------|
+| `spaceId` | UUID | Ja | Betroffener Space |
+| `action` | `added` \| `removed` | Ja | Art der Aenderung |
+| `memberDid` | DID | Ja | Betroffener Member |
+| `effectiveKeyGeneration` | Integer | Ja | Key-Generation, ab der diese Aenderung wirksam ist |
+| `reason` | String | Nein | Optionale menschenlesbare Begruendung |
+
+Empfaenger MÜSSEN `member-update` gegen den naechsten Space-Sync verifizieren. Die kanonische Mitgliederliste bleibt das signierte und synchronisierte Space-Dokument. `member-update` allein DARF keine dauerhafte Membership-State-Aenderung erzwingen.
+
 ## Neue Admins hinzufügen
 
 Ein Admin DARF einen bestehenden Member zum Admin befördern. Dafür wird die Admin-Liste im CRDT um die Haupt-DID des neuen Admins erweitert und dessen abgeleitete Admin-DID per `admin-add` beim Broker registriert. `admin-add` MUSS mit einem bestehenden Admin Key signiert sein.
@@ -127,6 +178,13 @@ Bei Entfernung eines Members MUSS ein Admin:
 4. neuen Space Content Key, neuen Space Capability Signing Key und neue Capability via ECIES an alle verbleibenden Members verteilen.
 
 Neue Daten werden mit der neuen Generation verschlüsselt. Der entfernte Member besitzt weder neuen Content Key noch gültige Capability.
+
+Der Admin MUSS zusaetzlich `member-update` Nachrichten senden:
+
+- an den entfernten Member mit `action="removed"` und `effectiveKeyGeneration` der neuen Generation, damit der Client den Space lokal als verlassen/gesperrt markieren kann;
+- an die verbleibenden Members mit `action="removed"`, damit UIs und lokale Caches die Entfernung sofort anzeigen koennen.
+
+Verbleibende Members MUESSEN ausserdem eine `key-rotation` Nachricht mit dem neuen Content Key und der neuen Capability erhalten. Der entfernte Member DARF diese `key-rotation` Nachricht nicht erhalten.
 
 ### Key-Rotation Nachricht
 
@@ -153,6 +211,20 @@ Inbox-Nachrichtentyp `key-rotation`, verschlüsselt mit ECIES:
 Der Admin sendet eine `key-rotation` Nachricht an **jedes** verbleibende Mitglied einzeln.
 
 Alte Daten bleiben mit alten Space Content Keys lesbar. Rotation schuetzt nur zukuenftige Daten und zukuenftigen Broker-Zugriff.
+
+### Key-Rotation Invarianten (MUSS)
+
+- `generation` MUSS exakt die vorherige Space-Key-Generation plus eins sein.
+- Die enthaltene `capability.generation` MUSS `generation` entsprechen.
+- Der Broker MUSS nach erfolgreicher `space-rotate` Verarbeitung alte Capabilities ablehnen (`CAPABILITY_GENERATION_STALE`).
+- Clients MUESSEN neue Log-Eintraege nach Rotation mit der neuen `keyGeneration` schreiben.
+- Clients MUESSEN alte Log-Eintraege weiter mit der jeweils im Log-Eintrag angegebenen historischen `keyGeneration` entschluesseln.
+
+Clients MUESSEN Key-Rotations anhand ihrer lokal bekannten Space-Key-Generation anwenden:
+
+- Wenn `generation` der lokal bekannten Generation plus eins entspricht, DARF die Rotation angewendet werden.
+- Wenn `generation` kleiner oder gleich der lokal bekannten Generation ist, MUSS die Rotation als doppelt oder veraltet ignoriert werden.
+- Wenn `generation` groesser als die lokal bekannte Generation plus eins ist, MUSS der Client die Rotation als zukuenftige Rotation behandeln. Er DARF sie puffern, MUSS fehlende Rotationen oder einen aktuellen Snapshot/Full-State nachladen und DARF die zukuenftige Rotation nicht anwenden, bevor die Luecke geschlossen ist.
 
 ## Concurrent-Verhalten
 

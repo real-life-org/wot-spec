@@ -23,11 +23,13 @@ Der Profil-Service verwaltet pro DID drei separate, aber zusammengehörige JWS-D
 
 | Ressource | Pfad | Inhalt |
 |---|---|---|
-| **Profil** | `/p/{did}` | Öffentliches Profil (Name, Bio, Avatar, Encryption Key, Broker-URLs, Protokolle) |
+| **Profil** | `/p/{did}` | DID-Dokument plus öffentliches Profil (Name, Bio, Avatar, Protokolle) |
 | **Verifikationen** | `/p/{did}/v` | Liste empfangener In-Person-Verifikationen (Beweis des Web-of-Trust-Graphen) |
-| **Attestations** | `/p/{did}/a` | Liste akzeptierter Attestations (öffentliche Aussagen die der Holder zeigen möchte) |
+| **Attestations** | `/p/{did}/a` | Liste bewusst veröffentlichter Attestations (öffentliche Aussagen die der Holder zeigen möchte) |
 
 Die Ressourcen werden unabhängig versioniert und aktualisiert.
+
+Empfangene Attestations landen zuerst in der privaten Wallet bzw. im Personal Doc des Holders. `/p/{did}/a` enthaelt nur Attestations, die der Holder bewusst veroeffentlicht hat. Der Profil-Service veroeffentlicht keine empfangenen Attestations automatisch.
 
 ### HTTP-API
 
@@ -148,7 +150,7 @@ Jede Ressource hat ihre eigene `version` (monoton, unabhängig von der Profil-Ve
 | `avatar` | String | Nein | Avatar-Bild (Data-URL oder HTTPS-URL) |
 | `protocols` | Array | Nein | Unterstützte Protokoll-URIs. Ermöglicht Clients zu erkennen, welche Extensions der Peer unterstützt. |
 
-Keys und Broker-URLs stehen ausschließlich im `didDocument` (`keyAgreement` und `service`). Es gibt keine separaten Top-Level-Felder für Encryption Keys oder Broker-URLs.
+Kanonische Quelle fuer Keys und Broker-URLs ist ausschliesslich das `didDocument` (`keyAgreement` und `service`). Das `profile`-Objekt enthaelt soziale Metadaten und Protokoll-Hinweise, aber keine redundanten kryptographischen Schluessel. Clients MUESSEN Encryption-Key-Discovery ueber `didDocument.keyAgreement` durchfuehren.
 
 ### Signatur-Prüfung beim PUT
 

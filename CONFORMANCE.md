@@ -61,6 +61,7 @@ Eine Implementierung ist `wot-trust@0.1`-konform, wenn sie zusaetzlich `wot-iden
 - QR-Challenge-Felder gemaess Trust 002 parsen.
 - Verification-Attestations als VC-JWS erzeugen und verifizieren.
 - Nonces gegen aktive Challenges und Nonce-History pruefen.
+- Online-In-Person-Verifikationen nur bei aktiver, noch nicht verbrauchter Challenge-Nonce akzeptieren.
 
 ## `wot-sync@0.1`
 
@@ -94,6 +95,8 @@ Eine Implementierung ist `wot-sync@0.1`-konform, wenn sie zusaetzlich `wot-ident
 - Personal Doc Key aus `wot/personal-doc/v1` ableiten.
 - Personal Doc mit derselben Log-Infrastruktur wie Spaces synchronisieren.
 - Space Content Keys und Capability Keys gemaess Sync 001/005 verwalten.
+- Invitee Encryption Keys ueber QR-Cache oder DID-Dokument `keyAgreement` aufloesen und fehlende Keys als Invite-Fehler behandeln.
+- `space-invite`, `member-update` und `key-rotation` Inbox-Nachrichten erzeugen, parsen und gegen die Space-Membership-Regeln pruefen.
 - Key-Rotation bei Member-Entfernung verarbeiten.
 
 ## `wot-device-delegation@0.1` (geplant)
