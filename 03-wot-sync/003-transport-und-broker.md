@@ -134,6 +134,10 @@ Inbox-Nachrichten werden **pro Device** zwischengespeichert, nicht pro DID. Das 
 4. Wenn **alle aktiven Devices** ACKt haben, ist die Nachricht vollständig zugestellt
 5. Deaktivierte Devices werden bei der Zustellung ignoriert (und ihre Inbox-Einträge gelöscht)
 
+Bei selbstadressierten Inbox-Nachrichten, deren `from` und `to` zur selben DID gehoeren, z.B. Cross-Device-Sync, MUSS der Broker die sendende `(did, deviceId)`-Verbindung von der Zustellung ausschliessen. Das sendende Device hat die lokale Aenderung bereits angewendet; ein ACK des sendenden Devices DARF niemals Inbox-Eintraege fuer andere Devices derselben DID loeschen.
+
+ACKs sind pro Device scoped. Ein Broker MUSS ein ACK nur fuer die Inbox des authentifizierten `(did, deviceId)` anwenden. Ein ACK von Device A DARF keine Nachricht fuer Device B loeschen, auch wenn beide Devices dieselbe DID verwenden.
+
 ### Retention und Garbage Collection
 
 - Nachrichten, die älter sind als ein definiertes TTL (z.B. 30 Tage) werden auch ohne ACK gelöscht — Implementierer dürfen das konfigurieren
@@ -503,7 +507,14 @@ Wird nur für **Inbox-Nachrichten** verwendet (nicht für sync-request/response 
 }
 ```
 
-Der Empfänger schickt `ack` nach erfolgreichem Verarbeiten (Entschlüsseln, Signatur-Verifizieren) einer Inbox-Nachricht. Der Broker kann die Nachricht dann aus der Device-Inbox entfernen.
+Der Empfänger schickt `ack` nach erfolgreichem Verarbeiten einer Inbox-Nachricht. Erfolgreich verarbeitet bedeutet:
+
+1. ECIES-Entschlüsselung erfolgreich, falls die Nachricht verschlüsselt war.
+2. Inneres JWS oder persistentes WoT-Objekt verifiziert.
+3. Replay-Prüfung bestanden oder die Nachricht wurde als Duplikat sicher erkannt.
+4. Resultierender lokaler State wurde angewendet oder die Nachricht wurde gemaess [Sync 002](002-sync-protokoll.md) durabel in der **Pending-Inbox** gepuffert. `Pending` bedeutet hier: crash-sichere persistente Speicherung (nicht nur volatil im RAM) zusammen mit den fuer die spaetere Aufloesung und Anwendung erforderlichen Metadaten, mindestens `messageId` sowie Abhaengigkeits-/Missing-Dependency-Metadaten.
+
+Der Broker kann die Nachricht dann aus der Inbox **dieses authentifizierten Devices** entfernen. Er DARF sie nicht aus anderen Device-Inboxen derselben DID entfernen. Wenn der Client eine Nachricht wegen fehlender Abhaengigkeiten nur volatil im Speicher haelt, DARF er sie noch nicht ACKen.
 
 #### Fehler-Responses
 
