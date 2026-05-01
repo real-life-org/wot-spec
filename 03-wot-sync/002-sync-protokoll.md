@@ -164,6 +164,7 @@ Die folgenden Flows definieren die Reihenfolge der Operationen fuer `wot-sync@0.
 ### Gemeinsame Regeln
 
 - Dauerhafter Zustand MUSS aus Log-Eintraegen, Personal-Doc-Eintraegen, Space-Metadaten, Group Keys und durabel gepufferten Inbox-Nachrichten rekonstruierbar sein.
+- Durabel gepufferte Pending-Zustaende, z.B. Pending-Inbox, `blocked-by-key` oder `future-rotation`, sind lokaler crash-sicherer State. Der konkrete Speicherort ist implementationsspezifisch, MUSS aber App-Neustarts ueberleben und MUSS alle Metadaten enthalten, die fuer erneute Pruefung und Anwendung noetig sind, mindestens Message-/Log-Entry-ID, betroffene `docId`, Abhaengigkeitsart und erwartete `keyGeneration`.
 - Ein Client DARF eine Inbox-Nachricht erst ACKen, wenn er sie entweder erfolgreich angewendet hat oder sie inklusive aller Abhaengigkeits-Metadaten dauerhaft gepuffert hat. Nach einem ACK darf der Broker die Nachricht fuer genau dieses Device loeschen (siehe [Sync 003 ACK](003-transport-und-broker.md#ack10--empfangsbestätigung)).
 - Ein Client DARF einen empfangenen Log-Eintrag nicht verwerfen, nur weil ihm der passende `keyGeneration`-Key fehlt. Er MUSS den Eintrag speichern oder erneut abrufbar lassen und den Eintrag als `blocked-by-key` behandeln.
 - Push- und Inbox-Nachrichten sind Wecksignale oder Key-/Control-Messages. Sie ersetzen keinen Log-Catch-Up fuer das betroffene Dokument.
@@ -171,16 +172,17 @@ Die folgenden Flows definieren die Reihenfolge der Operationen fuer `wot-sync@0.
 
 ### App-Start und Reconnect
 
-Bei App-Start und bei jedem Broker-Reconnect MUSS ein Client fuer jedes aktive Dokument folgenden Ablauf ausfuehren:
+Bei App-Start und bei jedem Broker-Reconnect MUSS ein Client fuer das Personal Doc und danach fuer alle bekannten aktiven Space-Dokumente folgenden Ablauf ausfuehren:
 
 1. Lokalen persistenten Zustand laden: Device-ID, bekannte Heads pro `(docId, deviceId)`, lokale Log-Eintraege, durabel gepufferte Inbox-Nachrichten, Personal Doc, Space-Metadaten und Group Keys.
 2. Beim Broker authentisieren, inklusive `did` und `deviceId` (siehe [Sync 003 Authentisierung](003-transport-und-broker.md#authentisierung)).
-3. Pro aktivem Dokument `broker_seq` und `local_seq` fuer die eigene `(deviceId, docId)`-Kombination vergleichen, bevor neue Eintraege an den Broker publiziert werden. Bei `broker_seq > local_seq` gilt die Restore-/Clone-Regel aus [seq-Konsistenz](#seq-konsistenz-muss).
+3. Fuer das Personal Doc `broker_seq` und `local_seq` fuer die eigene `(deviceId, docId)`-Kombination vergleichen, bevor neue Personal-Doc-Eintraege an den Broker publiziert werden. Bei `broker_seq > local_seq` gilt die Restore-/Clone-Regel aus [seq-Konsistenz](#seq-konsistenz-muss).
 4. Die eigene Device-Inbox drainen. Inbox-Nachrichten duerfen in beliebiger Reihenfolge empfangen werden, MUESSEN aber gemaess [Inbox-Verarbeitung](#inbox-verarbeitung-und-ack) verarbeitet, angewendet oder durabel gepuffert werden.
 5. Das Personal Doc per `sync-request` synchronisieren, bevor Space-Dokumente verarbeitet werden, die neue Space-Mitgliedschaften oder Group Keys benoetigen koennen.
-6. Fuer jedes bekannte Space-Dokument einen `sync-request` mit den lokal bekannten Heads senden.
-7. Empfangene `sync-response`-Eintraege verifizieren, lokal persistieren, nach `keyGeneration` entschluesseln und in den CRDT mergen. Eintraege mit fehlenden Keys werden als `blocked-by-key` gespeichert und spaeter erneut verarbeitet.
-8. Erst nach Personal-Doc-Catch-Up, Inbox-Verarbeitung und Space-Catch-Up SOLL die UI den Sync-Zustand als aktuell anzeigen. Eine Implementierung DARF vorher lokale Daten anzeigen, MUSS diese aber als potentiell veraltet behandeln.
+6. Nach abgeschlossenem Personal-Doc-Catch-Up die aktiven Space-Dokumente aus aktualisiertem Personal Doc, lokal persistenten Space-Metadaten und durabel gepufferten Abhaengigkeiten bestimmen.
+7. Fuer jedes bekannte Space-Dokument `broker_seq` und `local_seq` fuer die eigene `(deviceId, docId)`-Kombination vergleichen, bevor neue Space-Eintraege publiziert werden, und danach einen `sync-request` mit den lokal bekannten Heads senden.
+8. Empfangene `sync-response`-Eintraege verifizieren, lokal persistieren, nach `keyGeneration` entschluesseln und in den CRDT mergen. Eintraege mit fehlenden Keys werden als `blocked-by-key` gespeichert und spaeter erneut verarbeitet.
+9. Erst nach Personal-Doc-Catch-Up, Inbox-Verarbeitung und Space-Catch-Up SOLL die UI den Sync-Zustand als aktuell anzeigen. Eine Implementierung DARF vorher lokale Daten anzeigen, MUSS diese aber als potentiell veraltet behandeln.
 
 Wenn mehrere Broker oder P2P-Quellen verfuegbar sind, SOLLTE der Client diese Runden gegen mehrere Quellen ausfuehren und Heads vergleichen (siehe [Censorship- und Split-Brain-Detection](#censorship--und-split-brain-detection)).
 
@@ -227,6 +229,8 @@ Key-Rotation ist eine Abhaengigkeit fuer alle spaeteren Space-Log-Eintraege. Cli
 - Empfaengt ein Client eine `key-rotation` mit `generation > localGeneration + 1`, MUSS er sie als `future-rotation` durabel puffern. Er DARF sie nicht anwenden, bevor die Luecke geschlossen ist. Er MUSS fehlende Rotationen, Personal-Doc-Keys oder einen aktuellen Full-State/Log-Catch-Up anfordern.
 - Empfaengt ein Client einen Log-Eintrag mit unbekannter `keyGeneration`, MUSS er den Eintrag als `blocked-by-key` speichern oder erneut abrufbar lassen und Key-/Personal-Doc-Catch-Up anfordern. Er DARF den Eintrag nicht als verarbeitet markieren.
 - Sobald eine fehlende Generation verfuegbar wird, MUSS der Client alle gepufferten `future-rotation`-Nachrichten und `blocked-by-key`-Log-Eintraege in aufsteigender Generation erneut pruefen.
+
+`Anfordern` von fehlenden Rotationen oder Keys bedeutet in `wot-sync@0.1`, dass ein Client die bestehenden Sync-Quellen erneut nutzt: eigene Device-Inbox drainen, Personal Doc per `sync-request` aufholen, fuer das betroffene Space-Dokument einen `sync-request` senden und, falls implementiert, einen autorisierten Snapshot oder Full-State abrufen. Ein separates generisches `key-request` Nachrichtenformat ist in `wot-sync@0.1` nicht normiert. Solange die fehlende Generation danach nicht verfuegbar ist, MUSS der Client die betroffenen `future-rotation`- und `blocked-by-key`-Eintraege durabel gepuffert lassen und bei App-Start, Reconnect oder neuem Wecksignal erneut aufloesen.
 
 ### Snapshot- und Full-State-Optimierungen
 

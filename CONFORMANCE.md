@@ -80,7 +80,7 @@ Eine Implementierung ist `wot-sync@0.1`-konform, wenn sie zusaetzlich `wot-ident
 - `seq` pro `(deviceId, docId)` strikt monoton fuehren.
 - Restore/Clone-Erkennung bei `broker_seq > local_seq` umsetzen.
 - Kollisionen fuer `(docId, deviceId, seq)` erkennen und sicher behandeln.
-- App-Start- und Reconnect-Flows gemaess Sync 002 ausfuehren: lokalen Zustand laden, Broker authentisieren, Personal Doc zuerst syncen, danach Space-Dokumente ueber Heads/`sync-request` catch-upen.
+- App-Start- und Reconnect-Flows gemaess Sync 002 ausfuehren: lokalen Zustand laden, Broker authentisieren, Personal Doc zuerst syncen, danach fuer Space-Dokumente ueber Heads/`sync-request` einen Catch-Up durchfuehren.
 - Lokale Schreibvorgaenge zuerst persistent als Log-Eintrag speichern und erst danach an Broker/Peers publizieren.
 - Log-Eintraege mit fehlender `keyGeneration` als `blocked-by-key` behandeln und nach Key-Catch-Up erneut verarbeiten.
 - Snapshots und Full-State-Nachrichten nur als Optimierung mergen und niemals als Ersatz fuer Log-Catch-Up oder als Rollback bekannter gueltiger Eintraege verwenden.
@@ -93,7 +93,7 @@ Eine Implementierung ist `wot-sync@0.1`-konform, wenn sie zusaetzlich `wot-ident
 - Broker-Challenge-Response mit DID-Signaturen umsetzen.
 - Capabilities als JWS verifizieren.
 - Inbox-Nachrichten pro Device zustellen und ACKs verarbeiten.
-- Self-addressed Inbox-Nachrichten an andere Devices derselben DID zustellen, ohne das sendende Device als erfolgreich zugestellten Empfaenger zu behandeln.
+- Selbstadressierte Inbox-Nachrichten an andere Devices derselben DID zustellen, ohne das sendende Device als erfolgreich zugestellten Empfaenger zu behandeln.
 - Inbox-ACKs nur pro authentifiziertem Device anwenden und erst nach Entschluesselung, Verifikation, Replay-Pruefung und dauerhafter Anwendung oder durablem Pending-Speicher senden.
 
 ### Personal Doc und Gruppen
@@ -104,7 +104,7 @@ Eine Implementierung ist `wot-sync@0.1`-konform, wenn sie zusaetzlich `wot-ident
 - Invitee Encryption Keys ueber QR-Cache oder DID-Dokument `keyAgreement` aufloesen und fehlende Keys als Invite-Fehler behandeln.
 - `space-invite`, `member-update` und `key-rotation` Inbox-Nachrichten erzeugen, parsen und gegen die Space-Membership-Regeln pruefen.
 - Key-Rotation bei Member-Entfernung verarbeiten.
-- Key-Rotation-Generationen exakt nach Sync 005 anwenden: `local+1` anwenden, `<=local` ignorieren, `>local+1` durabel puffern und fehlende Rotationen/Keys/Full-State nachladen.
+- Key-Rotation-Generationen exakt nach Sync 005 anwenden: `local+1` anwenden, `<=local` ignorieren, `>local+1` durabel puffern und fehlende Rotationen/Keys ueber Device-Inbox, Personal-Doc-Catch-Up, Space-`sync-request` und optionale Snapshot-/Full-State-Quellen nachladen.
 - Nach `space-invite` und `key-rotation` einen Space-Catch-Up per `sync-request` ausloesen.
 
 ## `wot-device-delegation@0.1` (geplant)
