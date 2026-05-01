@@ -157,6 +157,87 @@ Snapshots sind damit eine optionale Performance-Schicht, nicht das normative Syn
 
 Das Log-Protokoll unterstützt Live-Sync und Catch-Up. Peers tauschen Heads pro `(docId, deviceId)` aus und senden fehlende Einträge. Push-Notifications sind nur ein Wecksignal; der Client holt fehlende Einträge danach über normalen Catch-Up (siehe [Sync 003](003-transport-und-broker.md#push-notifications)).
 
+## Normative Sync-Flows
+
+Die folgenden Flows definieren die Reihenfolge der Operationen fuer `wot-sync@0.1`. Implementierungen duerfen einzelne Schritte parallelisieren, MUESSEN aber dieselben Abhaengigkeiten einhalten und MUESSEN jeden Flow idempotent implementieren. Mehrfach empfangene Nachrichten, mehrfach publizierte Log-Eintraege und wiederholte `sync-request`-Runden duerfen keinen anderen Endzustand erzeugen als eine einmalige Verarbeitung.
+
+### Gemeinsame Regeln
+
+- Dauerhafter Zustand MUSS aus Log-Eintraegen, Personal-Doc-Eintraegen, Space-Metadaten, Group Keys und durabel gepufferten Inbox-Nachrichten rekonstruierbar sein.
+- Ein Client DARF eine Inbox-Nachricht erst ACKen, wenn er sie entweder erfolgreich angewendet hat oder sie inklusive aller Abhaengigkeits-Metadaten dauerhaft gepuffert hat. Nach einem ACK darf der Broker die Nachricht fuer genau dieses Device loeschen (siehe [Sync 003 ACK](003-transport-und-broker.md#ack10--empfangsbestätigung)).
+- Ein Client DARF einen empfangenen Log-Eintrag nicht verwerfen, nur weil ihm der passende `keyGeneration`-Key fehlt. Er MUSS den Eintrag speichern oder erneut abrufbar lassen und den Eintrag als `blocked-by-key` behandeln.
+- Push- und Inbox-Nachrichten sind Wecksignale oder Key-/Control-Messages. Sie ersetzen keinen Log-Catch-Up fuer das betroffene Dokument.
+- Snapshots, Full-State-Nachrichten und Vault-Backups sind Optimierungen. Sie duerfen keinen bekannten gueltigen Log-Eintrag zurueckrollen und duerfen eine fehlende Log-Sync-Runde nicht ersetzen.
+
+### App-Start und Reconnect
+
+Bei App-Start und bei jedem Broker-Reconnect MUSS ein Client fuer jedes aktive Dokument folgenden Ablauf ausfuehren:
+
+1. Lokalen persistenten Zustand laden: Device-ID, bekannte Heads pro `(docId, deviceId)`, lokale Log-Eintraege, durabel gepufferte Inbox-Nachrichten, Personal Doc, Space-Metadaten und Group Keys.
+2. Beim Broker authentisieren, inklusive `did` und `deviceId` (siehe [Sync 003 Authentisierung](003-transport-und-broker.md#authentisierung)).
+3. Pro aktivem Dokument `broker_seq` und `local_seq` fuer die eigene `(deviceId, docId)`-Kombination vergleichen, bevor neue Eintraege an den Broker publiziert werden. Bei `broker_seq > local_seq` gilt die Restore-/Clone-Regel aus [seq-Konsistenz](#seq-konsistenz-muss).
+4. Die eigene Device-Inbox drainen. Inbox-Nachrichten duerfen in beliebiger Reihenfolge empfangen werden, MUESSEN aber gemaess [Inbox-Verarbeitung](#inbox-verarbeitung-und-ack) verarbeitet, angewendet oder durabel gepuffert werden.
+5. Das Personal Doc per `sync-request` synchronisieren, bevor Space-Dokumente verarbeitet werden, die neue Space-Mitgliedschaften oder Group Keys benoetigen koennen.
+6. Fuer jedes bekannte Space-Dokument einen `sync-request` mit den lokal bekannten Heads senden.
+7. Empfangene `sync-response`-Eintraege verifizieren, lokal persistieren, nach `keyGeneration` entschluesseln und in den CRDT mergen. Eintraege mit fehlenden Keys werden als `blocked-by-key` gespeichert und spaeter erneut verarbeitet.
+8. Erst nach Personal-Doc-Catch-Up, Inbox-Verarbeitung und Space-Catch-Up SOLL die UI den Sync-Zustand als aktuell anzeigen. Eine Implementierung DARF vorher lokale Daten anzeigen, MUSS diese aber als potentiell veraltet behandeln.
+
+Wenn mehrere Broker oder P2P-Quellen verfuegbar sind, SOLLTE der Client diese Runden gegen mehrere Quellen ausfuehren und Heads vergleichen (siehe [Censorship- und Split-Brain-Detection](#censorship--und-split-brain-detection)).
+
+### Lokaler Schreibvorgang
+
+Bei jedem lokalen Schreibvorgang in ein Personal Doc oder Space-Dokument MUSS der Client:
+
+1. Den naechsten `seq`-Wert atomar aus dem persistenten Log fuer `(deviceId, docId)` reservieren. Wenn der Broker erreichbar ist, MUSS vorher ein Broker-Head-Abgleich stattfinden; wenn der Client offline ist, MUSS spaetestens vor der ersten Publikation nach Reconnect der Broker-Head-Abgleich stattfinden.
+2. Den CRDT-Update-Payload mit dem aktuell gueltigen Key und der aktuell gueltigen `keyGeneration` verschluesseln.
+3. Einen Log-Entry-JWS mit `seq`, `deviceId`, `docId`, `authorKid`, `keyGeneration`, `data` und `timestamp` erzeugen und signieren.
+4. Den Log-Eintrag lokal persistieren, bevor er an Broker oder Peers uebermittelt wird.
+5. Den Log-Eintrag an alle relevanten Broker/Peers publizieren. Fehler bei der Uebermittlung MUESSEN als retrybarer Outbox-Zustand behandelt werden; eine erneute Publikation desselben Log-Eintrags MUSS idempotent sein.
+6. Keine Inbox-ACK-Semantik fuer Log-Eintraege verwenden. Fehlende Log-Eintraege werden ueber Heads und `sync-request` erkannt.
+
+### Inbox-Verarbeitung und ACK
+
+Inbox-Nachrichten sind direkte Nachrichten wie Attestations, Verifications, Space-Einladungen, `member-update` und `key-rotation`. Fuer jede empfangene Inbox-Nachricht MUSS der Client:
+
+1. ECIES entschluesseln, wenn die Nachricht verschluesselt ist.
+2. Das innere JWS oder das normative persistente Objekt verifizieren. Envelope-Felder allein duerfen nicht als Autoritaetsanker verwendet werden (siehe [Sync 003 Autoritaetsgrenze](003-transport-und-broker.md#autoritätsgrenze-muss)).
+3. Replay-Schutz ueber Message-ID-History anwenden.
+4. Die resultierende lokale Aenderung anwenden oder die Nachricht durabel in einer Pending-Inbox speichern, wenn Abhaengigkeiten fehlen.
+5. Falls die Nachricht ein Dokument betrifft, danach einen `sync-request` fuer dieses Dokument ausloesen oder vormerken. Ein `space-invite` fuehrt zu Space-Catch-Up; eine `key-rotation` fuehrt zu erneuter Verarbeitung blockierter Log-Eintraege fuer diese `keyGeneration`.
+6. Erst dann ACKen, wenn Schritt 4 dauerhaft abgeschlossen ist. Bei einem Prozess-Crash nach ACK MUSS der Client ohne erneute Broker-Zustellung fortfahren koennen.
+
+Wenn eine Inbox-Nachricht ungueltig ist (falsche Signatur, falscher Empfaenger, Replay, abgelaufen), MUSS der Client sie verwerfen und DARF sie ACKen, damit der Broker sie fuer dieses Device nicht erneut liefert. Der Client SOLLTE lokale Audit-/Debug-Informationen speichern, aber keinen autoritativen State aendern.
+
+### Space-Invite-Annahme
+
+Bei Annahme einer `space-invite` MUSS der Client:
+
+1. Einladung entschluesseln und inneres JWS, Empfaenger-DID, Capability und `currentKeyGeneration` pruefen.
+2. Space Content Keys, Space Capability Signing Key, Capability, Broker-URLs und Space-Metadaten im Personal Doc oder lokalem aequivalentem Zustand persistieren.
+3. Danach den Invite ACKen.
+4. Einen `sync-request` fuer das Space-Dokument mit leeren oder lokalen Heads senden.
+5. Empfangene Log-Eintraege gemaess normalem Space-Catch-Up verarbeiten. Wenn die Einladung nicht alle historischen Keys enthaelt, MUSS der erste verarbeitbare Snapshot oder Log-Eintrag mit `currentKeyGeneration` erreichbar sein; sonst bleibt der Space `blocked-by-key`.
+
+### Key-Rotation und Generation-Gaps
+
+Key-Rotation ist eine Abhaengigkeit fuer alle spaeteren Space-Log-Eintraege. Clients MUESSEN folgende Regeln anwenden:
+
+- Empfaengt ein Client eine `key-rotation` mit `generation = localGeneration + 1`, MUSS er den neuen Content Key und die neue Capability durabel speichern, blockierte Log-Eintraege dieser Generation erneut verarbeiten und einen `sync-request` fuer das Space-Dokument ausloesen.
+- Empfaengt ein Client eine `key-rotation` mit `generation <= localGeneration`, MUSS er sie als doppelt oder veraltet behandeln. Er DARF sie ACKen, nachdem Replay- und Signaturpruefung abgeschlossen sind.
+- Empfaengt ein Client eine `key-rotation` mit `generation > localGeneration + 1`, MUSS er sie als `future-rotation` durabel puffern. Er DARF sie nicht anwenden, bevor die Luecke geschlossen ist. Er MUSS fehlende Rotationen, Personal-Doc-Keys oder einen aktuellen Full-State/Log-Catch-Up anfordern.
+- Empfaengt ein Client einen Log-Eintrag mit unbekannter `keyGeneration`, MUSS er den Eintrag als `blocked-by-key` speichern oder erneut abrufbar lassen und Key-/Personal-Doc-Catch-Up anfordern. Er DARF den Eintrag nicht als verarbeitet markieren.
+- Sobald eine fehlende Generation verfuegbar wird, MUSS der Client alle gepufferten `future-rotation`-Nachrichten und `blocked-by-key`-Log-Eintraege in aufsteigender Generation erneut pruefen.
+
+### Snapshot- und Full-State-Optimierungen
+
+Snapshots und Full-State-Nachrichten duerfen verwendet werden, um lange Catch-Up-Runden zu beschleunigen. Sie MUESSEN aber wie folgt eingeordnet werden:
+
+1. Ein Snapshot MUSS mindestens `docId`, `keyGeneration` und eine Abdeckung der enthaltenen Log-Heads (`heads` oder aequivalente Metadaten) besitzen, wenn er als Catch-Up-Optimierung verwendet wird.
+2. Kann eine Implementierung die Abdeckung nicht bestimmen, DARF sie den Snapshot nur als CRDT-Merge-Hilfe verwenden und MUSS danach trotzdem eine normale `sync-request`-Runde ausfuehren.
+3. Ein Snapshot mit unbekannter oder zukuenftiger `keyGeneration` wird wie ein blockierter Log-Eintrag behandelt: puffern oder erneut abrufen, fehlende Keys anfordern, nicht als verarbeitet markieren.
+4. Ein Snapshot DARF keine lokal bekannten gueltigen Log-Eintraege loeschen oder ueberschreiben. Der CRDT-Merge bleibt autoritativ fuer Konvergenz.
+5. Zeitbasierte Retry-Mechanismen duerfen als Implementierungsdetail existieren, sind aber nicht der normative Sync-Mechanismus. Normative Recovery basiert auf Heads, `sync-request`, per-Device-Inbox und Generation-Gap-Erkennung.
+
 ## Censorship- und Split-Brain-Detection
 
 Das Sync-Protokoll konvergiert, solange Peers dieselben Log-Einträge sehen. Broker oder andere Zwischenakteure können jedoch Einträge selektiv unterdrücken oder verschiedenen Peers unterschiedliche Heads zeigen.

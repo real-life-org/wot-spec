@@ -264,7 +264,9 @@ Das Personal Doc nutzt dieselbe Log-, Signatur-, Nonce- und DIDComm-Infrastruktu
 
 ### Self-Addressed Messages
 
-Personal-Doc-Nachrichten werden an die eigene DID adressiert. Der Broker routet sie an die anderen verbundenen Geräte derselben DID.
+Personal-Doc-Nachrichten werden an die eigene DID adressiert. Der Broker routet sie an die anderen verbundenen Geräte derselben DID. Die sendende `(did, deviceId)`-Verbindung darf ihre eigene Nachricht nicht als zugestellt ACKen; ACKs sind pro Device scoped (siehe [Sync 003 Store-and-Forward pro Device](003-transport-und-broker.md#store-and-forward-pro-device)).
+
+Beim Start oder Reconnect MUSS ein Client das Personal Doc vor Space-Dokumenten synchronisieren, weil Space-Mitgliedschaften und `groupKeys` im Personal Doc liegen. Space-Log-Eintraege mit unbekannter `keyGeneration` MUESSEN blockiert bleiben, bis Personal-Doc-Catch-Up oder eine `key-rotation` Inbox-Nachricht den passenden Key liefert (siehe [Sync 002 App-Start und Reconnect](002-sync-protokoll.md#app-start-und-reconnect)).
 
 ### Replikation auf mehreren Brokern
 

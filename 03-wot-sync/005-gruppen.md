@@ -186,6 +186,18 @@ Der Admin MUSS zusaetzlich `member-update` Nachrichten senden:
 
 Verbleibende Members MUESSEN ausserdem eine `key-rotation` Nachricht mit dem neuen Content Key und der neuen Capability erhalten. Der entfernte Member DARF diese `key-rotation` Nachricht nicht erhalten.
 
+### Operationelle Reihenfolge (MUSS)
+
+Damit offline Devices deterministisch aufholen koennen, MUSS eine Member-Entfernung als geordneter Sync-Flow behandelt werden:
+
+1. Der Admin erzeugt die Remove-CRDT-Operation und den neuen Key-Material-Satz lokal und persistiert beides gemaess [Sync 002 Lokaler Schreibvorgang](002-sync-protokoll.md#lokaler-schreibvorgang).
+2. Der Admin registriert die neue Capability-Key-Generation beim Broker (`space-rotate`) oder legt die Operation in eine retrybare Outbox, falls der Broker offline ist.
+3. Der Admin sendet `key-rotation` Inbox-Nachrichten an alle verbleibenden Members und `member-update` Nachrichten an verbleibende sowie entfernte Members. Diese Nachrichten MUESSEN pro Device zugestellt und ACKt werden (siehe [Sync 003 Store-and-Forward pro Device](003-transport-und-broker.md#store-and-forward-pro-device)).
+4. Verbleibende Members speichern die neue Generation durabel, bevor sie `key-rotation` ACKen. Danach MUESSEN sie einen Space-`sync-request` ausloesen und blockierte Log-Eintraege dieser Generation erneut verarbeiten.
+5. Entfernte Members duerfen `member-update(action="removed")` erst als dauerhaften lokalen Austritt behandeln, wenn der naechste Space-Sync die kanonische Mitgliederliste oder eine gueltige Rotation bestaetigt. Bis dahin SOLLTE die UI den Space als "Entfernung ausstehend" oder vergleichbar markieren.
+
+Zeitbasierte Snapshot- oder Vault-Retries duerfen diesen Ablauf beschleunigen, sind aber nicht normativ. Normative Konvergenz entsteht durch Inbox-Zustellung, Key-/Generation-Gap-Regeln und Log-Catch-Up gemaess [Sync 002 Key-Rotation und Generation-Gaps](002-sync-protokoll.md#key-rotation-und-generation-gaps).
+
 ### Key-Rotation Nachricht
 
 Inbox-Nachrichtentyp `key-rotation`, verschlüsselt mit ECIES:
@@ -225,6 +237,8 @@ Clients MUESSEN Key-Rotations anhand ihrer lokal bekannten Space-Key-Generation 
 - Wenn `generation` der lokal bekannten Generation plus eins entspricht, DARF die Rotation angewendet werden.
 - Wenn `generation` kleiner oder gleich der lokal bekannten Generation ist, MUSS die Rotation als doppelt oder veraltet ignoriert werden.
 - Wenn `generation` groesser als die lokal bekannte Generation plus eins ist, MUSS der Client die Rotation als zukuenftige Rotation behandeln. Er DARF sie puffern, MUSS fehlende Rotationen oder einen aktuellen Snapshot/Full-State nachladen und DARF die zukuenftige Rotation nicht anwenden, bevor die Luecke geschlossen ist.
+
+Die detaillierte Verarbeitung von `blocked-by-key` Log-Eintraegen, durabel gepufferten `future-rotation` Nachrichten und ACK-Zeitpunkten ist in [Sync 002 Normative Sync-Flows](002-sync-protokoll.md#normative-sync-flows) definiert.
 
 ## Concurrent-Verhalten
 
