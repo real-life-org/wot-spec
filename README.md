@@ -126,6 +126,7 @@ Nicht WoT-spezifisch — jede Local-First-App könnte das nutzen.
 | [Interop und Zielgruppe](research/interop-und-zielgruppe.md) | Standards (DIDComm, OpenID4VC), Zielgruppen, eIDAS-Kontext |
 | [DIDComm Migration](research/didcomm-migration.md) | Analyse, Roadmap, fehlende Teile, Sicherheitsanalyse |
 | [Verbreitungsstrategie](research/verbreitungsstrategie.md) | 5-Jahres-Vision, Schlüsselpartner, eIDAS-Kontext |
+| [Public-Signed Spaces](research/public-signed-spaces.md) | Nicht normativer Draft fuer oeffentliche Link-/White-Label-Spaces mit signierten Updates |
 
 ## Implementierungen
 
