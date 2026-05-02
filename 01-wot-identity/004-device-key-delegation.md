@@ -20,6 +20,12 @@ Das Modell besteht aus:
 
 Device DIDs sind keine sozialen Identitaeten. Sie sind technische Signing Keys, die durch die Identity DID fuer konkrete Capabilities delegiert werden.
 
+## Architektur-Schnitt
+
+Device-Key-Delegation liegt in der Identity-Dokumentfamilie, weil sie das Key-/Authority-Modell einer Identity DID erweitert: Welche technischen Keys duerfen fuer diese Identity handeln?
+
+Sie ist trotzdem nicht Teil des Identity-Core-Profils `wot-identity@0.1`. Implementierungen von `wot-identity@0.1` muessen nur Identity Keys, DID-Resolution und direkte JWS-Signaturen beherrschen. Device-Key-Delegation ist ein eigenes geplantes Erweiterungsprofil, das von Trust und Sync konsumiert wird, wenn delegierte Attestations, delegierte Log-Signaturen oder Device-basierte Broker-Authentisierung verwendet werden.
+
 ## Identitaetsmodell
 
 In Phase 2 nutzt jedes Geraet eine eigene `did:key`-DID:
@@ -114,7 +120,7 @@ DeviceKeyBinding wird als JWS Compact Serialization signiert.
 
 - `alg` MUSS `"EdDSA"` sein.
 - `kid` MUSS auf den Identity Key zeigen, der `iss` kontrolliert.
-- `typ` SOLLTE `"wot-device-key-binding+jwt"` sein.
+- `typ` MUSS `"wot-device-key-binding+jwt"` sein.
 
 ## Delegated-Attestation-Bundle
 

@@ -22,7 +22,7 @@ Dieses Dokument spezifiziert wie Daten im Web of Trust signiert und verifiziert 
 
 ## Anforderungen
 
-- Alle signierten Daten MÜSSEN allein mit der DID des Signierers verifizierbar sein (kein externer Lookup nötig)
+- DID-gebundene Signaturen MUESSEN ueber `kid`, `resolve(did)` und das DID-Dokument verifizierbar sein; nicht-DID-gebundene Signaturen MUESSEN ihren kontextspezifischen Key-Resolver normativ angeben.
 - Das Signaturformat MUSS deterministische Verifikation unterstützen (gleiche Eingabe → gleiches Ergebnis)
 - Die Kanonisierungsmethode MUSS eindeutig sein
 
@@ -43,7 +43,7 @@ BASE64URL(header) . BASE64URL(payload) . BASE64URL(signature)
 **Header:**
 
 ```json
-{ "alg": "EdDSA", "typ": "<kontextspezifisch>", "kid": "<DID-URL>" }
+{ "alg": "EdDSA", "typ": "<kontextspezifisch>", "kid": "<Key-Identifier>" }
 ```
 
 `kid` (Key Identifier) ist **PFLICHT** in jedem WoT-JWS. Es identifiziert welcher konkrete Key die Signatur erzeugt hat. Für DID-gebundene Signaturen ist `kid` eine DID-URL mit Fragment (z.B. `did:key:z6Mk...#sig-0`). Der Verifier nutzt `kid` um über `resolve()` ([Identity 003](003-did-resolution.md)) den richtigen Public Key zu finden. In Phase 1 ist das Fragment immer `#sig-0` (einziger Key). In Phase 2 (Per-Device-Keys) zeigt es auf den spezifischen Device-Key.
@@ -137,17 +137,17 @@ Für die Verifikation werden benötigt:
 
 **Wichtig:** Der Verifier darf den Payload NICHT neu kanonisieren oder neu serialisieren. Kanonisierung (JCS) findet ausschließlich auf Sender-Seite statt, **bevor** Base64URL-Kodierung. Auf Empfängerseite werden die empfangenen Bytes 1:1 verifiziert. Re-Kanonisierung bei der Verifikation würde abweichende Bytes erzeugen und gültige Signaturen fälschlich ablehnen.
 
-Kein externer Key-Server oder Zertifikatskette nötig — die DID selbst enthält den Public Key.
+Kein vertrauenswuerdiger externer Key-Server oder eine Zertifikatskette ist noetig. DID-gebundene Signaturen werden ueber DID-Dokumente verifiziert; kontextspezifische Signaturen wie Space-Capabilities werden ueber den im jeweiligen Protokolldokument definierten Kontext-Resolver verifiziert.
 
 ### kid-Konsistenz (MUSS)
 
 Der Verifier MUSS prüfen, dass `kid` mit dem Signierer- oder Kontext-Identifier im Payload konsistent ist. Konkret:
 
-- Bei Attestations: `kid` MUSS zur DID in `iss` / `issuer` passen
-- Bei Log-Einträgen: `kid` MUSS zur DID in `authorKid` passen
+- Bei direkten Attestation-Signaturen in `wot-trust@0.1`: Die DID im `kid` MUSS zur DID in `iss` / `issuer` passen. Delegierte Device-Key-Signaturen folgen den Regeln aus [Identity 004](004-device-key-delegation.md).
+- Bei Log-Einträgen: `kid` MUSS dem `authorKid` entsprechen.
 - Bei Space-Capabilities: `kid` MUSS `spaceId` und `generation` referenzieren (Format: `wot:space:<spaceId>#cap-<generation>`)
 
-"Passen" bedeutet bei DID-gebundenen Signaturen: die DID im `kid` (ohne Fragment) MUSS identisch sein mit der DID im Payload. Bei Space-Capabilities MUSS der Space-Kontext im `kid` mit dem Payload übereinstimmen. Andernfalls MUSS der Verifier den JWS ablehnen — ein Mismatch deutet auf Manipulation hin.
+"Passen" bedeutet bei direkten DID-gebundenen Signaturen: die DID im `kid` (ohne Fragment) MUSS identisch sein mit der DID im Payload. Bei Space-Capabilities MUSS der Space-Kontext im `kid` mit dem Payload uebereinstimmen. Bei delegierten Signaturen MUSS der Delegation Proof die Beziehung zwischen Device Key und Identity DID herstellen. Andernfalls MUSS der Verifier den JWS ablehnen — ein Mismatch deutet auf Manipulation hin.
 
 ### Algorithmus-Validierung (MUSS)
 

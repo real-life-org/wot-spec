@@ -32,7 +32,7 @@ Im Normalfall reicht **ein einziger QR-Scan** für eine gegenseitige Verifikatio
 
 ## QR-Code-Format
 
-Jeder User zeigt einen QR-Code, der als Challenge fungiert. Er enthält alle Informationen die der Gegenüber braucht — inklusive Encryption Key und Broker-URL, damit der Flow **komplett offline** funktioniert. DIDComm definiert ein ähnliches Konzept (Out-of-Band Invitation), das aber DID-Resolution voraussetzt und keine Challenge-Nonce enthält. Unser Format ist reicher und offline-tauglicher.
+Jeder User zeigt einen QR-Code, der als Challenge fungiert. Er enthält die Informationen, die der Gegenüber für sofortige lokale Verifikation und spätere verschlüsselte Zustellung braucht — insbesondere den Encryption Key und optional eine Broker-URL. DIDComm definiert ein ähnliches Konzept (Out-of-Band Invitation), das aber DID-Resolution voraussetzt und keine Challenge-Nonce enthält. Unser Format ist reicher und offline-tauglicher.
 
 ```json
 {

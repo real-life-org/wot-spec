@@ -6,13 +6,47 @@ Ein Protokoll für dezentrale Vertrauensnetzwerke basierend auf echten Begegnung
 
 Zwei Menschen treffen sich, verifizieren ihre Identität, und stellen sich gegenseitig signierte Aussagen aus — kryptographisch verifizierbar, offline-fähig, ohne zentrale Instanz.
 
-Das Protokoll besteht aus drei Schichten:
+Die Spezifikation ist die neutrale Protokollquelle. Referenzimplementierungen informieren sie, ersetzen sie aber nicht.
 
-**WoT Identity** — Dezentrale Identität (DID), Schlüsselableitung, Signaturen, JCS/JWS und DID-Resolution.
+## Wie diese Spec gelesen wird
 
-**WoT Trust** — Signierte Aussagen (W3C Verifiable Credentials) und ein Challenge-Response-Verifikationsverfahren für physische Begegnungen.
+| Ebene | Zweck |
+|---|---|
+| Diese README | Gesamtueberblick: Was ist WoT, welche Dokumentfamilien gibt es, wo beginnt man? |
+| Abschnitts-READMEs | Lesefuehrung innerhalb einer Dokumentfamilie, z.B. [WoT Identity](01-wot-identity/README.md). |
+| Nummerierte Dokumente | Normative Detail-Spezifikation mit Regeln, Formaten und Verifikationsablaeufen. |
 
-**WoT Sync** — Verschlüsselter Local-First Sync mit E2EE, Append-only Logs und Broker-as-Peer.
+[Schemas](schemas/) und [Test-Vektoren](test-vectors/) machen Formate und Krypto-Werte pruefbar. [CONFORMANCE](CONFORMANCE.md) definiert abgeleitete Implementierungs-Claims wie `wot-identity@0.1`. [Forschung](#forschung) ist nicht normativ.
+
+Wenn eine Architektur- oder Implementierungsarbeit eine unklare Regel findet, wird die normative Spec-Datei korrigiert. Uebersichten ueberstimmen die Spec nicht.
+
+## Spec-Landkarte
+
+```mermaid
+%%{init: {"theme": "base", "themeVariables": {"background": "transparent", "primaryColor": "#f8fafc", "primaryTextColor": "#111827", "primaryBorderColor": "#64748b", "lineColor": "#94a3b8", "tertiaryColor": "#f8fafc", "fontFamily": "system-ui, sans-serif"}}}%%
+flowchart TD
+  Identity[WoT Identity]
+  Trust[WoT Trust]
+  Sync[WoT Sync]
+  RLS[RLS Extension]
+  HMC[HMC Extension]
+
+  Identity --> Trust
+  Identity --> Sync
+  Trust --> RLS
+  Trust --> HMC
+  Sync --> HMC
+```
+
+| Dokumentfamilie | Kurzrolle | Einstieg |
+|---|---|---|
+| WoT Identity | Keys, DID, JWS/JCS, DID-Resolution. | [01-wot-identity/README.md](01-wot-identity/README.md) |
+| WoT Trust | Attestations und reale Verifikation. | [02-wot-trust/README.md](02-wot-trust/README.md) |
+| WoT Sync | Verschluesselter Local-First-Sync, Broker, Inbox, Spaces, Personal Doc. | [03-wot-sync/README.md](03-wot-sync/README.md) |
+| RLS Extension | App-spezifische Badge-Erweiterung. | [04-rls-extensions/](04-rls-extensions/) |
+| HMC Extension | Trust-Scores, Trust-Lists, Transactions, Gossip. | [05-hmc-extensions/](05-hmc-extensions/) |
+
+## Standards
 
 WoT definiert keine neuen Standards — es kombiniert bestehende Standards und bewusst begrenzte Kompatibilitaetsprofile:
 
@@ -29,27 +63,13 @@ WoT definiert keine neuen Standards — es kombiniert bestehende Standards und b
 | [X25519](https://datatracker.ietf.org/doc/html/rfc7748) (RFC 7748) | ECDH Key Agreement (ECIES) |
 | [AES-256-GCM](https://csrc.nist.gov/publications/detail/sp/800-38d/final) (NIST) | Symmetrische Verschlüsselung |
 
-## Architektur
-
-```
-┌─────────────────────────────────────────┐
-│  Apps (WoT App, Real Life, Human Money) │
-├──────────────────┬──────────────────────┤
-│  RLS Extension   │  HMC Extension       │
-├──────────────────┴──────────────────────┤
-│  WoT Sync (E2EE, Logs, Broker, Groups)  │
-├─────────────────────────────────────────┤
-│  WoT Trust (Attestations, Verification) │
-├─────────────────────────────────────────┤
-│  WoT Identity (Keys, DID, JWS, resolve) │
-└─────────────────────────────────────────┘
-```
-
 ## Governance
 
 | Dokument | Beschreibung |
 |----------|-------------|
 | [ROADMAP](ROADMAP.md) | Milestones und naechste Arbeitsbloecke |
+| [ARCHITECTURE](ARCHITECTURE.md) | Arbeitskompass fuer Spec-Leseschicht, Architekturfragen und TypeScript-Mapping |
+| [IMPLEMENTATION-ARCHITECTURE](IMPLEMENTATION-ARCHITECTURE.md) | Nicht-normativer TypeScript-Mapping-Kompass fuer die Referenzimplementierung |
 | [VERSIONING](VERSIONING.md) | Release-Versionen, Spec-Profile, Wire-Versionen |
 | [CHANGELOG](CHANGELOG.md) | Nachvollziehbare Aenderungen zwischen Releases |
 | [CONFORMANCE](CONFORMANCE.md) | Anforderungen fuer konforme Implementierungen |
@@ -64,16 +84,20 @@ WoT definiert keine neuen Standards — es kombiniert bestehende Standards und b
 
 Was jede Implementierung braucht, die WoT-DIDs, Signaturen oder DID-Dokumente verwendet.
 
+Einstieg: [WoT Identity README](01-wot-identity/README.md).
+
 | # | Dokument | Beschreibung |
 |---|----------|-------------|
 | 001 | [Identität und Schlüsselableitung](01-wot-identity/001-identitaet-und-schluesselableitung.md) | BIP39 → HKDF → Ed25519 + X25519 Schlüsselpaare |
 | 002 | [Signaturen und Verifikation](01-wot-identity/002-signaturen-und-verifikation.md) | Ed25519, JWS, JCS, SHA-256 |
 | 003 | [DID-Dokument und Resolution](01-wot-identity/003-did-resolution.md) | DID-Methoden-agnostisch, resolve()-Interface, did:key + did:webvh |
-| 004 | [Device-Key-Delegation](01-wot-identity/004-device-key-delegation.md) | Geplante Phase-2-Erweiterung: DeviceKeyBinding und Delegated-Attestation-Bundle |
+| 004 | [Device-Key-Delegation](01-wot-identity/004-device-key-delegation.md) | Geplantes Phase-2-Erweiterungsprofil der Identity-Dokumentfamilie; nicht Teil von `wot-identity@0.1` |
 
 ### WoT Trust — Vertrauenssemantik
 
 Was Apps brauchen, die Attestations und reale Verifikation verwenden.
+
+Einstieg: [WoT Trust README](02-wot-trust/README.md).
 
 | # | Dokument | Beschreibung |
 |---|----------|-------------|
@@ -83,6 +107,8 @@ Was Apps brauchen, die Attestations und reale Verifikation verwenden.
 ### WoT Sync — Verschlüsselte Infrastruktur
 
 Nicht WoT-spezifisch — jede Local-First-App könnte das nutzen.
+
+Einstieg: [WoT Sync README](03-wot-sync/README.md).
 
 | # | Dokument | Beschreibung |
 |---|----------|-------------|

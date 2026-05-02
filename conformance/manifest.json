@@ -80,7 +80,7 @@
       ]
     },
     "wot-device-delegation@0.1": {
-      "description": "Geplante Phase-2-Erweiterung: DeviceKeyBinding und Delegated-Attestation-Bundle.",
+      "description": "Geplantes Phase-2-Erweiterungsprofil der Identity-Dokumentfamilie: DeviceKeyBinding und Delegated-Attestation-Bundle.",
       "requires": ["wot-identity@0.1", "wot-trust@0.1"],
       "spec_documents": ["01-wot-identity/004-device-key-delegation.md"],
       "schemas": [
