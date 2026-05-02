@@ -12,60 +12,86 @@ Dieses Dokument trennt die Protokollrollen von konkreten Implementierungen. Es s
 
 ## Architekturrollen
 
+<!-- Legende: ── durchgezogen = Datenfluss / ···> gestrichelt = Lookup / Read -->
+
 ```mermaid
-flowchart TB
-  subgraph Peer["Peer / Device"]
-    SyncEngine["Sync State Machine"]
-    InboxProcessor["Inbox Processor"]
-    LogSync["Log Catch-Up"]
-    KeyResolver["Key Dependency Resolver"]
-    AckPolicy["ACK Policy"]
-    DocEngine["CRDT Document Engine\n(black box)"]
+flowchart TD
+  subgraph net["🌐 Sync Sources"]
+    direction LR
+    Broker["Broker / Relay\nper-device Inbox\nsync-request / response"]
+    P2P["Peer-to-Peer"]
+    Snap["Snapshot Source"]
   end
 
-  subgraph LocalState["Local Durable State"]
-    DeviceState["Device State\ndeviceId, local seq"]
-    LogStore["Log Store\n(docId, deviceId, seq)"]
-    PendingInbox["Pending Inbox\nblocked-by-key, future-rotation"]
-    KeyStore["Key Store\ngroup keys, generations"]
-    PersonalDoc["Personal Doc\nspaces, keys, memberships"]
-    SpaceMeta["Space Metadata"]
+  subgraph peer["⚙️ Peer / Device"]
+    SE(["🎯 Sync Engine\norchestrates start · reconnect · writes · catch-up"])
+
+    subgraph inbox["📨 Inbox Path"]
+      direction TB
+      IP["Inbox Processor\ninvite · member-update\nkey-rotation · attestation"]
+      IP --> AP["ACK Policy\nACK after apply\nor durable buffer"]
+    end
+
+    subgraph logpath["📋 Log Path"]
+      direction TB
+      LS["Log Catch-Up\ncompare heads\nfetch missing entries"]
+      LS --> DE["CRDT Engine\n(black box)"]
+    end
+
+    KR["🔑 Key Resolver\nblocked-by-key\nfuture-rotation"]
   end
 
-  subgraph Network["Sync Sources"]
-    Broker["Broker / Relay\nper-device Inbox + sync-request"]
-    PeerToPeer["Other Peers\noptional direct transport"]
-    SnapshotSource["Snapshot / Full-State Source\noptional optimization"]
+  subgraph store["💾 Durable State"]
+    direction LR
+    DS["Device State\ndeviceId · seq"]
+    PD["Personal Doc\nspaces · keys · memberships"]
+    SM["Space Meta"]
+    LOG["Log Store\ndocId · deviceId · seq"]
+    KS["Key Store\ngroup keys · generations"]
+    PI["Pending Inbox\ncrash-safe buffer"]
   end
 
-  SyncEngine --> InboxProcessor
-  SyncEngine --> LogSync
-  SyncEngine --> KeyResolver
-  InboxProcessor --> AckPolicy
+  %% ── Network → Peer (Datenfluss) ──
+  Broker -->|"inbox msgs"| IP
+  Broker -->|"sync ↔ entries"| LS
+  P2P --> LS
+  Snap -.-> LS
 
-  SyncEngine --> DeviceState
-  LogSync --> LogStore
-  InboxProcessor --> PendingInbox
-  KeyResolver --> PendingInbox
-  KeyResolver --> KeyStore
-  SyncEngine --> PersonalDoc
-  SyncEngine --> SpaceMeta
-  LogSync --> DocEngine
+  %% ── Orchestrierung ──
+  SE --> IP
+  SE --> LS
+  SE --> KR
 
-  Broker --> InboxProcessor
-  Broker --> LogSync
-  PeerToPeer --> LogSync
-  SnapshotSource --> LogSync
+  %% ── ACK zurueck an Broker ──
+  AP -->|"ACK"| Broker
 
-  AckPolicy --> Broker
+  %% ── Buffer & Resolve ──
+  IP -->|"buffer"| PI
+  KR -->|"replay"| PI
 
-  classDef local fill:#ecfdf5,stroke:#059669,stroke-width:2px
-  classDef network fill:#fff7ed,stroke:#f59e0b,stroke-width:2px
-  classDef engine fill:#e8f0ff,stroke:#2563eb,stroke-width:2px
+  %% ── Persist ──
+  LS --> LOG
+  DE -.-> LOG
 
-  class DeviceState,LogStore,PendingInbox,KeyStore,PersonalDoc,SpaceMeta local
-  class Broker,PeerToPeer,SnapshotSource network
-  class SyncEngine,InboxProcessor,LogSync,KeyResolver,AckPolicy,DocEngine engine
+  %% ── Lookups (gestrichelt) ──
+  SE -.-> DS
+  SE -.-> PD
+  SE -.-> SM
+  IP -.->|"decrypt · verify"| KS
+  IP -.->|"update"| PD
+  LS -.->|"decrypt"| KS
+  KR -.->|"check key"| KS
+
+  %% ── Styles ──
+  classDef netStyle fill:#fff7ed,stroke:#ea580c,stroke-width:2px
+  classDef engStyle fill:#dbeafe,stroke:#2563eb,stroke-width:2px
+  classDef storeStyle fill:#ecfdf5,stroke:#059669,stroke-width:2px
+  classDef orchStyle fill:#fef9c3,stroke:#ca8a04,stroke-width:2.5px
+
+  class Broker,P2P,Snap netStyle
+  class IP,AP,LS,DE,KR engStyle
+  class DS,PD,SM,LOG,KS,PI storeStyle
+  class SE orchStyle
 ```
 
 ## Verantwortung Der Rollen
