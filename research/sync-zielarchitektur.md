@@ -12,87 +12,53 @@ Dieses Dokument trennt die Protokollrollen von konkreten Implementierungen. Es s
 
 ## Architekturrollen
 
-<!-- Legende: ── durchgezogen = Datenfluss / ···> gestrichelt = Lookup / Read -->
+<!-- Uebersicht: 30-Sekunden-Bild. Details in den Diagrammen weiter unten. -->
 
 ```mermaid
 flowchart TD
-  subgraph net["🌐 Sync Sources"]
+  SE(["🎯 Sync Engine\nStart · Reconnect · Writes"])
+
+  subgraph net["🌐 Netzwerk"]
     direction LR
-    Broker["Broker / Relay\nper-device Inbox\nsync-request / response"]
-    P2P["Peer-to-Peer"]
-    Snap["Snapshot Source"]
+    Broker["Broker / Relay"]
+    Peers["Peers · Snapshots"]
   end
 
-  subgraph peer["⚙️ Peer / Device"]
-    SE(["🎯 Sync Engine\norchestrates start · reconnect · writes · catch-up"])
+  IP["📨 Inbox Path\nInvite · Keys · Members · Attestation"]
+  LP["📋 Log Path\nHead-Vergleich · CRDT Catch-Up · Decrypt"]
 
-    subgraph inbox["📨 Inbox Path"]
-      direction TB
-      IP["Inbox Processor\ninvite · member-update\nkey-rotation · attestation"]
-      IP --> AP["ACK Policy\nACK after apply\nor durable buffer"]
-    end
-
-    subgraph logpath["📋 Log Path"]
-      direction TB
-      LS["Log Catch-Up\ncompare heads\nfetch missing entries"]
-      LS --> DE["CRDT Engine\n(black box)"]
-    end
-
-    KR["🔑 Key Resolver\nblocked-by-key\nfuture-rotation"]
-  end
-
-  subgraph store["💾 Durable State"]
+  subgraph state["💾 Lokaler Durable State"]
     direction LR
-    DS["Device State\ndeviceId · seq"]
-    PD["Personal Doc\nspaces · keys · memberships"]
-    SM["Space Meta"]
-    LOG["Log Store\ndocId · deviceId · seq"]
-    KS["Key Store\ngroup keys · generations"]
-    PI["Pending Inbox\ncrash-safe buffer"]
+    Docs["Dokumente · Keys · Metadata"]
+    Pending["Pending Buffer"]
   end
 
-  %% ── Network → Peer (Datenfluss) ──
-  Broker -->|"inbox msgs"| IP
-  Broker -->|"sync ↔ entries"| LS
-  P2P --> LS
-  Snap -.-> LS
+  SE -.-> IP
+  SE -.-> LP
 
-  %% ── Orchestrierung ──
-  SE --> IP
-  SE --> LS
-  SE --> KR
+  Broker -->|"Inbox"| IP
+  Broker -->|"Entries"| LP
+  Peers --> LP
 
-  %% ── ACK zurueck an Broker ──
-  AP -->|"ACK"| Broker
+  IP --> Docs
+  IP --> Pending
+  LP --> Docs
+  LP --> Pending
 
-  %% ── Buffer & Resolve ──
-  IP -->|"buffer"| PI
-  KR -->|"replay"| PI
+  IP -->|"ACK"| Broker
 
-  %% ── Persist ──
-  LS --> LOG
-  DE -.-> LOG
+  classDef netS fill:#fff7ed,stroke:#ea580c,stroke-width:2px
+  classDef pathS fill:#dbeafe,stroke:#2563eb,stroke-width:2px
+  classDef stateS fill:#ecfdf5,stroke:#059669,stroke-width:2px
+  classDef orchS fill:#fef9c3,stroke:#ca8a04,stroke-width:2.5px
 
-  %% ── Lookups (gestrichelt) ──
-  SE -.-> DS
-  SE -.-> PD
-  SE -.-> SM
-  IP -.->|"decrypt · verify"| KS
-  IP -.->|"update"| PD
-  LS -.->|"decrypt"| KS
-  KR -.->|"check key"| KS
-
-  %% ── Styles ──
-  classDef netStyle fill:#fff7ed,stroke:#ea580c,stroke-width:2px
-  classDef engStyle fill:#dbeafe,stroke:#2563eb,stroke-width:2px
-  classDef storeStyle fill:#ecfdf5,stroke:#059669,stroke-width:2px
-  classDef orchStyle fill:#fef9c3,stroke:#ca8a04,stroke-width:2.5px
-
-  class Broker,P2P,Snap netStyle
-  class IP,AP,LS,DE,KR engStyle
-  class DS,PD,SM,LOG,KS,PI storeStyle
-  class SE orchStyle
+  class Broker,Peers netS
+  class IP,LP pathS
+  class Docs,Pending stateS
+  class SE orchS
 ```
+
+> **Nicht gezeigt:** Key Store, Log Store, Device State, Key Resolver, ACK Policy, CRDT Engine — diese Rollen sind in der Tabelle unten beschrieben und in den Detail-Diagrammen (Startup, Inbox-Flow, Key-Rotation) aufgeschluesselt.
 
 ## Verantwortung Der Rollen
 
