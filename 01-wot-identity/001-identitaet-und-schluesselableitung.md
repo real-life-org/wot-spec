@@ -106,7 +106,7 @@ Eine sauberere Architektur wären **Per-Device Keys** — jedes Gerät hat ein e
 
 **Warum wir das jetzt nicht einführen:** `did:key` kann per Design nur einen einzigen Schlüssel ausdrücken — die DID *ist* der Public Key. Mehrere Device Keys im DID-Dokument setzen eine andere DID-Methode voraus ([did:peer:4](https://identity.foundation/peer-did-method-spec/) oder [did:webvh](https://identity.foundation/didwebvh/)).
 
-Der geplante Upgrade-Pfad ist deshalb stufenweise: Phase 2 erlaubt Device Keys über einen vom Identity Key signierten Delegation Proof, der zusammen mit der Signatur transportiert wird. Phase 3 migriert diese Autorisierung in eine Sigchain oder eine DID-Methode mit verifiable History wie `did:webvh`. Siehe [Device Keys](../research/device-keys.md), [Identitäts-Alternativen](../research/identitaet-alternativen.md) und [Identity Migration](../research/identity-migration.md) für den geplanten Pfad.
+Der geplante Upgrade-Pfad ist deshalb stufenweise: Phase 2 erlaubt Device Keys über einen vom Identity Key signierten Delegation Proof, der zusammen mit der Signatur transportiert wird. Dieses Modell ist als eigenes geplantes Erweiterungsprofil in [Identity 004](004-device-key-delegation.md) beschrieben und nicht Teil von `wot-identity@0.1`. Phase 3 migriert diese Autorisierung in eine Sigchain oder eine DID-Methode mit verifiable History wie `did:webvh`. Siehe außerdem [Device Keys](../research/device-keys.md), [Identitäts-Alternativen](../research/identitaet-alternativen.md) und [Identity Migration](../research/identity-migration.md) für den geplanten Pfad.
 
 ### Seed-Schutz auf dem Gerät
 

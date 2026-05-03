@@ -109,7 +109,7 @@ Eine Implementierung ist `wot-sync@0.1`-konform, wenn sie zusaetzlich `wot-ident
 
 ## `wot-device-delegation@0.1` (geplant)
 
-`wot-device-delegation@0.1` ist ein geplantes Phase-2-Profil. Eine Implementierung ist konform, wenn sie zusaetzlich `wot-identity@0.1` und `wot-trust@0.1` erfuellt und die folgenden Faehigkeiten besitzt.
+`wot-device-delegation@0.1` ist ein geplantes Phase-2-Erweiterungsprofil in der Identity-Dokumentfamilie, aber nicht Teil von `wot-identity@0.1`. Eine Implementierung ist konform, wenn sie zusaetzlich `wot-identity@0.1` und `wot-trust@0.1` erfuellt und die folgenden Faehigkeiten besitzt.
 
 - DeviceKeyBinding-JWS mit `typ: "wot-device-key-binding+jwt"` erzeugen und verifizieren.
 - `deviceKid`, `sub` und `devicePublicKeyMultibase` konsistent pruefen.

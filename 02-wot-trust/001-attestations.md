@@ -60,7 +60,7 @@ Eine WoT Attestation ist ein W3C Verifiable Credential 2.0, gesichert als JWS (V
 }
 ```
 
-Die letzten vier Felder sind **JWT Registered Claims** (RFC 7519) — redundant zu den VC-Feldern darüber, aber nötig für Kompatibilität mit Standard-JWT-Bibliotheken und externen VC-Verifiern:
+Die JWT-Felder sind **JWT Registered Claims** (RFC 7519) — redundant zu den VC-Feldern darüber, aber nötig für Kompatibilität mit Standard-JWT-Bibliotheken und externen VC-Verifiern:
 
 | JWT Claim | VC-Feld | Wert |
 |---|---|---|
@@ -178,7 +178,7 @@ Um eine Attestation zu verifizieren:
 
 Kein externer Service nötig für die Signatur-Verifikation. Alles lokal verifizierbar (DID-Dokument aus Cache). Nur die StatusList-Prüfung (Schritt 9) kann einen optionalen Online-Abruf erfordern.
 
-**Geplante Phase-2-Erweiterung:** Attestations koennen spaeter auch mit einem delegierten Device Key signiert werden. Dann bleibt `iss` die Identity DID, der JWS-Header `kid` zeigt auf den Device Key, und der Verifier prueft zusaetzlich einen vom Identity Key signierten Delegation Proof. Der Proof begrenzt die Signaturberechtigung des Device Keys, nicht die Gueltigkeit der Attestation selbst. Er bindet Device Key, Identity DID, Ausstellungszeitpunkt und die Capability `sign-attestation` bzw. `sign-verification`. Das geplante Bundle ist ein JSON-Container mit Attestation-JWS und DeviceKeyBinding-JWS; es ist nicht Teil von `wot-trust@0.1`. Siehe [Device Keys](../research/device-keys.md).
+**Geplante Phase-2-Erweiterung:** Attestations koennen spaeter auch mit einem delegierten Device Key signiert werden. Dann bleibt `iss` die Identity DID, der JWS-Header `kid` zeigt auf den Device Key, und der Verifier prueft zusaetzlich einen vom Identity Key signierten Delegation Proof. Der Proof begrenzt die Signaturberechtigung des Device Keys, nicht die Gueltigkeit der Attestation selbst. Er bindet Device Key, Identity DID, Ausstellungszeitpunkt und die Capability `sign-attestation` bzw. `sign-verification`. Das geplante Bundle ist ein JSON-Container mit Attestation-JWS und DeviceKeyBinding-JWS; es ist nicht Teil von `wot-trust@0.1`. Siehe [Identity 004](../01-wot-identity/004-device-key-delegation.md).
 
 ## Subjects
 

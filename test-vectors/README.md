@@ -233,7 +233,7 @@ Eine konforme Implementierung MUSS alle obigen SHA-256 Hashes reproduzieren. Wen
 
 ## Verwendung
 
-Eine konforme Implementierung MUSS:
+Eine konforme Implementierung MUSS fuer die jeweils beanspruchten Profile:
 
 1. Aus dem Mnemonic "abandon...about" dieselbe DID erzeugen.
 2. Den JWS-Testvektor verifizieren koennen (Signatur ueber den Signing Input mit dem Public Key).
@@ -241,7 +241,7 @@ Eine konforme Implementierung MUSS:
 4. Fuer alle JCS-Test-Vektoren dieselben SHA-256 Hashes erzeugen.
 5. Den Attestation-VC-JWS aus den Phase-1-Interop-Vektoren verifizieren koennen.
 6. Die Phase-1-Interop-Vektoren in [`phase-1-interop.md`](phase-1-interop.md) reproduzieren koennen.
-7. Die Device-Delegation-Vektoren in [`device-delegation.json`](device-delegation.json) verifizieren und die Negativfaelle ablehnen koennen.
+7. Fuer `wot-device-delegation@0.1`: die Device-Delegation-Vektoren in [`device-delegation.json`](device-delegation.json) verifizieren und die Negativfaelle ablehnen koennen.
 
 Wenn diese Tests bestehen, ist die kryptographische Basis interoperabel.
 

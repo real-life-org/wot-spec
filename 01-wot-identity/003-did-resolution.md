@@ -151,7 +151,7 @@ Ein Verifier MUSS prüfen dass der verwendete Key für den jeweiligen Zweck auto
 - **Broker-Login und Sync** DÜRFEN mit einem Key aus `authentication` signiert werden — das sind Session-bezogene Aktionen
 - **Device-Enrollment und Admin-Delegation** SOLLEN mit einem Key aus `capabilityDelegation` signiert werden (Phase 2)
 
-In Phase 1 verweisen `authentication`, `assertionMethod` und `capabilityDelegation` alle auf denselben Key (`#sig-0`). Die Trennung hat aktuell keine praktische Auswirkung, bereitet aber den Wechsel zu Per-Device-Keys vor: Device Keys stehen dann typischerweise in `authentication` und koennen ueber Delegation Proofs zusaetzliche, capability-gebundene Signaturrechte erhalten. Das Delegation-Modell ist noch nicht Teil von `wot-identity@0.1`; siehe [Device Keys](../research/device-keys.md).
+In Phase 1 verweisen `authentication`, `assertionMethod` und `capabilityDelegation` alle auf denselben Key (`#sig-0`). Die Trennung hat aktuell keine praktische Auswirkung, bereitet aber den Wechsel zu Per-Device-Keys vor: Device Keys stehen dann typischerweise in `authentication` und koennen ueber Delegation Proofs zusaetzliche, capability-gebundene Signaturrechte erhalten. Das Delegation-Modell ist noch nicht Teil von `wot-identity@0.1`; siehe [Identity 004](004-device-key-delegation.md).
 
 ## DID-Dokument-Quellen
 
@@ -260,7 +260,7 @@ resolve("did:key:z6MkhaXgBZDvotDkL5257faiztiGiC2QtKLGpbnnEGta2doK")
    }
 ```
 
-**Das keyAgreement-Problem bei did:key:**
+#### Das keyAgreement-Problem bei did:key
 
 Der X25519 Encryption Key wird über einen separaten HKDF-Pfad abgeleitet (siehe [Identity 001](001-identitaet-und-schluesselableitung.md)) und ist **nicht aus der `did:key` ableitbar**. Deshalb ist `keyAgreement` im generierten Dokument zunächst leer.
 
