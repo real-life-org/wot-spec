@@ -103,7 +103,7 @@ Eine Implementierung ist `wot-sync@0.1`-konform, wenn sie zusaetzlich `wot-ident
 - Space Content Keys und Capability Keys gemaess Sync 001/005 verwalten.
 - Invitee Encryption Keys ueber QR-Cache oder DID-Dokument `keyAgreement` aufloesen und fehlende Keys als Invite-Fehler behandeln.
 - `space-invite`, `member-update` und `key-rotation` Inbox-Nachrichten erzeugen, parsen und gegen die Space-Membership-Regeln pruefen.
-- `member-update` als Zustell- und Pending-UX-Signal behandeln, gegen den naechsten Space-Sync verifizieren, idempotent verarbeiten und stale/future `effectiveKeyGeneration` gemaess Sync 005 anwenden.
+- `member-update` als Zustell- und Pending-UX-Signal behandeln, gegen den naechsten Space-Sync verifizieren, Signer-Policy vor vertrauensbasierter UI- oder Schreibwirkung anwenden, Idempotenz einschliesslich Authority-Upgrade/Downgrade-Regeln verarbeiten und stale/future `effectiveKeyGeneration` gemaess Sync 005 anwenden.
 - Key-Rotation bei Member-Entfernung verarbeiten.
 - Key-Rotation-Generationen exakt nach Sync 005 anwenden: `local+1` anwenden, `<=local` ignorieren, `>local+1` durabel puffern und fehlende Rotationen/Keys ueber Device-Inbox, Personal-Doc-Catch-Up, Space-`sync-request` und optionale Snapshot-/Full-State-Quellen nachladen.
 - Nach `space-invite` und `key-rotation` einen Space-Catch-Up per `sync-request` ausloesen.

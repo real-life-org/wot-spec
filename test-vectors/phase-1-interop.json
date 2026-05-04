@@ -193,8 +193,8 @@
         "name": "member-signed-add-is-actionable-pending",
         "localKeyGeneration": 3,
         "knownAdminDids": ["did:key:z6MkvLMiE11z8wXjNScxqjcMJHNfNyc8XqDT4aGzry4pFTTd"],
-        "knownMemberDids": ["did:key:z6MkqKnownMember111111111111111111111111111111"],
-        "signerDid": "did:key:z6MkqKnownMember111111111111111111111111111111",
+        "knownMemberDids": ["did:key:z6Mko3ZEjKJWQAM5nDXKoZ9jErvvxbWbYgS8KJXYpC5Hbu8a"],
+        "signerDid": "did:key:z6Mko3ZEjKJWQAM5nDXKoZ9jErvvxbWbYgS8KJXYpC5Hbu8a",
         "seenUpdates": [],
         "incomingUpdate": {
           "spaceId": "7f3a2b10-4c5d-4e6f-8a7b-9c0d1e2f3a4b",
@@ -208,8 +208,8 @@
         "name": "unknown-signer-add-is-unverified-pending",
         "localKeyGeneration": 3,
         "knownAdminDids": ["did:key:z6MkvLMiE11z8wXjNScxqjcMJHNfNyc8XqDT4aGzry4pFTTd"],
-        "knownMemberDids": ["did:key:z6MkqKnownMember111111111111111111111111111111"],
-        "signerDid": "did:key:z6MkqUnknownSigner1111111111111111111111111111",
+        "knownMemberDids": ["did:key:z6Mko3ZEjKJWQAM5nDXKoZ9jErvvxbWbYgS8KJXYpC5Hbu8a"],
+        "signerDid": "did:key:z6MknVbixt4vJMcKzaXUWURZN8ZZ1tC1kxRFysKRFXYjQpDp",
         "seenUpdates": [],
         "incomingUpdate": {
           "spaceId": "7f3a2b10-4c5d-4e6f-8a7b-9c0d1e2f3a4b",
@@ -220,14 +220,43 @@
         "expectedDisposition": "store-unverified-pending-and-sync"
       },
       {
+        "name": "admin-signed-add-upgrades-unverified-pending",
+        "localKeyGeneration": 3,
+        "knownAdminDids": ["did:key:z6MkvLMiE11z8wXjNScxqjcMJHNfNyc8XqDT4aGzry4pFTTd"],
+        "knownMemberDids": ["did:key:z6Mko3ZEjKJWQAM5nDXKoZ9jErvvxbWbYgS8KJXYpC5Hbu8a"],
+        "signerDid": "did:key:z6MkvLMiE11z8wXjNScxqjcMJHNfNyc8XqDT4aGzry4pFTTd",
+        "seenUpdates": [
+          {
+            "spaceId": "7f3a2b10-4c5d-4e6f-8a7b-9c0d1e2f3a4b",
+            "action": "added",
+            "memberDid": "did:key:z6MkpTHR8VNsBxYAAWHut2Geadd9jSwuBV8xRoAnwWsdvktH",
+            "effectiveKeyGeneration": 3,
+            "signerDid": "did:key:z6MknVbixt4vJMcKzaXUWURZN8ZZ1tC1kxRFysKRFXYjQpDp",
+            "storedDisposition": "store-unverified-pending-and-sync"
+          }
+        ],
+        "incomingUpdate": {
+          "spaceId": "7f3a2b10-4c5d-4e6f-8a7b-9c0d1e2f3a4b",
+          "action": "added",
+          "memberDid": "did:key:z6MkpTHR8VNsBxYAAWHut2Geadd9jSwuBV8xRoAnwWsdvktH",
+          "effectiveKeyGeneration": 3
+        },
+        "expectedDisposition": "upgrade-pending-and-sync"
+      },
+      {
         "name": "duplicate-removed-update-is-idempotent",
         "localKeyGeneration": 3,
+        "knownAdminDids": ["did:key:z6MkvLMiE11z8wXjNScxqjcMJHNfNyc8XqDT4aGzry4pFTTd"],
+        "knownMemberDids": ["did:key:z6MkpTHR8VNsBxYAAWHut2Geadd9jSwuBV8xRoAnwWsdvktH"],
+        "signerDid": "did:key:z6MkvLMiE11z8wXjNScxqjcMJHNfNyc8XqDT4aGzry4pFTTd",
         "seenUpdates": [
           {
             "spaceId": "7f3a2b10-4c5d-4e6f-8a7b-9c0d1e2f3a4b",
             "action": "removed",
             "memberDid": "did:key:z6MkpTHR8VNsBxYAAWHut2Geadd9jSwuBV8xRoAnwWsdvktH",
-            "effectiveKeyGeneration": 4
+            "effectiveKeyGeneration": 4,
+            "signerDid": "did:key:z6MkvLMiE11z8wXjNScxqjcMJHNfNyc8XqDT4aGzry4pFTTd",
+            "storedDisposition": "store-pending-and-sync"
           }
         ],
         "incomingUpdate": {
@@ -241,6 +270,9 @@
       {
         "name": "stale-generation-does-not-create-pending-state",
         "localKeyGeneration": 4,
+        "knownAdminDids": ["did:key:z6MkvLMiE11z8wXjNScxqjcMJHNfNyc8XqDT4aGzry4pFTTd"],
+        "knownMemberDids": ["did:key:z6MkpTHR8VNsBxYAAWHut2Geadd9jSwuBV8xRoAnwWsdvktH"],
+        "signerDid": "did:key:z6MkvLMiE11z8wXjNScxqjcMJHNfNyc8XqDT4aGzry4pFTTd",
         "seenUpdates": [],
         "incomingUpdate": {
           "spaceId": "7f3a2b10-4c5d-4e6f-8a7b-9c0d1e2f3a4b",
@@ -253,6 +285,9 @@
       {
         "name": "next-generation-removal-is-pending-until-confirmed",
         "localKeyGeneration": 3,
+        "knownAdminDids": ["did:key:z6MkvLMiE11z8wXjNScxqjcMJHNfNyc8XqDT4aGzry4pFTTd"],
+        "knownMemberDids": ["did:key:z6MkpTHR8VNsBxYAAWHut2Geadd9jSwuBV8xRoAnwWsdvktH"],
+        "signerDid": "did:key:z6MkvLMiE11z8wXjNScxqjcMJHNfNyc8XqDT4aGzry4pFTTd",
         "seenUpdates": [],
         "incomingUpdate": {
           "spaceId": "7f3a2b10-4c5d-4e6f-8a7b-9c0d1e2f3a4b",
@@ -265,6 +300,9 @@
       {
         "name": "current-generation-add-is-pending-until-confirmed",
         "localKeyGeneration": 3,
+        "knownAdminDids": ["did:key:z6MkvLMiE11z8wXjNScxqjcMJHNfNyc8XqDT4aGzry4pFTTd"],
+        "knownMemberDids": ["did:key:z6MkpTHR8VNsBxYAAWHut2Geadd9jSwuBV8xRoAnwWsdvktH"],
+        "signerDid": "did:key:z6MkvLMiE11z8wXjNScxqjcMJHNfNyc8XqDT4aGzry4pFTTd",
         "seenUpdates": [],
         "incomingUpdate": {
           "spaceId": "7f3a2b10-4c5d-4e6f-8a7b-9c0d1e2f3a4b",
@@ -277,6 +315,9 @@
       {
         "name": "future-generation-is-buffered",
         "localKeyGeneration": 3,
+        "knownAdminDids": ["did:key:z6MkvLMiE11z8wXjNScxqjcMJHNfNyc8XqDT4aGzry4pFTTd"],
+        "knownMemberDids": ["did:key:z6MkpTHR8VNsBxYAAWHut2Geadd9jSwuBV8xRoAnwWsdvktH"],
+        "signerDid": "did:key:z6MkvLMiE11z8wXjNScxqjcMJHNfNyc8XqDT4aGzry4pFTTd",
         "seenUpdates": [],
         "incomingUpdate": {
           "spaceId": "7f3a2b10-4c5d-4e6f-8a7b-9c0d1e2f3a4b",
