@@ -166,6 +166,12 @@ Empfaenger MUESSEN `member-update` gegen den naechsten Space-Sync verifizieren. 
 
 Ein Client MUSS `member-update` anhand von `(spaceId, action, memberDid, effectiveKeyGeneration)` idempotent verarbeiten. Exakte Duplikate MUESSEN ohne zusaetzliche UI-, Sync- oder State-Transitions ignoriert werden, nachdem die erste Nachricht durable verarbeitet wurde.
 
+Ein Client MUSS den Signer des inneren JWS gegen die lokal bekannte Space-Policy pruefen, bevor ein `member-update` vor der kanonischen Space-Sync-Bestaetigung UI- oder Schreibwirkung entfalten darf:
+
+- `action="removed"` ist vorlaeufig nur wirksam, wenn der Signer eine lokal bekannte aktuelle Admin-DID des Space ist. Nicht autorisierbare oder unbekannte Signer DUERFEN keine lokale Schreibsperre, kein Ausblenden und keine andere vertrauensbasierte Removal-UX ausloesen; der Client MUSS das Signal hoechstens als unverifiziertes Pending-Signal durabel speichern und einen Space-Catch-Up ausloesen.
+- `action="added"` ist vorlaeufig nur als Pending-Signal wirksam, wenn der Signer eine lokal bekannte aktuelle Admin-DID oder Member-DID des Space ist. Nicht autorisierbare oder unbekannte Signer DUERFEN keine vertrauensbasierte Join-UX oder Schreibrechte ausloesen; der Client MUSS das Signal hoechstens als unverifiziertes Pending-Signal durabel speichern und einen Space-Catch-Up ausloesen.
+- In allen Faellen entscheidet die kanonische Mitgliederliste nach Log-Catch-Up. Eine spaetere kanonische Bestaetigung DARF ein zuvor unverifiziertes Pending-Signal bestaetigen; ein Widerspruch MUSS das Pending-Signal verwerfen.
+
 Vor der Bestaetigung durch den naechsten Space-Sync gelten diese Regeln:
 
 - Bei `action="added"` fuer die lokale DID DARF der Client den Space als "Beitritt ausstehend" oder vergleichbar anzeigen, lokale Keys und Capabilities aus einer passenden `space-invite` verwenden und MUSS einen Space-Catch-Up per `sync-request` ausloesen. Er DARF Schreibzugriff erst als bestaetigte Mitgliedschaft behandeln, wenn die kanonische Mitgliederliste die lokale DID enthaelt.
