@@ -158,6 +158,75 @@
       "memberDid": "did:key:z6MkpTHR8VNsBxYAAWHut2Geadd9jSwuBV8xRoAnwWsdvktH",
       "effectiveKeyGeneration": 4
     },
+    "member_update_generation_cases": [
+      {
+        "name": "duplicate-removed-update-is-idempotent",
+        "localKeyGeneration": 3,
+        "seenUpdates": [
+          {
+            "spaceId": "7f3a2b10-4c5d-4e6f-8a7b-9c0d1e2f3a4b",
+            "action": "removed",
+            "memberDid": "did:key:z6MkpTHR8VNsBxYAAWHut2Geadd9jSwuBV8xRoAnwWsdvktH",
+            "effectiveKeyGeneration": 4
+          }
+        ],
+        "incomingUpdate": {
+          "spaceId": "7f3a2b10-4c5d-4e6f-8a7b-9c0d1e2f3a4b",
+          "action": "removed",
+          "memberDid": "did:key:z6MkpTHR8VNsBxYAAWHut2Geadd9jSwuBV8xRoAnwWsdvktH",
+          "effectiveKeyGeneration": 4
+        },
+        "expectedDisposition": "ignore-duplicate"
+      },
+      {
+        "name": "stale-generation-does-not-create-pending-state",
+        "localKeyGeneration": 4,
+        "seenUpdates": [],
+        "incomingUpdate": {
+          "spaceId": "7f3a2b10-4c5d-4e6f-8a7b-9c0d1e2f3a4b",
+          "action": "removed",
+          "memberDid": "did:key:z6MkpTHR8VNsBxYAAWHut2Geadd9jSwuBV8xRoAnwWsdvktH",
+          "effectiveKeyGeneration": 3
+        },
+        "expectedDisposition": "ignore-stale"
+      },
+      {
+        "name": "next-generation-removal-is-pending-until-confirmed",
+        "localKeyGeneration": 3,
+        "seenUpdates": [],
+        "incomingUpdate": {
+          "spaceId": "7f3a2b10-4c5d-4e6f-8a7b-9c0d1e2f3a4b",
+          "action": "removed",
+          "memberDid": "did:key:z6MkpTHR8VNsBxYAAWHut2Geadd9jSwuBV8xRoAnwWsdvktH",
+          "effectiveKeyGeneration": 4
+        },
+        "expectedDisposition": "store-pending-and-sync"
+      },
+      {
+        "name": "current-generation-add-is-pending-until-confirmed",
+        "localKeyGeneration": 3,
+        "seenUpdates": [],
+        "incomingUpdate": {
+          "spaceId": "7f3a2b10-4c5d-4e6f-8a7b-9c0d1e2f3a4b",
+          "action": "added",
+          "memberDid": "did:key:z6MkpTHR8VNsBxYAAWHut2Geadd9jSwuBV8xRoAnwWsdvktH",
+          "effectiveKeyGeneration": 3
+        },
+        "expectedDisposition": "store-pending-and-sync"
+      },
+      {
+        "name": "future-generation-is-buffered",
+        "localKeyGeneration": 3,
+        "seenUpdates": [],
+        "incomingUpdate": {
+          "spaceId": "7f3a2b10-4c5d-4e6f-8a7b-9c0d1e2f3a4b",
+          "action": "removed",
+          "memberDid": "did:key:z6MkpTHR8VNsBxYAAWHut2Geadd9jSwuBV8xRoAnwWsdvktH",
+          "effectiveKeyGeneration": 6
+        },
+        "expectedDisposition": "buffer-future-and-catch-up"
+      }
+    ],
     "key_rotation_body": {
       "spaceId": "7f3a2b10-4c5d-4e6f-8a7b-9c0d1e2f3a4b",
       "generation": 4,

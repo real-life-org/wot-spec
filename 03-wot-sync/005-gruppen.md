@@ -158,7 +158,35 @@ Inbox-Nachrichtentyp `member-update`, verschluesselt mit ECIES und mit innerem J
 | `effectiveKeyGeneration` | Integer | Ja | Key-Generation, ab der diese Aenderung wirksam ist |
 | `reason` | String | Nein | Optionale menschenlesbare Begruendung |
 
-Empfaenger MÜSSEN `member-update` gegen den naechsten Space-Sync verifizieren. Die kanonische Mitgliederliste bleibt das signierte und synchronisierte Space-Dokument. `member-update` allein DARF keine dauerhafte Membership-State-Aenderung erzwingen.
+Empfaenger MUESSEN `member-update` gegen den naechsten Space-Sync verifizieren. Die kanonische Mitgliederliste bleibt das signierte und synchronisierte Space-Dokument. `member-update` allein DARF keine dauerhafte Membership-State-Aenderung erzwingen.
+
+### Member-Update Verarbeitung (MUSS)
+
+`member-update` ist zugleich ein Zustellsignal und ein lokales Pending-Signal. Es ist keine Autoritaet fuer den kanonischen Membership-State. Ein Client MUSS die Nachricht nach erfolgreicher Entschluesselung, JWS-Pruefung, Replay-Pruefung und durablem Pending-Speicher ACKen; die ACK bestaetigt nur die lokale Annahme des Signals, nicht die kanonische Membership-Aenderung.
+
+Ein Client MUSS `member-update` anhand von `(spaceId, action, memberDid, effectiveKeyGeneration)` idempotent verarbeiten. Exakte Duplikate MUESSEN ohne zusaetzliche UI-, Sync- oder State-Transitions ignoriert werden, nachdem die erste Nachricht durable verarbeitet wurde.
+
+Vor der Bestaetigung durch den naechsten Space-Sync gelten diese Regeln:
+
+- Bei `action="added"` fuer die lokale DID DARF der Client den Space als "Beitritt ausstehend" oder vergleichbar anzeigen, lokale Keys und Capabilities aus einer passenden `space-invite` verwenden und MUSS einen Space-Catch-Up per `sync-request` ausloesen. Er DARF Schreibzugriff erst als bestaetigte Mitgliedschaft behandeln, wenn die kanonische Mitgliederliste die lokale DID enthaelt.
+- Bei `action="added"` fuer eine andere DID DARF der Client UIs und lokale Caches als ausstehende Hinzufuegung aktualisieren, MUSS die kanonische Mitgliederliste aber unveraendert lassen.
+- Bei `action="removed"` fuer die lokale DID SOLLTE der Client den Space als "Entfernung ausstehend" oder vergleichbar markieren und DARF lokale Schreibaktionen sofort sperren oder den Space lokal ausblenden. Er DARF lokalen State erst nach kanonischer Bestaetigung oder bestaetigter Broker-Rotation dauerhaft als ausgetreten behandeln.
+- Bei `action="removed"` fuer eine andere DID DARF der Client UIs und lokale Caches als ausstehende Entfernung aktualisieren, MUSS die kanonische Mitgliederliste aber unveraendert lassen.
+
+Nach dem naechsten Space-Sync MUSS der Client Pending-Updates gegen die kanonische Mitgliederliste aufloesen:
+
+- Wenn `action="added"` und die kanonische Mitgliederliste `memberDid` enthaelt, MUSS der Client die Hinzufuegung als bestaetigt behandeln.
+- Wenn `action="removed"` und die kanonische Mitgliederliste `memberDid` nicht enthaelt, MUSS der Client die Entfernung als bestaetigt behandeln.
+- Wenn die kanonische Mitgliederliste dem Pending-Update widerspricht, MUSS der Client das Pending-Update verwerfen und den kanonischen Membership-State beibehalten.
+
+`effectiveKeyGeneration` bindet das Pending-Signal an die Space-Key-Generation, ab der die Aenderung erwartet wird:
+
+- Wenn fuer `spaceId` noch keine lokal bekannte Space-Key-Generation existiert, MUSS der Client die hoechste durable Generation aus einer passenden akzeptierten `space-invite` als lokale Vergleichsgeneration verwenden. Ohne lokale Space-Keys DARF der Client das Update nur als unverifiziertes Pending-Signal speichern und MUSS zuerst Einladung oder Key-Material nachladen.
+- Wenn `effectiveKeyGeneration` kleiner als die lokal bekannte Space-Key-Generation ist, MUSS der Client das Update als veraltet behandeln und DARF daraus keine neue Pending-State-Aenderung ableiten. Ein bereits bestaetigter kanonischer State bleibt unveraendert.
+- Wenn `effectiveKeyGeneration` gleich der lokal bekannten Space-Key-Generation oder exakt `local+1` ist, DARF der Client das Pending-Update nach den obigen Regeln verarbeiten und MUSS einen Space-Catch-Up ausloesen.
+- Wenn `effectiveKeyGeneration` groesser als `local+1` ist, MUSS der Client das Update als zukuenftiges Pending-Update durabel puffern, fehlende Rotationen oder Keys gemaess [Sync 002 Key-Rotation und Generation-Gaps](002-sync-protokoll.md#key-rotation-und-generation-gaps) nachladen und DARF das Update nicht als bestaetigt behandeln, bevor die Generation-Luecke geschlossen und der Space-Sync erfolgt ist.
+
+Ein `member-update` kann konkurrierende oder widerspruechliche Signale transportieren. Solche Konflikte werden nicht durch Inbox-Reihenfolge entschieden; die kanonische Mitgliederliste nach Log-Catch-Up MUSS entscheiden.
 
 ## Neue Admins hinzufügen
 
@@ -181,7 +209,7 @@ Neue Daten werden mit der neuen Generation verschlüsselt. Der entfernte Member 
 
 Der Admin MUSS zusaetzlich `member-update` Nachrichten senden:
 
-- an den entfernten Member mit `action="removed"` und `effectiveKeyGeneration` der neuen Generation, damit der Client den Space lokal als verlassen/gesperrt markieren kann;
+- an den entfernten Member mit `action="removed"` und `effectiveKeyGeneration` der neuen Generation, damit der Client den Space lokal als Entfernung ausstehend markieren oder sperren kann;
 - an die verbleibenden Members mit `action="removed"`, damit UIs und lokale Caches die Entfernung sofort anzeigen koennen.
 
 Verbleibende Members MUESSEN ausserdem eine `key-rotation` Nachricht mit dem neuen Content Key und der neuen Capability erhalten. Der entfernte Member DARF diese `key-rotation` Nachricht nicht erhalten.
