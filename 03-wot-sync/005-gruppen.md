@@ -197,6 +197,7 @@ Die disposition-level Testvektoren in `test-vectors/phase-1-interop.json` verwen
 - `store-pending-and-sync`: ein autorisiertes oder lokal actionable Pending-Signal durabel speichern und Space-Catch-Up ausloesen.
 - `store-unverified-pending-and-sync`: ein nicht lokal autorisierbares Signal nur unverifiziert durabel speichern und Space-Catch-Up ausloesen; keine vertrauensbasierte UI- oder Schreibwirkung vor kanonischer Bestaetigung.
 - `upgrade-pending-and-sync`: ein bereits unverifiziert gespeichertes Pending-Record durch ein hoeher autorisiertes Signal zu actionable pending upgraden und Space-Catch-Up ausloesen.
+- `ignore-lower-authority`: ein Signal mit niedrigerer oder unbekannter lokaler Autorisierung ignorieren, wenn bereits ein actionable Pending-Record fuer dasselbe Tuple existiert.
 - `ignore-duplicate`: ein exaktes bereits durable verarbeitetes Signal ohne neue Wirkung ignorieren.
 - `ignore-stale`: ein gegen die lokale Generation veraltetes Signal ohne neue Pending-Wirkung ignorieren.
 - `buffer-future-and-catch-up`: ein Signal fuer eine Generation groesser als `local+1` durabel puffern, fehlende Generationen/Keys nachladen und Catch-Up ausloesen.
