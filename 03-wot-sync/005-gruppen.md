@@ -162,9 +162,9 @@ Empfaenger MUESSEN `member-update` gegen den naechsten Space-Sync verifizieren. 
 
 ### Member-Update Verarbeitung (MUSS)
 
-`member-update` ist zugleich ein Zustellsignal und ein lokales Pending-Signal. Es ist keine Autoritaet fuer den kanonischen Membership-State. Ein Client MUSS die Nachricht nach erfolgreicher Entschluesselung, JWS-Pruefung, Replay-Pruefung und durablem Pending-Speicher ACKen; die ACK bestaetigt nur die lokale Annahme des Signals, nicht die kanonische Membership-Aenderung.
+`member-update` ist zugleich ein Zustellsignal und ein lokales Pending-Signal. Es ist keine Autoritaet fuer den kanonischen Membership-State. Ein Client MUSS die Nachricht nach erfolgreicher Entschluesselung, JWS-Pruefung, Replay-Pruefung und durabel gespeichertem Pending-Signal ACKen; die ACK bestaetigt nur die lokale Annahme des Signals, nicht die kanonische Membership-Aenderung.
 
-Ein Client MUSS `member-update` anhand von `(spaceId, action, memberDid, effectiveKeyGeneration)` als Pending-Record zusammenfuehren. Exakte Duplikate mit gleichem Signer und gleicher Signer-Autorisierung MUESSEN ohne zusaetzliche UI-, Sync- oder State-Transitions ignoriert werden, nachdem die erste Nachricht durable verarbeitet wurde. Eine spaeter empfangene Nachricht mit demselben Tuple, aber hoeherer lokaler Autorisierung, MUSS das Pending-Record upgraden (z.B. von `unverified-pending` zu actionable pending). Eine spaeter empfangene Nachricht mit niedrigerer oder unbekannter Autorisierung DARF ein bereits actionable Pending-Record nicht downgraden.
+Ein Client MUSS `member-update` anhand von `(spaceId, action, memberDid, effectiveKeyGeneration)` als Pending-Record zusammenfuehren. Exakte Duplikate mit gleichem Signer und gleicher Signer-Autorisierung MUESSEN ohne zusaetzliche UI-, Sync- oder State-Transitions ignoriert werden, nachdem die erste Nachricht durabel verarbeitet wurde. Eine spaeter empfangene Nachricht mit demselben Tuple, aber hoeherer lokaler Autorisierung, MUSS das Pending-Record upgraden (z.B. von `unverified-pending` zu actionable pending). Eine spaeter empfangene Nachricht mit niedrigerer oder unbekannter Autorisierung DARF ein bereits actionable Pending-Record nicht downgraden.
 
 Ein Client MUSS den Signer des inneren JWS gegen die lokal bekannte Space-Policy pruefen, bevor ein `member-update` vor der kanonischen Space-Sync-Bestaetigung UI- oder Schreibwirkung entfalten darf:
 
@@ -187,7 +187,7 @@ Nach dem naechsten Space-Sync MUSS der Client Pending-Updates gegen die kanonisc
 
 `effectiveKeyGeneration` bindet das Pending-Signal an die Space-Key-Generation, ab der die Aenderung erwartet wird:
 
-- Wenn fuer `spaceId` noch keine lokal bekannte Space-Key-Generation existiert, MUSS der Client die hoechste durable Generation aus einer passenden akzeptierten `space-invite` als lokale Vergleichsgeneration verwenden. Ohne lokale Space-Keys DARF der Client das Update nur als unverifiziertes Pending-Signal speichern und MUSS zuerst Einladung oder Key-Material nachladen.
+- Wenn fuer `spaceId` noch keine lokal bekannte Space-Key-Generation existiert, MUSS der Client die hoechste durabel gespeicherte Generation aus einer passenden akzeptierten `space-invite` als lokale Vergleichsgeneration verwenden. Ohne lokale Space-Keys DARF der Client das Update nur als unverifiziertes Pending-Signal speichern und MUSS zuerst Einladung oder Key-Material nachladen.
 - Wenn `effectiveKeyGeneration` kleiner als die lokal bekannte Space-Key-Generation ist, MUSS der Client das Update als veraltet behandeln und DARF daraus keine neue Pending-State-Aenderung ableiten. Ein bereits bestaetigter kanonischer State bleibt unveraendert.
 - Wenn `effectiveKeyGeneration` gleich der lokal bekannten Space-Key-Generation oder exakt `local+1` ist, DARF der Client das Pending-Update nach den obigen Regeln verarbeiten und MUSS einen Space-Catch-Up ausloesen.
 - Wenn `effectiveKeyGeneration` groesser als `local+1` ist, MUSS der Client das Update als zukuenftiges Pending-Update durabel puffern, fehlende Rotationen oder Keys gemaess [Sync 002 Key-Rotation und Generation-Gaps](002-sync-protokoll.md#key-rotation-und-generation-gaps) nachladen und DARF das Update nicht als bestaetigt behandeln, bevor die Generation-Luecke geschlossen und der Space-Sync erfolgt ist.
@@ -198,7 +198,7 @@ Die disposition-level Testvektoren in `test-vectors/phase-1-interop.json` verwen
 - `store-unverified-pending-and-sync`: ein nicht lokal autorisierbares Signal nur unverifiziert durabel speichern und Space-Catch-Up ausloesen; keine vertrauensbasierte UI- oder Schreibwirkung vor kanonischer Bestaetigung.
 - `upgrade-pending-and-sync`: ein bereits unverifiziert gespeichertes Pending-Record durch ein hoeher autorisiertes Signal zu actionable pending upgraden und Space-Catch-Up ausloesen.
 - `ignore-lower-authority`: ein Signal mit niedrigerer oder unbekannter lokaler Autorisierung ignorieren, wenn bereits ein actionable Pending-Record fuer dasselbe Tuple existiert.
-- `ignore-duplicate`: ein exaktes bereits durable verarbeitetes Signal ohne neue Wirkung ignorieren.
+- `ignore-duplicate`: ein exaktes bereits durabel verarbeitetes Signal ohne neue Wirkung ignorieren.
 - `ignore-stale`: ein gegen die lokale Generation veraltetes Signal ohne neue Pending-Wirkung ignorieren.
 - `buffer-future-and-catch-up`: ein Signal fuer eine Generation groesser als `local+1` durabel puffern, fehlende Generationen/Keys nachladen und Catch-Up ausloesen.
 
