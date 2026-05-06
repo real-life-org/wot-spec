@@ -203,3 +203,18 @@ Fehler-Bodies sollten `Content-Type: text/plain` sein mit einer lesbaren Fehlerm
 ## Daten-Discovery
 
 Ein neues Gerät findet Personal Doc und Space-Dokumente über bekannte Broker oder über Multi-Device-Sync mit einem bestehenden Gerät. Der Broker liefert Dokument-IDs für die authentifizierte DID; die konkreten Sync-Formate sind in [Sync 002](002-sync-protokoll.md) und [Sync 003](003-transport-und-broker.md) spezifiziert.
+
+## Profil-Service-Recovery-Fallback
+
+Implementierungen DUERFEN den Profil-Service als Recovery-Fallback verwenden, wenn Vault, Personal Doc oder lokaler CRDT-State nicht erreichbar oder nicht lesbar sind. Dieser Fallback ist auf oeffentliche, signierte Profil-Service-Ressourcen begrenzt.
+
+Ein Profil-Service-Recovery-Fallback DARF rekonstruieren:
+
+- DID-Dokument und oeffentliche Profil-Daten aus `/p/{did}`.
+- veroeffentlichte Verifikationen aus `/p/{did}/v`.
+- bewusst veroeffentlichte Attestations aus `/p/{did}/a`.
+- oeffentliche `keyAgreement`- und `service`-Informationen aus dem DID-Dokument.
+
+Ein Profil-Service-Recovery-Fallback DARF NICHT als Recovery-Quelle fuer private Wallet-Zustaende, unveroeffentlichte empfangene Attestations, private Kontakte, Space Content Keys, Space-Mitgliedschaftsgeheimnisse, Personal-Doc-only State oder Vault Secrets verwendet werden.
+
+Clients MUESSEN bei diesem Fallback dieselben Pruefungen anwenden wie bei normalem Profil-Service-Abruf: JWS-Signatur, DID/Pfad-Konsistenz und Versionsmonotonie. Recovered Profile Data bleibt oeffentliches Profil-/Discovery-Datum und ist kein kanonischer Ersatz fuer Personal Doc oder Vault.

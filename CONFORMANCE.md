@@ -36,6 +36,7 @@ Eine Implementierung ist `wot-identity@0.1`-konform, wenn sie die folgenden Faeh
 
 - JWS Compact Serialization mit `alg=EdDSA` erzeugen und verifizieren.
 - JCS nach RFC 8785 fuer JSON-Payloads verwenden.
+- JCS-Primitive-Vektoren einschliesslich Zahlenformatierung reproduzieren oder verifizieren.
 - `kid` im JWS-Header verpflichtend setzen und auswerten.
 - Signatur-Keys ueber `resolve(did)` und DID-Dokumente aufloesen.
 
@@ -55,6 +56,7 @@ Eine Implementierung ist `wot-trust@0.1`-konform, wenn sie zusaetzlich `wot-iden
 - VC-JOSE-COSE JWS (`typ: "vc+jwt"`) fuer Attestations verifizieren.
 - `issuer`, `iss`, `credentialSubject.id`, `sub`, `validFrom` und `nbf` konsistent pruefen.
 - Nicht verstandene Extension-Felder ignorieren.
+- Keine semantische Annahmebestaetigung fuer Attestations verlangen oder aus Transport-ACKs ableiten. `wot-trust@0.1` definiert kein `attestation-ack`; Attestations sind nach gueltiger Signatur Wallet-Artefakte des Empfaengers. Eine spaetere Veroeffentlichung im Profil ist die bewusste oeffentliche Rueckmeldung des Empfaengers.
 
 ### Verifikation
 
@@ -95,6 +97,14 @@ Eine Implementierung ist `wot-sync@0.1`-konform, wenn sie zusaetzlich `wot-ident
 - Inbox-Nachrichten pro Device zustellen und ACKs verarbeiten.
 - Selbstadressierte Inbox-Nachrichten an andere Devices derselben DID zustellen, ohne das sendende Device als erfolgreich zugestellten Empfaenger zu behandeln.
 - Inbox-ACKs nur pro authentifiziertem Device anwenden und erst nach Entschluesselung, Verifikation, Replay-Pruefung und dauerhafter Anwendung oder durablem Pending-Speicher senden.
+- Inbox-ACKs als Transport-/Persistenzbestaetigung behandeln und nicht als semantische Annahme, Vertrauenserklaerung oder Veroeffentlichungsabsicht fuer Attestations oder andere Inhaltsartefakte interpretieren.
+
+### Discovery und Recovery
+
+- Profil-Service-Ressourcen als oeffentliche, signierte Discovery-Daten behandeln.
+- Profil-Service-Recovery nur fuer DID-Dokument, oeffentliches Profil, veroeffentlichte Verifikationen, bewusst veroeffentlichte Attestations sowie oeffentliche `keyAgreement`- und `service`-Informationen verwenden.
+- Profil-Service-Recovery nicht als Ersatz fuer Vault, Personal Doc, private Wallet, unveroeffentlichte empfangene Attestations, private Kontakte, Space Content Keys, Space-Mitgliedschaftsgeheimnisse oder andere private Sync-Zustaende behandeln.
+- Beim Recovery-Fallback JWS-Signatur, DID/Pfad-Konsistenz und Versionsmonotonie pruefen.
 
 ### Personal Doc und Gruppen
 

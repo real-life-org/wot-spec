@@ -47,6 +47,20 @@ Ein Bootstrap-DID-Dokument nach QR- oder Profil-Service-Kontakt:
 SHA-256(JCS DID Document): 9f71bde97db9df9bc5fd14ab3c5a65dd3eb3e77fd1e74a43fe187a718015fefc
 ```
 
+## 2a. JCS-Kanonisierung (Identity 002)
+
+Diese Vektoren pruefen primitive JCS-Faelle, die nicht zu einem konkreten Artefakt-Payload gehoeren:
+
+| Name | Canonical JSON | SHA-256 |
+|---|---|---|
+| `lexicographic_keys` | `{"a":1,"z":0}` | `b55af27c4bd5f02ebeca8f901b84d2940b22e7bea7230e4d06f275d903bfdd72` |
+| `minus_zero` | `{"n":0}` | `f3013f933b9fb80ab6d995e7ad9da36f683837ba1d81e950c943d40111eac2f0` |
+| `large_exponent` | `{"n":1e+30}` | `53bcca850cd9028c384aef303539ce41d82d7fb56fbfa1e5289fe51caef28f93` |
+| `small_exponent` | `{"n":1e-7}` | `747d6d23b64d1b2d579adb832b44de31c91c875bbef7a8e397f5d183a746b54b` |
+| `shortest_roundtrip_decimal` | `{"n":333333333.3333333}` | `8e1aa496328ac7acbd045b34464ae11d72d8b525c355b85099382ffcb499143b` |
+
+`NaN`, `Infinity` und `-Infinity` sind keine gueltigen JSON-Zahlen und MUESSEN vor oder waehrend der JCS-Kanonisierung abgelehnt werden.
+
 ## 3. Attestation VC-JWS (Trust 001)
 
 Payload ist das gültige Beispiel aus `schemas/examples/valid/attestation-vc-payload.json`, kanonisiert mit JCS und als `vc+jwt` signiert.

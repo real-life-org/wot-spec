@@ -164,6 +164,16 @@ Empfaenger MUESSEN `member-update` gegen den naechsten Space-Sync verifizieren. 
 
 `member-update` ist zugleich ein Zustellsignal und ein lokales Pending-Signal. Es ist keine Autoritaet fuer den kanonischen Membership-State. Ein Client MUSS die Nachricht nach erfolgreicher Entschluesselung, JWS-Pruefung, Replay-Pruefung und durabel gespeichertem Pending-Signal ACKen; die ACK bestaetigt nur die lokale Annahme des Signals, nicht die kanonische Membership-Aenderung.
 
+#### Authority-Split (MUSS)
+
+Implementierungen MUESSEN `member-update` entlang dieser Verantwortlichkeitsgrenzen verarbeiten:
+
+- **Protocol:** prueft die normalisierte Nachrichtenform und kryptographischen Artefakte und klassifiziert deterministisch `(member-update, signerDid, localPolicySnapshot, existingPendingState)`. Die Protocol-Schicht kennt keinen Storage, Broker, CRDT, Adapter, UI oder Netzwerkzustand.
+- **Application:** stellt den lokalen Policy-Snapshot bereit, speichert Pending-Zustaende durabel, entscheidet lokale UX-/Write-Lock-Wirkung aus der Protocol-Klassifikation, loest Space-Catch-Up aus, loest Pending-Zustaende gegen die kanonische Mitgliederliste auf und sendet ACKs erst nach Anwendung oder durablem Puffern.
+- **Adapter:** transportiert, entschluesselt, liefert, persistiert technisch und uebertraegt per-Device ACKs. Adapter DUERFEN keine Mitgliedschaftsautoritaet, Signer-Policy-Autoritaet oder kanonische Membership-Entscheidung besitzen.
+
+Der lokale Policy-Snapshot enthaelt mindestens lokal bekannte Admin-DIDs, lokal bekannte Member-DIDs, die lokale Space-Key-Generation und bereits gespeicherte Pending-Tuples. Envelope-Komfortformen sind implementierungslokal; sie MUESSEN vor Protocol-/Application-Verarbeitung in die normativen Payload-Felder und Signer-Information normalisiert werden.
+
 Ein Client MUSS `member-update` anhand von `(spaceId, action, memberDid, effectiveKeyGeneration)` als Pending-Record zusammenfuehren. Exakte Duplikate mit gleichem Signer und gleicher Signer-Autorisierung MUESSEN ohne zusaetzliche UI-, Sync- oder State-Transitions ignoriert werden, nachdem die erste Nachricht durabel verarbeitet wurde. Eine spaeter empfangene Nachricht mit demselben Tuple, aber hoeherer lokaler Autorisierung, MUSS das Pending-Record upgraden (z.B. von `unverified-pending` zu actionable pending). Eine spaeter empfangene Nachricht mit niedrigerer oder unbekannter Autorisierung DARF ein bereits actionable Pending-Record nicht downgraden.
 
 Ein Client MUSS den Signer des inneren JWS gegen die lokal bekannte Space-Policy pruefen, bevor ein `member-update` vor der kanonischen Space-Sync-Bestaetigung UI- oder Schreibwirkung entfalten darf:
@@ -265,6 +275,8 @@ Inbox-Nachrichtentyp `key-rotation`, verschlüsselt mit ECIES:
 ```
 
 Der Admin sendet eine `key-rotation` Nachricht an **jedes** verbleibende Mitglied einzeln.
+
+`key-rotation` ist der einzige normative bekannte Inbox-Nachrichtentyp fuer Space-Key-Rotation in `wot-sync@0.1`. `group-key-rotation` ist kein normativer Nachrichtentyp und DARF von konformen Implementierungen nicht als bekannte Protocol-Type-URI beansprucht werden. Lokale Migrations-Aliase MUESSEN vor Protocol-Verarbeitung auf die normative `key-rotation`-Form normalisiert werden.
 
 Alte Daten bleiben mit alten Space Content Keys lesbar. Rotation schuetzt nur zukuenftige Daten und zukuenftigen Broker-Zugriff.
 

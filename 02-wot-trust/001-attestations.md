@@ -139,6 +139,10 @@ Die Attestation gehört dem Subject. Konkret:
 
 Der Holder hat ein lokales `public`-Flag pro Attestation. Nicht veröffentlichte Attestations bleiben in der Wallet bzw. im Personal Doc und sind unsichtbar für Dritte (nicht im Profil-Service). Das Flag ist **nicht Teil des VC** und wird **nicht signiert** — es ist eine reine lokale Entscheidung, gespeichert als Metadaten neben dem JWS im Personal Doc.
 
+`wot-trust@0.1` definiert kein `attestation-ack` und keine semantische Annahmebestaetigung. Attestations sind Geschenke: Nach der Zustellung gehoeren sie dem Holder, und der Holder entscheidet privat, ob er sie speichert, ignoriert, anzeigt oder veroeffentlicht. Der Issuer erhaelt aus dem Trust-Protokoll keine Rueckmeldung darueber, ob der Holder die Attestation angenommen, gelesen, behalten oder intern vertraut hat.
+
+Transport-ACKs aus dem Sync-Layer bestaetigen nur die Verarbeitung oder durable Pufferung einer Inbox-Nachricht fuer ein bestimmtes Device. Sie DUERFEN nicht als Akzeptanz- oder Vertrauenssignal fuer eine Attestation interpretiert werden. Die einzige bewusste oeffentliche Rueckmeldung ist die spaetere Veroeffentlichung durch den Holder im Profil-Service (`/p/{did}/a`), falls der Holder das will.
+
 ## Unveränderlichkeit
 
 Attestations sind **unveränderlich.** Einmal signiert, kann der Inhalt nicht geändert werden ohne die JWS-Signatur zu brechen.

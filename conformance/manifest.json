@@ -14,7 +14,7 @@
       "test_vectors": [
         {
           "file": "test-vectors/phase-1-interop.json",
-          "sections": ["identity", "did_resolution"]
+          "sections": ["identity", "did_resolution", "jcs_canonicalization"]
         }
       ]
     },
