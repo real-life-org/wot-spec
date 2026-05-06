@@ -2,6 +2,8 @@
 import base64
 import hashlib
 import json
+import math
+import re
 from pathlib import Path
 
 from cryptography.hazmat.primitives import hashes, serialization
@@ -44,7 +46,46 @@ def b58decode(value: str) -> bytes:
 
 
 def jcs(value) -> bytes:
-    return json.dumps(value, ensure_ascii=False, sort_keys=True, separators=(",", ":")).encode("utf-8")
+    return jcs_string(value).encode("utf-8")
+
+
+def jcs_string(value) -> str:
+    if value is None:
+        return "null"
+    if isinstance(value, bool):
+        return "true" if value else "false"
+    if isinstance(value, str):
+        return json.dumps(value, ensure_ascii=False, separators=(",", ":"))
+    if isinstance(value, int):
+        return str(value)
+    if isinstance(value, float):
+        return jcs_number(value)
+    if isinstance(value, list):
+        return "[" + ",".join(jcs_string(item) for item in value) + "]"
+    if isinstance(value, dict):
+        return "{" + ",".join(
+            f"{json.dumps(key, ensure_ascii=False, separators=(',', ':'))}:{jcs_string(value[key])}"
+            for key in sorted(value)
+        ) + "}"
+    raise TypeError(f"unsupported JCS value: {type(value).__name__}")
+
+
+def jcs_number(value: float) -> str:
+    if not math.isfinite(value):
+        raise ValueError("non-finite numbers are not valid JSON numbers")
+    if value == 0:
+        return "0"
+    if value.is_integer() and abs(value) < 1e21:
+        return str(int(value))
+    encoded = json.dumps(value, ensure_ascii=False, allow_nan=False, separators=(",", ":"))
+    return re.sub(r"e([+-])0+(\d)", r"e\1\2", encoded)
+
+
+def load_json_strict(value: str):
+    def reject_constant(constant: str):
+        raise ValueError(f"invalid JSON number: {constant}")
+
+    return json.loads(value, parse_constant=reject_constant)
 
 
 def hkdf(ikm: bytes, info: str, length: int = 32) -> bytes:
@@ -161,6 +202,18 @@ def main() -> None:
     assert did_doc["did_document"]["keyAgreement"][0]["publicKeyMultibase"] == multibase_x(x_pub)
     assert hashlib.sha256(jcs(did_doc["did_document"])).hexdigest() == did_doc["jcs_sha256"]
     print("did resolution ok")
+
+    for case in data["jcs_canonicalization"]["valid_cases"]:
+        canonical = jcs_string(case["input"])
+        assert canonical == case["canonical"], case["name"]
+        assert hashlib.sha256(canonical.encode("utf-8")).hexdigest() == case["sha256"], case["name"]
+    for case in data["jcs_canonicalization"]["invalid_cases"]:
+        try:
+            load_json_strict(case["json"])
+        except ValueError:
+            continue
+        raise AssertionError(f"invalid JCS case accepted: {case['name']}")
+    print("jcs canonicalization ok")
 
     attestation = data["attestation_vc_jws"]
     header_b64, payload_b64, sig_b64 = attestation["jws"].split(".")

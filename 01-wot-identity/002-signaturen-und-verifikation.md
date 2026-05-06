@@ -177,15 +177,19 @@ function verifyJws(jws: string, did: string): boolean {
 }
 ```
 
-## Testvektor
+## Testvektoren und Profil-Zuordnung
 
-Vollständige, verifizierbare Test-Vektoren mit konkreten Krypto-Werten finden sich in den [Test-Vektoren](../test-vectors/). Diese enthalten:
+Vollständige, verifizierbare Test-Vektoren mit konkreten Krypto-Werten finden sich in den [Test-Vektoren](../test-vectors/). Fuer `wot-identity@0.1` sind die folgenden Vektorarten profileigen:
 
-1. **Identität:** Mnemonic → BIP39 Seed → HKDF → Ed25519 Key → did:key (mit exakten Hex-Werten für jeden Schritt)
-2. **JWS-Signatur:** Payload → JCS → Base64URL → Signing Input → Ed25519-Signatur → JWS Compact (mit verifizierbarer Signatur)
-3. **AES-256-GCM:** Plaintext → Verschlüsselung → Ciphertext + Auth Tag → Blob-Format
+1. **Identität:** Mnemonic → BIP39 Seed → HKDF → Ed25519 Key → did:key (mit exakten Hex-Werten fuer jeden Schritt).
+2. **DID-Resolution:** `did:key` → DID-Dokument und JCS-Fingerprint.
+3. **JCS-Kanonisierung:** Primitive JSON-Kanonisierungsfaelle einschliesslich Zahlenformatierung.
 
-Eine konforme Implementierung MUSS alle drei Test-Vektoren reproduzieren können.
+JCS und JWS sind normative Basistechniken von `wot-identity@0.1`. Konkrete JWS-Artefaktvektoren gehoeren aber zu dem Profil, das das jeweilige Artefakt definiert, z.B. Attestation-JWS zu `wot-trust@0.1`, Log-Entry-JWS und Space-Capability-JWS zu `wot-sync@0.1` und Device-Key-Binding-JWS zu `wot-device-delegation@0.1`.
+
+AES-256-GCM und ECIES sind keine `wot-identity@0.1`-Vektoren. Sie gehoeren zu den Sync-Verschluesselungsanforderungen in [Sync 001](../03-wot-sync/001-verschluesselung.md) und damit zu `wot-sync@0.1`.
+
+Eine `wot-identity@0.1`-konforme Implementierung MUSS die identity-, DID-resolution- und JCS-Vektoren reproduzieren oder verifizieren. Eine Implementierung MUSS zusaetzlich die Artefakt-JWS-Vektoren der Profile bestehen, die sie beansprucht.
 
 **Wichtig:** Ed25519 signiert direkt die Bytes des Signing Input — kein SHA-256 Hash dazwischen. Ed25519 hasht intern mit SHA-512. SHA-256 wird nur für andere Zwecke im Protokoll verwendet (z.B. Content-Adressierung), nicht für die JWS-Signatur selbst.
 

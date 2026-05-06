@@ -516,6 +516,8 @@ Der Empfänger schickt `ack` nach erfolgreichem Verarbeiten einer Inbox-Nachrich
 
 Der Broker kann die Nachricht dann aus der Inbox **dieses authentifizierten Devices** entfernen. Er DARF sie nicht aus anderen Device-Inboxen derselben DID entfernen. Wenn der Client eine Nachricht wegen fehlender Abhaengigkeiten nur volatil im Speicher haelt, DARF er sie noch nicht ACKen.
 
+Ein `ack/1.0` ist ausschliesslich eine Transport-/Persistenzbestaetigung fuer genau dieses Device. Es bestaetigt nicht, dass ein Inhaltsartefakt semantisch angenommen, vertraut, gelesen, angezeigt oder veroeffentlicht wurde. Insbesondere definiert `wot-trust@0.1` kein `attestation-ack`; ob ein Empfaenger eine Attestation spaeter oeffentlich zeigt, ergibt sich nur aus seiner bewussten Profil-Veroeffentlichung.
+
 #### Fehler-Responses
 
 Wenn eine Sync-Anfrage nicht erfüllt werden kann, antwortet der Broker mit einer Error-Nachricht:
