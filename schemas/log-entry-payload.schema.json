@@ -7,8 +7,8 @@
   "additionalProperties": false,
   "properties": {
     "seq": { "type": "integer", "minimum": 0 },
-    "deviceId": { "type": "string", "format": "uuid" },
-    "docId": { "type": "string", "format": "uuid" },
+    "deviceId": { "type": "string", "format": "uuid", "pattern": "^[0-9a-f]{8}-[0-9a-f]{4}-4[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$" },
+    "docId": { "type": "string", "format": "uuid", "pattern": "^[0-9a-f]{8}-[0-9a-f]{4}-4[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$" },
     "authorKid": { "type": "string", "pattern": "^did:[a-z0-9]+:.+#.+$" },
     "keyGeneration": { "type": "integer", "minimum": 0 },
     "data": { "type": "string", "pattern": "^[A-Za-z0-9_-]+$" },

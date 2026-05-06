@@ -100,6 +100,8 @@ Inbox-Nachrichtentyp `space-invite`, verschlüsselt mit ECIES:
 - `spaceContentKeys` MUSS alle Generationen enthalten, die der Eingeladene zum Entschluesseln der aktuell verfuegbaren Space-History benoetigt. Implementierungen duerfen alte Generationen weglassen, wenn sie dem Eingeladenen nur Zugriff ab einem spaeteren Snapshot geben; dann MUSS dieser Snapshot mit `currentKeyGeneration` entschluesselbar sein.
 - Der `spaceCapabilitySigningKey` DARF nur zur Ausstellung weiterer Broker-Capabilities verwendet werden, nicht zur Autoren-Authentifizierung.
 
+Die Phase-1-Interop-Vektoren fuer `space-invite` pruefen das Inbox-Message-Shape. Die enthaltene `capability` wird dort nur als kompakter JWS-String validiert. Payload-Korrelation der Capability (`audience`, `spaceId`, `generation`, Signatur) ist durch den separaten `space_capability_jws` Vektor und die Capability-Regeln in [Sync 003](003-transport-und-broker.md#capability-format) abgedeckt. Spaetere Conformance-Vektoren SOLLEN echte Capability-JWS-End-to-End-Beispiele fuer `space-invite` enthalten.
+
 ### Annahme und Ablehnung
 
 Bei Annahme speichert der Empfänger Space Content Key, Space Capability Signing Key und Capability lokal, verbindet sich mit dem Heim-Broker und synchronisiert das Space-Dokument. Bei Ablehnung verwirft er die Nachricht.
@@ -287,6 +289,8 @@ Alte Daten bleiben mit alten Space Content Keys lesbar. Rotation schuetzt nur zu
 - Der Broker MUSS nach erfolgreicher `space-rotate` Verarbeitung alte Capabilities ablehnen (`CAPABILITY_GENERATION_STALE`).
 - Clients MUESSEN neue Log-Eintraege nach Rotation mit der neuen `keyGeneration` schreiben.
 - Clients MUESSEN alte Log-Eintraege weiter mit der jeweils im Log-Eintrag angegebenen historischen `keyGeneration` entschluesseln.
+
+Die Phase-1-Interop-Vektoren fuer `key-rotation` pruefen das Inbox-Message-Shape. Die enthaltene `capability` wird dort nur als kompakter JWS-String validiert. Payload-Korrelation der Capability (`audience`, `spaceId`, `generation`, Signatur) ist durch den separaten `space_capability_jws` Vektor und die Capability-Regeln in [Sync 003](003-transport-und-broker.md#capability-format) abgedeckt. Spaetere Conformance-Vektoren SOLLEN echte Capability-JWS-End-to-End-Beispiele fuer `key-rotation` enthalten.
 
 Clients MUESSEN Key-Rotations anhand ihrer lokal bekannten Space-Key-Generation anwenden:
 

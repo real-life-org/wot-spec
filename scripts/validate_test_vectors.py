@@ -115,6 +115,15 @@ def did_key_ed(public_key: bytes) -> str:
     return "did:key:z" + b58encode(bytes.fromhex("ed01") + public_key)
 
 
+def uuid_v4_from_bytes(value: bytes) -> str:
+    if len(value) != 16:
+        raise ValueError("uuid value must be 16 bytes")
+    raw = bytearray(value)
+    raw[6] = (raw[6] & 0x0F) | 0x40
+    raw[8] = (raw[8] & 0x3F) | 0x80
+    return f"{raw[:4].hex()}-{raw[4:6].hex()}-{raw[6:8].hex()}-{raw[8:10].hex()}-{raw[10:].hex()}"
+
+
 def multibase_ed(public_key: bytes) -> str:
     return "z" + b58encode(bytes.fromhex("ed01") + public_key)
 
@@ -273,8 +282,7 @@ def main() -> None:
     personal = data["personal_doc"]
     personal_key = hkdf(seed, personal["hkdf_info"])
     assert personal_key.hex() == personal["key_hex"]
-    raw_doc = personal_key[:16]
-    doc_id = f"{raw_doc[:4].hex()}-{raw_doc[4:6].hex()}-{raw_doc[6:8].hex()}-{raw_doc[8:10].hex()}-{raw_doc[10:].hex()}"
+    doc_id = uuid_v4_from_bytes(personal_key[:16])
     assert doc_id == personal["doc_id"]
     print("personal doc ok")
 

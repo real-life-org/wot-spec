@@ -195,7 +195,10 @@ Damit hat jedes Gerät des Users denselben Personal Doc Key. Es muss nichts vert
 Die Dokument-ID des Personal Doc wird aus dem Personal Doc Key abgeleitet:
 
 ```
-docId = first_16_bytes(Personal Doc Key)  → formatiert als UUID
+raw = first_16_bytes(Personal Doc Key)
+raw[6] = (raw[6] & 0x0f) | 0x40  // UUID version 4
+raw[8] = (raw[8] & 0x3f) | 0x80  // RFC 9562 variant
+docId = raw formatiert als kanonische lowercase UUID
 ```
 
 Damit hat jedes Gerät des Users dieselbe Document-ID. Der Broker speichert Log-Einträge unter dieser ID, ohne wissen zu müssen, dass es ein Personal Doc ist.
