@@ -74,7 +74,7 @@ Eine Implementierung ist `wot-sync@0.1`-konform, wenn sie zusaetzlich `wot-ident
 - AES-256-GCM mit 96-Bit Nonces verwenden.
 - ECIES mit X25519, HKDF-SHA256 und AES-256-GCM fuer Inbox-Nachrichten implementieren.
 - Gruppen- und Personal-Doc-Payloads vor dem Sync verschluesseln.
-- Leere Klartexte und tag-only Ciphertexts fuer ECIES- und Log-Payloads ablehnen.
+- Implementierungen MUESSEN leere Klartexte und tag-only Ciphertexts fuer ECIES- und Log-Payloads ablehnen.
 - Die Nonce-Konstruktion des jeweiligen Dokuments einhalten.
 
 ### Log-Sync
@@ -85,7 +85,7 @@ Eine Implementierung ist `wot-sync@0.1`-konform, wenn sie zusaetzlich `wot-ident
 - Kollisionen fuer `(docId, deviceId, seq)` erkennen und sicher behandeln.
 - App-Start- und Reconnect-Flows gemaess Sync 002 ausfuehren: lokalen Zustand laden, Broker authentisieren, Personal Doc zuerst syncen, danach fuer Space-Dokumente ueber Heads/`sync-request` einen Catch-Up durchfuehren.
 - Lokale Schreibvorgaenge zuerst persistent als Log-Eintrag speichern und erst danach an Broker/Peers publizieren.
-- Gueltige Log-Eintraege mit vorhandener, aber lokal unbekannter `keyGeneration` als `blocked-by-key` behandeln und nach Key-Catch-Up erneut verarbeiten; malformed Log-Eintraege ohne Pflichtfeld `keyGeneration` ablehnen.
+- Implementierungen MUESSEN gueltige Log-Eintraege mit vorhandener, aber lokal unbekannter `keyGeneration` als `blocked-by-key` behandeln und nach Key-Catch-Up erneut verarbeiten; malformed Log-Eintraege ohne Pflichtfeld `keyGeneration` MUESSEN abgelehnt werden.
 - Snapshots und Full-State-Nachrichten nur als Optimierung mergen und niemals als Ersatz fuer Log-Catch-Up oder als Rollback bekannter gueltiger Eintraege verwenden.
 
 ### Transport und Broker
@@ -93,7 +93,7 @@ Eine Implementierung ist `wot-sync@0.1`-konform, wenn sie zusaetzlich `wot-ident
 - WoT Plaintext Envelopes erzeugen und parsen, deren JSON-Shape DIDComm-v2-Plaintext-kompatibel ist und `typ: "application/didcomm-plain+json"` setzt.
 - Envelope-Testvektoren mit mindestens einer etablierten DIDComm-v2-Library validieren. Diese Validierung prueft nur die Envelope-Kompatibilitaet, nicht DIDComm-JWE/Authcrypt oder DIDComm-Mediator-Protokolle.
 - WoT Envelopes nur als ephemeres Transport-Framing behandeln; persistente WoT-Objekte bleiben JWS-/Payload-Objekte im Body.
-- Broker-Challenge-Response mit DID-Signaturen ueber den strukturierten Broker-Auth-Transcript umsetzen.
+- Implementierungen MUESSEN Broker-Challenge-Response mit DID-Signaturen ueber den strukturierten Broker-Auth-Transcript umsetzen.
 - Capabilities als JWS verifizieren.
 - Inbox-Nachrichten pro Device zustellen und ACKs verarbeiten.
 - Selbstadressierte Inbox-Nachrichten an andere Devices derselben DID zustellen, ohne das sendende Device als erfolgreich zugestellten Empfaenger zu behandeln.

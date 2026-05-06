@@ -54,7 +54,7 @@ Nach dem Handshake ist die WebSocket-Verbindung authentifiziert. Alle weiteren N
 
 Die Device-ID (`deviceId`) identifiziert das Gerät stabil — derselbe Wert wie im Sync-Protokoll ([Sync 002](002-sync-protokoll.md#device-identifikation)).
 
-`register.deviceId`, `challenge-response.deviceId`, `device-revoke.deviceId` und ACK-/Inbox-Scoping ueber `deviceId` MUESSEN die kanonische lowercase UUID-v4-Form verwenden. Broker MUESSEN malformed oder nicht-v4 Device-IDs vor einer Registrierung mit `MALFORMED_MESSAGE` ablehnen.
+`register.deviceId`, `challenge-response.deviceId`, `device-revoke.deviceId` und ACK-/Inbox-Scoping über `deviceId` MÜSSEN die kanonische lowercase UUID-v4-Form verwenden. Broker MÜSSEN malformed oder nicht-v4 Device-IDs vor einer Registrierung mit `MALFORMED_MESSAGE` ablehnen.
 
 ### Nonce-Handling (MUSS)
 
@@ -67,7 +67,7 @@ Die Challenge-Nonce in der Broker-Authentisierung MUSS denselben Replay-Schutz-R
 
 ### Broker-Auth-Transcript (MUSS)
 
-Die Signatur in `challenge-response` wird nicht ueber die rohen Nonce-Bytes und nicht ueber den Base64URL-String allein erzeugt. Sie MUSS ueber die JCS-kanonisierten Bytes des folgenden Transcripts erzeugt und verifiziert werden:
+Die Signatur in `challenge-response` wird nicht über die rohen Nonce-Bytes und nicht über den Base64URL-String allein erzeugt. Sie MUSS über die JCS-kanonisierten Bytes des folgenden Transcripts erzeugt und verifiziert werden:
 
 ```json
 {
@@ -79,9 +79,9 @@ Die Signatur in `challenge-response` wird nicht ueber die rohen Nonce-Bytes und 
 }
 ```
 
-Die `nonce` im Transcript ist die kanonische unpadded Base64URL-Darstellung der 32 zufaelligen Nonce-Bytes. Base64URL-Padding (`=`) ist in Broker-Challenges und Challenge-Responses ungueltig.
+Die `nonce` im Transcript ist die kanonische unpadded Base64URL-Darstellung der 32 zufälligen Nonce-Bytes. Base64URL-Padding (`=`) ist in Broker-Challenges und Challenge-Responses ungültig.
 
-Der Broker MUSS ausgegebene, noch nicht akzeptierte Nonces an die konkrete WebSocket-Verbindung und an die zuvor empfangenen `register.did` / `register.deviceId` Werte binden. `challenge-response.did`, `challenge-response.deviceId` und `challenge-response.nonce` MUESSEN exakt zu dieser ausstehenden Challenge passen, bevor die Signatur als gueltig akzeptiert wird. Nach erfolgreicher Akzeptanz MUSS die Nonce als verbraucht gespeichert werden; ein erneuter Versuch mit derselben Nonce wird mit `NONCE_REPLAY` abgelehnt.
+Der Broker MUSS ausgegebene, noch nicht akzeptierte Nonces an die konkrete WebSocket-Verbindung und an die zuvor empfangenen `register.did` / `register.deviceId` Werte binden. `challenge-response.did`, `challenge-response.deviceId` und `challenge-response.nonce` MÜSSEN exakt zu dieser ausstehenden Challenge passen, bevor die Signatur als gültig akzeptiert wird. Nach erfolgreicher Akzeptanz MUSS die Nonce als verbraucht gespeichert werden; ein erneuter Versuch mit derselben Nonce wird mit `NONCE_REPLAY` abgelehnt.
 
 ## Device-Registrierung
 
@@ -96,7 +96,7 @@ Der Broker MUSS pro DID eine Liste der zugehörigen Device-IDs führen. Das ist 
 Wenn ein Client mit einer `(did, deviceId)`-Kombination verbindet, die der Broker noch nicht kennt:
 
 1. Broker führt normale Challenge-Response durch (siehe oben)
-2. Nach erfolgreicher Authentisierung: Broker prüft, ob `deviceId` bereits für eine **andere DID** registriert ist, egal ob dort `active` oder `revoked`
+2. Nach erfolgreicher Authentisierung: Broker prüft, ob `deviceId` bereits für eine **andere DID** registriert ist, egal ob dort `active` oder `revoked` (siehe [Device-Liste](#device-liste))
    - Falls ja: **Ablehnen** mit `DEVICE_ID_CONFLICT` — Device-IDs MÜSSEN global eindeutig sein
 3. Broker prüft, ob `deviceId` für diese DID in einer Revocation-Liste steht
    - Falls ja: **Ablehnen** mit `DEVICE_REVOKED`
@@ -133,11 +133,11 @@ Signiert mit dem Identity Key der angegebenen DID. Der Broker MUSS prüfen:
 4. Ausstehende Inbox-Nachrichten für dieses Device werden gelöscht
 5. Zukünftige Verbindungsversuche mit dieser Kombination werden mit `DEVICE_REVOKED` abgelehnt
 
-Jede gueltig mit dem Identity Key der DID signierte `device-revoke` Nachricht darf jedes Device derselben DID deaktivieren. Im Shared-Seed-Modell ist keine zusaetzliche Signatur eines device-spezifischen Keys erforderlich.
+Jede gültig mit dem Identity Key der DID signierte `device-revoke` Nachricht DARF jedes Device derselben DID deaktivieren. Im Shared-Seed-Modell ist keine zusätzliche Signatur eines device-spezifischen Keys erforderlich.
 
-Eine gueltige Revocation fuer ein unbekanntes `(did, deviceId)` MUSS der Broker als revoked Tombstone speichern und idempotent akzeptieren. Eine gueltige Revocation fuer ein bereits revoked Device MUSS ebenfalls idempotent akzeptiert werden; die zuerst gespeicherten Revocation-Metadaten bleiben autoritativ und werden durch spaetere Duplikate nicht ueberschrieben. Fuer Duplikate MUSS der Broker keine Inbox-Nachrichten erneut loeschen, DARF aber dieselbe Cleanup-Operation idempotent ausfuehren.
+Eine gültige Revocation für ein unbekanntes `(did, deviceId)` MUSS der Broker als revoked Tombstone speichern und idempotent akzeptieren. Eine gültige Revocation für ein bereits revoked Device MUSS ebenfalls idempotent akzeptiert werden; die zuerst gespeicherten Revocation-Metadaten bleiben autoritativ und werden durch spätere Duplikate nicht überschrieben. Für Duplikate MUSS der Broker keine Inbox-Nachrichten erneut löschen, DARF aber dieselbe Cleanup-Operation idempotent ausführen.
 
-Malformed `device-revoke` Nachrichten werden mit `MALFORMED_MESSAGE` abgelehnt. Ungueltige Signaturen, Signaturen eines anderen DID-Schluessels oder ein `did`/Signer-Mismatch werden mit `AUTH_INVALID` abgelehnt.
+Malformed `device-revoke` Nachrichten werden mit `MALFORMED_MESSAGE` abgelehnt. Ungültige Signaturen, Signaturen eines anderen DID-Schlüssels oder ein `did`/Signer-Mismatch werden mit `AUTH_INVALID` abgelehnt.
 
 **Limitation im Shared-Seed-Modell:** Wer den Seed hat, kann eine neue `deviceId` generieren und sich als "neues Device" registrieren. Device-Deaktivierung schützt nicht gegen Seed-Kompromittierung — siehe [Identity 001](../01-wot-identity/001-identitaet-und-schluesselableitung.md#multi-device--shared-seed-modell). Für echten Schutz muss die Identität rotiert werden.
 
@@ -145,7 +145,7 @@ Malformed `device-revoke` Nachrichten werden mit `MALFORMED_MESSAGE` abgelehnt. 
 
 Der Broker speichert pro DID mindestens `deviceId`, `firstSeenAt`, `lastSeenAt`, `status` (`active` oder `revoked`) und optional `revokedAt`. Diese Liste ist Broker-Metadatum und liegt im Klartext vor.
 
-`active` und `revoked` sind die einzigen normativen Device-Statuswerte in `wot-sync@0.1`. Ein `revoked` Record ist ein Tombstone: solange der Broker ihn speichert, gilt die `deviceId` weiter als registriert und reserviert fuer Konfliktpruefungen. Eine fuer eine andere DID retained revoked `deviceId` fuehrt daher weiterhin zu `DEVICE_ID_CONFLICT`.
+`active` und `revoked` sind die einzigen normativen Device-Statuswerte in `wot-sync@0.1`. Ein `revoked` Record ist ein Tombstone: solange der Broker ihn speichert, gilt die `deviceId` weiter als registriert und reserviert für Konfliktprüfungen. Eine für eine andere DID retained revoked `deviceId` führt daher weiterhin zu `DEVICE_ID_CONFLICT`.
 
 ### Race Conditions
 
@@ -332,7 +332,7 @@ Persistente WoT-Objekte (Attestation-JWS, Capability-JWS, Log-Entry-JWS, verschl
 | `pthid` | UUID v4 | Optional | Parent-Thread-ID. Verweist auf einen übergeordneten Thread — für verschachtelte Konversationen (z.B. ein Sub-Protokoll das innerhalb eines größeren Flows läuft). |
 | `body` | Object | Ja | Nachrichteninhalt. Struktur abhängig vom `type`. |
 
-Das generische Plaintext-Envelope-Format DARF `to` weglassen, wenn der konkrete Nachrichtentyp seine Empfaenger aus dem authentifizierten Transportkontext oder aus dem Body ableitet, z.B. bei Broker-gebundenen `sync-request`/`sync-response` Nachrichten. Konkrete Nachrichtentypen DUERFEN strengere Regeln definieren. Inbox- und direkt adressierte Nachrichten MUESSEN `to` setzen.
+Das generische Plaintext-Envelope-Format DARF `to` weglassen, wenn der konkrete Nachrichtentyp seine Empfänger aus dem authentifizierten Transportkontext oder aus dem Body ableitet, z.B. bei Broker-gebundenen `sync-request`/`sync-response` Nachrichten. Konkrete Nachrichtentypen DÜRFEN strengere Regeln definieren. Inbox- und direkt adressierte Nachrichten MÜSSEN `to` setzen.
 
 ### Autoritätsgrenze (MUSS)
 
@@ -576,9 +576,9 @@ Normative Error-Codes:
 | `DEVICE_REVOKED` | Device-ID ist als revoked markiert |
 | `DEVICE_ID_CONFLICT` | Device-ID bereits für eine andere DID registriert |
 | `SEQ_COLLISION_DETECTED` | Log-Eintrag mit `(docId, deviceId, seq)` existiert bereits mit anderem Content-Hash — Client MUSS neue `deviceId` generieren (Restore/Clone-Szenario) |
-| `MALFORMED_MESSAGE` | Nachricht oder Pflichtfeld ist syntaktisch ungueltig, inklusive malformed DID, malformed UUID v4 `deviceId`, malformed Base64URL-Nonce oder fehlender Pflichtfelder |
-| `AUTH_INVALID` | Challenge-Response, Envelope-JWS oder Device-Revocation-Signatur ist ungueltig oder passt nicht zu DID, Device oder ausstehender Challenge |
-| `NONCE_REPLAY` | Broker-Challenge-Nonce wurde bereits akzeptiert oder ist nicht mehr als ausstehende Challenge gueltig |
+| `MALFORMED_MESSAGE` | Nachricht oder Pflichtfeld ist syntaktisch ungültig, inklusive JSON-Parse-Fehler, malformed DID, malformed UUID v4 `deviceId`, malformed Base64URL-Nonce oder fehlender Pflichtfelder |
+| `AUTH_INVALID` | Challenge-Response, Envelope-JWS oder Device-Revocation-Signatur ist ungültig oder passt nicht zu DID, Device oder ausstehender Challenge |
+| `NONCE_REPLAY` | Broker-Challenge-Nonce wurde bereits akzeptiert oder ist nicht mehr als ausstehende Challenge gültig |
 | `RATE_LIMITED` | Rate-Limit überschritten |
 | `INTERNAL_ERROR` | Server-Fehler |
 

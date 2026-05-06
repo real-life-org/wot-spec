@@ -192,14 +192,16 @@ Damit hat jedes Gerät des Users denselben Personal Doc Key. Es muss nichts vert
 
 ### Deterministische Document-ID
 
-Die Dokument-ID des Personal Doc wird aus dem Personal Doc Key abgeleitet:
+Die Dokument-ID des Personal Doc MUSS aus dem Personal Doc Key abgeleitet werden:
 
-```
+```text
 raw = first_16_bytes(Personal Doc Key)
-raw[6] = (raw[6] & 0x0f) | 0x40  // UUID version 4
+raw[6] = (raw[6] & 0x0f) | 0x40  // UUID version 4, RFC 9562 §5.4
 raw[8] = (raw[8] & 0x3f) | 0x80  // RFC 9562 variant
 docId = raw formatiert als kanonische lowercase UUID
 ```
+
+Diese deterministische UUID-v4-Form ist eine Wire-Format-Konvention für Interop, keine Aussage darüber, dass die nicht fixierten Bits aus einem UUID-v4-RNG stammen. JSON-Schema kann die Byte-Manipulation auf abgeleitetem Schlüsselmaterial nicht vollständig validieren; Schemas DÜRFEN nur die kanonische UUID-v4-Form prüfen. Konformität der Ableitung wird durch Testvektoren und Referenz-Validatoren geprüft.
 
 Damit hat jedes Gerät des Users dieselbe Document-ID. Der Broker speichert Log-Einträge unter dieser ID, ohne wissen zu müssen, dass es ein Personal Doc ist.
 

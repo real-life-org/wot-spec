@@ -72,7 +72,7 @@ Clients MÜSSEN den Encryption Key nach dem ersten Empfang lokal cachen. In JWE-
 
 Die Nonce wird dem Ciphertext vorangestellt. AES-256-GCM ist nativ in der Web Crypto API aller Browser verfügbar und Hardware-beschleunigt (AES-NI).
 
-Das Segment `Ciphertext + Authentication Tag` MUSS mindestens ein Ciphertext-Byte plus den 16-Byte Authentication Tag enthalten. WoT-Sync-Payloads und ECIES-Inbox-Nachrichten haben keine semantisch gueltige leere Nutzlast: Implementierungen MUESSEN leeren Klartext vor der Verschluesselung ablehnen und MUESSEN beim Entschluesseln tag-only Ciphertexts ablehnen.
+Das Segment `Ciphertext + Authentication Tag` MUSS mindestens ein Ciphertext-Byte plus den 16-Byte Authentication Tag enthalten. ECIES-Inbox-Nachrichten und Log-Payloads MÜSSEN nicht-leere Klartexte verwenden: Implementierungen MÜSSEN leeren Klartext vor der Verschlüsselung ablehnen und MÜSSEN beim Entschlüsseln tag-only Ciphertexts ablehnen.
 
 ### Nonce-Konstruktion
 
@@ -114,8 +114,8 @@ Für direkte Nachrichten zwischen zwei Parteien (Attestations, Einladungen, Key-
    - Salt: leer (32 Null-Bytes)
    - Info: `"wot/ecies/v1"`
    - Ausgabe: 256-Bit AES-Schlüssel
-4. Nicht-leeren Klartext mit AES-256-GCM verschlüsseln (zufällige 12-Byte Nonce)
-5. Ausgabe: `{ ciphertext, nonce, ephemeralPublicKey }`
+4. Der nicht-leere Klartext MUSS mit AES-256-GCM verschlüsselt werden; dafür MUSS eine zufällige 12-Byte-Nonce verwendet werden.
+5. Die Ausgabe MUSS `{ ciphertext, nonce, ephemeralPublicKey }` enthalten.
 
 ### Entschlüsselung (Empfänger)
 
