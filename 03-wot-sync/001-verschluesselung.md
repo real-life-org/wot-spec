@@ -72,6 +72,8 @@ Clients MÜSSEN den Encryption Key nach dem ersten Empfang lokal cachen. In JWE-
 
 Die Nonce wird dem Ciphertext vorangestellt. AES-256-GCM ist nativ in der Web Crypto API aller Browser verfügbar und Hardware-beschleunigt (AES-NI).
 
+Das Segment `Ciphertext + Authentication Tag` MUSS mindestens ein Ciphertext-Byte plus den 16-Byte Authentication Tag enthalten. ECIES-Inbox-Nachrichten und Log-Payloads MÜSSEN nicht-leere Klartexte verwenden: Implementierungen MÜSSEN leeren Klartext vor der Verschlüsselung ablehnen und MÜSSEN beim Entschlüsseln tag-only Ciphertexts ablehnen.
+
 ### Nonce-Konstruktion
 
 AES-256-GCM ist **katastrophal unsicher** wenn dieselbe (Key, Nonce)-Kombination zweimal verwendet wird (Authentication-Key-Recovery, Klartext-Recovery). Die Spec definiert zwei verschiedene Nonce-Konstruktionen je nach Kontext:
@@ -106,18 +108,20 @@ Für direkte Nachrichten zwischen zwei Parteien (Attestations, Einladungen, Key-
 
 1. Ephemeres X25519-Schlüsselpaar generieren
 2. ECDH: `shared_secret = ephemeral_private × recipient_public`
+   - Wenn `shared_secret` der all-zero 32-Byte-Wert ist, MUSS die Nachricht abgelehnt werden. Der Wert DARF NICHT in HKDF eingehen.
 3. HKDF-SHA256:
    - Input: `shared_secret`
    - Salt: leer (32 Null-Bytes)
    - Info: `"wot/ecies/v1"`
    - Ausgabe: 256-Bit AES-Schlüssel
-4. Klartext mit AES-256-GCM verschlüsseln (zufällige 12-Byte Nonce)
-5. Ausgabe: `{ ciphertext, nonce, ephemeralPublicKey }`
+4. Der nicht-leere Klartext MUSS mit AES-256-GCM verschlüsselt werden; dafür MUSS eine zufällige 12-Byte-Nonce verwendet werden.
+5. Die Ausgabe MUSS `{ ciphertext, nonce, ephemeralPublicKey }` enthalten.
 
 ### Entschlüsselung (Empfänger)
 
 1. Ephemeral Public Key aus der Nachricht lesen
 2. ECDH: `shared_secret = recipient_private × ephemeral_public`
+   - Wenn `shared_secret` der all-zero 32-Byte-Wert ist, MUSS die Nachricht abgelehnt werden. Der Wert DARF NICHT in HKDF eingehen.
 3. Denselben AES-Schlüssel via HKDF ableiten
 4. Ciphertext entschlüsseln
 
@@ -151,7 +155,7 @@ ECIES verwendet einen ephemeren Sender-Key und den statischen X25519-Key des Emp
 |------|-----|-------------|
 | `epk` | String | Ephemerer X25519 Public Key (Base64URL, 32 Bytes) |
 | `nonce` | String | AES-256-GCM Nonce (Base64URL, 12 Bytes) |
-| `ciphertext` | String | Verschlüsselter Inhalt + AES-GCM Auth Tag (Base64URL) |
+| `ciphertext` | String | Verschlüsselter nicht-leerer Inhalt + AES-GCM Auth Tag (Base64URL; dekodiert mindestens 17 Bytes) |
 
 ### DIDComm-Abgrenzung
 

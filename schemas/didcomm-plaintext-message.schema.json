@@ -6,7 +6,7 @@
   "required": ["id", "typ", "type", "from", "created_time", "body"],
   "additionalProperties": true,
   "properties": {
-    "id": { "type": "string", "format": "uuid" },
+    "id": { "type": "string", "format": "uuid", "pattern": "^[0-9a-f]{8}-[0-9a-f]{4}-4[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$" },
     "typ": { "const": "application/didcomm-plain+json" },
     "type": { "type": "string", "format": "uri" },
     "from": { "type": "string", "pattern": "^did:[a-z0-9]+:.+" },

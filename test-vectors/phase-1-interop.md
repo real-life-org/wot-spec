@@ -189,7 +189,7 @@ Admin DID: did:key:z6MkvLMiE11z8wXjNScxqjcMJHNfNyc8XqDT4aGzry4pFTTd
 ```
 HKDF Info: wot/personal-doc/v1
 Personal Doc Key: ed3b3cbec944063041a15cf14be4c2aecd87ec30f2085cd9f2f82333cfcd437c
-Document-ID: ed3b3cbe-c944-0630-41a1-5cf14be4c2ae
+Document-ID: ed3b3cbe-c944-4630-81a1-5cf14be4c2ae
 ```
 
 ## 11. SD-JWT VC Trust List (H01/H03)

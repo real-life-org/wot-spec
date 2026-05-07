@@ -42,7 +42,9 @@ Jedes Gerät generiert beim ersten Start eine zufällige **Device-UUID** und spe
 deviceId = crypto.randomUUID()
 ```
 
-Log-Einträge werden pro `deviceId` pro `docId` sequenziert. Die UUID ist kein kryptografischer Key, sondern nur der Sequenz- und Nonce-Namespace eines Devices.
+Neue Devices MÜSSEN ihre `deviceId` als kanonische lowercase UUID v4 erzeugen. Log-Einträge werden pro `deviceId` pro `docId` sequenziert. Die UUID ist kein kryptografischer Key, sondern nur der Sequenz- und Nonce-Namespace eines Devices.
+
+Alle `deviceId`- und `docId`-Werte im Sync-Log MÜSSEN als kanonische lowercase UUID v4 serialisiert werden. Deterministische Document-IDs, z.B. die Personal-Doc-ID aus [Sync 006](006-personal-doc.md#deterministische-document-id), MÜSSEN beim Formatieren die UUID-v4-Version- und Variant-Bits setzen.
 
 ## Log
 
@@ -70,10 +72,10 @@ Ein Log-Eintrag ist ein **persistentes WoT-Objekt**: ein JWS-signierter Datensat
 |------|-----|---------|-------------|
 | `seq` | Integer | Ja | Aufsteigend, pro deviceId pro docId. Beginnt bei 0. |
 | `deviceId` | UUID v4 | Ja | Welches Gerät hat den Eintrag erzeugt |
-| `docId` | UUID v4 | Ja | Zu welchem Dokument gehört der Eintrag |
+| `docId` | UUID v4 | Ja | Zu welchem Dokument gehört der Eintrag. Deterministische IDs setzen die UUID-v4-Version- und Variant-Bits beim Formatieren. |
 | `authorKid` | DID-URL | Ja | Verification Method ID des Signierenden (z.B. `did:key:z6Mk...#sig-0`). DID wird aus dem Teil vor `#` extrahiert. In Phase 1 ist das Fragment immer `#sig-0` (einziger Key). In Phase 2 identifiziert es einen spezifischen Device-Key. |
 | `keyGeneration` | Integer | Ja | Generation des Space Content Keys der zur Verschlüsselung verwendet wurde (siehe [Sync 001](001-verschluesselung.md)) |
-| `data` | String | Ja | Base64URL-kodierter AES-256-GCM Ciphertext (Nonce + Ciphertext + Auth Tag, siehe [Sync 001](001-verschluesselung.md)) |
+| `data` | String | Ja | Base64URL-kodierter AES-256-GCM Ciphertext (Nonce + nicht-leerer Ciphertext + Auth Tag, siehe [Sync 001](001-verschluesselung.md)) |
 | `timestamp` | ISO 8601 | Ja | Erstellungszeitpunkt (UTC) |
 
 ### seq-Konsistenz (MUSS)
@@ -128,12 +130,14 @@ Der DIDComm-Envelope ist **kein Autoritätsanker** für den Log-Eintrag. Empfän
 Der `data`-Blob enthält ein mit AES-256-GCM verschlüsseltes CRDT-Update:
 
 ```
-Klartext (CRDT-Update, z.B. Yjs-Binary)
+Nicht-leerer Klartext (CRDT-Update, z.B. Yjs-Binary)
   → AES-256-GCM verschlüsseln mit Space Content Key (Generation = keyGeneration)
   → Nonce (12 Bytes) + Ciphertext + Auth Tag (16 Bytes)
   → Base64URL kodieren
   → in `data`-Feld schreiben
 ```
+
+Ein Log-Payload mit leerem Klartext ist in `wot-sync@0.1` ungültig. Empfänger MÜSSEN dekodierte `data`-Blobs ablehnen, die nur aus Nonce und Authentication Tag bestehen und keine Ciphertext-Bytes enthalten.
 
 ### CRDT-Agnostik
 
@@ -151,7 +155,7 @@ Wenn eine Implementierung einen Snapshot oder Full-State-Payload uebertraegt, ge
 - Ein Empfaenger DARF einen Snapshot nur mergen, wenn er zur erwarteten `docId` und `keyGeneration` passt.
 - Peers MUESSEN weiterhin Log-Eintraege mit `authorKid`, `seq`, `deviceId` und `keyGeneration` verifizieren koennen.
 
-Snapshots sind damit eine optionale Performance-Schicht, nicht das normative Sync-Wire-Format. Ein Snapshot ist nicht autoritativ gegenueber bereits bekannten gueltigen CRDT-Operationen: Clients MUESSEN einen Snapshot ueber den jeweiligen CRDT mergen und DUERFEN ihn nicht verwenden, um lokal bekannte gueltige Log-Eintraege zurueckzurollen oder zu ersetzen. Wenn der CRDT-Import oder Merge eines Snapshots fehlschlaegt, MUSS der Client den Snapshot ignorieren und mit Log-/State-Sync fortfahren.
+Snapshots sind damit eine optionale Performance-Schicht, nicht das normative Sync-Wire-Format. `wot-sync@0.1` standardisiert keinen Snapshot- oder Full-State-Message-Type und kein Snapshot-Body-Schema. Ein Snapshot ist nicht autoritativ gegenüber bereits bekannten gültigen CRDT-Operationen: Clients MÜSSEN einen Snapshot über den jeweiligen CRDT mergen und DÜRFEN ihn nicht verwenden, um lokal bekannte gültige Log-Einträge zurückzurollen oder zu ersetzen. Wenn der CRDT-Import oder Merge eines Snapshots fehlschlägt, MUSS der Client den Snapshot ignorieren und mit Log-/State-Sync fortfahren.
 
 ## Sync-Modi
 
@@ -166,7 +170,7 @@ Die folgenden Flows definieren die Reihenfolge der Operationen fuer `wot-sync@0.
 - Dauerhafter Zustand MUSS aus Log-Eintraegen, Personal-Doc-Eintraegen, Space-Metadaten, Group Keys und durabel gepufferten Inbox-Nachrichten rekonstruierbar sein.
 - Durabel gepufferte Pending-Zustaende, z.B. Pending-Inbox, `blocked-by-key` oder `future-rotation`, sind lokaler crash-sicherer State. Der konkrete Speicherort ist implementationsspezifisch, MUSS aber App-Neustarts ueberleben und MUSS alle Metadaten enthalten, die fuer erneute Pruefung und Anwendung noetig sind, mindestens Message-/Log-Entry-ID, betroffene `docId`, Abhaengigkeitsart und erwartete `keyGeneration`.
 - Ein Client DARF eine Inbox-Nachricht erst ACKen, wenn er sie entweder erfolgreich angewendet hat oder sie inklusive aller Abhaengigkeits-Metadaten dauerhaft gepuffert hat. Nach einem ACK darf der Broker die Nachricht fuer genau dieses Device loeschen (siehe [Sync 003 ACK](003-transport-und-broker.md#ack10--empfangsbestätigung)).
-- Ein Client DARF einen empfangenen Log-Eintrag nicht verwerfen, nur weil ihm der passende `keyGeneration`-Key fehlt. Er MUSS den Eintrag speichern oder erneut abrufbar lassen und den Eintrag als `blocked-by-key` behandeln.
+- Ein Client DARF einen gültigen empfangenen Log-Eintrag mit vorhandener `keyGeneration` nicht verwerfen, nur weil ihm das passende Key-Material fehlt. Er MUSS den Eintrag speichern oder erneut abrufbar lassen und den Eintrag als `blocked-by-key` behandeln. Ein Log-Eintrag ohne Pflichtfeld `keyGeneration` ist malformed und wird vor dieser Disposition abgelehnt.
 - Push- und Inbox-Nachrichten sind Wecksignale oder Key-/Control-Messages. Sie ersetzen keinen Log-Catch-Up fuer das betroffene Dokument.
 - Snapshots, Full-State-Nachrichten und Vault-Backups sind Optimierungen. Sie duerfen keinen bekannten gueltigen Log-Eintrag zurueckrollen und duerfen eine fehlende Log-Sync-Runde nicht ersetzen.
 
@@ -227,19 +231,19 @@ Key-Rotation ist eine Abhaengigkeit fuer alle spaeteren Space-Log-Eintraege. Cli
 - Empfaengt ein Client eine `key-rotation` mit `generation = localGeneration + 1`, MUSS er den neuen Content Key und die neue Capability durabel speichern, blockierte Log-Eintraege dieser Generation erneut verarbeiten und einen `sync-request` fuer das Space-Dokument ausloesen.
 - Empfaengt ein Client eine `key-rotation` mit `generation <= localGeneration`, MUSS er sie als doppelt oder veraltet behandeln. Er DARF sie ACKen, nachdem Replay- und Signaturpruefung abgeschlossen sind.
 - Empfaengt ein Client eine `key-rotation` mit `generation > localGeneration + 1`, MUSS er sie als `future-rotation` durabel puffern. Er DARF sie nicht anwenden, bevor die Luecke geschlossen ist. Er MUSS fehlende Rotationen, Personal-Doc-Keys oder einen aktuellen Full-State/Log-Catch-Up anfordern.
-- Empfaengt ein Client einen Log-Eintrag mit unbekannter `keyGeneration`, MUSS er den Eintrag als `blocked-by-key` speichern oder erneut abrufbar lassen und Key-/Personal-Doc-Catch-Up anfordern. Er DARF den Eintrag nicht als verarbeitet markieren.
+- Empfängt ein Client einen ansonsten gültigen Log-Eintrag mit vorhandener, aber lokal unbekannter `keyGeneration`, MUSS er den Eintrag als `blocked-by-key` speichern oder erneut abrufbar lassen und Key-/Personal-Doc-Catch-Up anfordern. Er DARF den Eintrag nicht als verarbeitet markieren. Fehlt das Pflichtfeld `keyGeneration`, ist der Log-Eintrag malformed und wird nicht als `blocked-by-key` klassifiziert.
 - Sobald eine fehlende Generation verfuegbar wird, MUSS der Client alle gepufferten `future-rotation`-Nachrichten und `blocked-by-key`-Log-Eintraege in aufsteigender Generation erneut pruefen.
 
 `Anfordern` von fehlenden Rotationen oder Keys bedeutet in `wot-sync@0.1`, dass ein Client die bestehenden Sync-Quellen erneut nutzt: eigene Device-Inbox drainen, Personal Doc per `sync-request` aufholen, fuer das betroffene Space-Dokument einen `sync-request` senden und, falls implementiert, einen autorisierten Snapshot oder Full-State abrufen. Ein separates generisches `key-request` Nachrichtenformat ist in `wot-sync@0.1` nicht normiert. Solange die fehlende Generation danach nicht verfuegbar ist, MUSS der Client die betroffenen `future-rotation`- und `blocked-by-key`-Eintraege durabel gepuffert lassen und bei App-Start, Reconnect oder neuem Wecksignal erneut aufloesen.
 
 ### Snapshot- und Full-State-Optimierungen
 
-Snapshots und Full-State-Nachrichten duerfen verwendet werden, um lange Catch-Up-Runden zu beschleunigen. Sie MUESSEN aber wie folgt eingeordnet werden:
+Snapshots und Full-State-Nachrichten DÜRFEN verwendet werden, um lange Catch-Up-Runden zu beschleunigen. Da `wot-sync@0.1` kein gemeinsames Snapshot-Wire-Format normiert, sind Snapshot-Bodies implementationsspezifisch. Sie MÜSSEN aber wie folgt eingeordnet werden:
 
-1. Ein Snapshot MUSS mindestens `docId`, `keyGeneration` und eine Abdeckung der enthaltenen Log-Heads (`heads` oder aequivalente Metadaten) besitzen, wenn er als Catch-Up-Optimierung verwendet wird.
-2. Kann eine Implementierung die Abdeckung nicht bestimmen, DARF sie den Snapshot nur als CRDT-Merge-Hilfe verwenden und MUSS danach trotzdem eine normale `sync-request`-Runde ausfuehren.
+1. Ein Snapshot MUSS mindestens `docId`, `keyGeneration` und eine Abdeckung der enthaltenen Log-Heads besitzen, wenn er als Catch-Up-Optimierung verwendet wird. Die interoperable Abdeckungsform ist dieselbe `heads`-Map wie bei `sync-request`/`sync-response`: kanonische lowercase UUID-v4-`deviceId` -> höchste enthaltene `seq`.
+2. Kann eine Implementierung diese Abdeckung nicht bestimmen oder verwendet sie eine nicht interoperable Metadatenform, DARF sie den Snapshot nur als CRDT-Merge-Hilfe verwenden und MUSS danach trotzdem eine normale `sync-request`-Runde ausfuehren.
 3. Ein Snapshot mit unbekannter oder zukuenftiger `keyGeneration` wird wie ein blockierter Log-Eintrag behandelt: puffern oder erneut abrufen, fehlende Keys anfordern, nicht als verarbeitet markieren.
-4. Ein Snapshot DARF keine lokal bekannten gueltigen Log-Eintraege loeschen oder ueberschreiben. Der CRDT-Merge bleibt autoritativ fuer Konvergenz.
+4. Ein Snapshot DARF keine lokal bekannten gültigen Log-Einträge löschen oder überschreiben. Der CRDT-Merge bleibt autoritativ für Konvergenz.
 5. Zeitbasierte Retry-Mechanismen duerfen als Implementierungsdetail existieren, sind aber nicht der normative Sync-Mechanismus. Normative Recovery basiert auf Heads, `sync-request`, per-Device-Inbox und Generation-Gap-Erkennung.
 
 ## Censorship- und Split-Brain-Detection

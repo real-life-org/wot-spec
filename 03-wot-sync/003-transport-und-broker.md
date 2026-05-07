@@ -41,11 +41,11 @@ Beim Verbindungsaufbau zum Broker authentifiziert sich der Client via **Challeng
 2. Client sendet: { type: "register", did: "did:key:z6Mk...", deviceId: "uuid" }
 3. Broker generiert zufällige Nonce (32 Bytes)
 4. Broker sendet: { type: "challenge", nonce: "<Base64URL>" }
-5. Client signiert die Nonce mit Ed25519 Private Key
+5. Client signiert den Broker-Auth-Transcript mit Ed25519 Private Key
 6. Client sendet: { type: "challenge-response", did, deviceId, nonce, signature }
 7. Broker verifiziert:
    - DID auflösen → Public Key
-   - Signatur über Nonce prüfen
+   - Signatur über den Broker-Auth-Transcript prüfen
    - OK → Verbindung authentifiziert
 8. Broker sendet: { type: "registered", did, deviceId }
 ```
@@ -53,6 +53,8 @@ Beim Verbindungsaufbau zum Broker authentifiziert sich der Client via **Challeng
 Nach dem Handshake ist die WebSocket-Verbindung authentifiziert. Alle weiteren Nachrichten auf dieser Verbindung gelten als von dieser DID + deviceId kommend.
 
 Die Device-ID (`deviceId`) identifiziert das Gerät stabil — derselbe Wert wie im Sync-Protokoll ([Sync 002](002-sync-protokoll.md#device-identifikation)).
+
+`register.deviceId`, `challenge-response.deviceId`, `device-revoke.deviceId` und ACK-/Inbox-Scoping über `deviceId` MÜSSEN die kanonische lowercase UUID-v4-Form verwenden. Broker MÜSSEN malformed oder nicht-v4 Device-IDs vor einer Registrierung mit `MALFORMED_MESSAGE` ablehnen.
 
 ### Nonce-Handling (MUSS)
 
@@ -62,6 +64,24 @@ Die Challenge-Nonce in der Broker-Authentisierung MUSS denselben Replay-Schutz-R
 - Eine Nonce DARF nur einmal akzeptiert werden
 - Nonces MÜSSEN mindestens 32 Bytes aus einer kryptographisch sicheren Zufallsquelle haben
 - Clients MÜSSEN die Nonce direkt nach Empfang signieren (keine späteren Signaturen auf wiederverwendeten Nonces)
+
+### Broker-Auth-Transcript (MUSS)
+
+Die Signatur in `challenge-response` wird nicht über die rohen Nonce-Bytes und nicht über den Base64URL-String allein erzeugt. Sie MUSS über die JCS-kanonisierten Bytes des folgenden Transcripts erzeugt und verifiziert werden:
+
+```json
+{
+  "protocol": "wot/broker-auth/v1",
+  "type": "challenge-response",
+  "did": "did:key:z6Mk...",
+  "deviceId": "550e8400-e29b-41d4-a716-446655440000",
+  "nonce": "<kanonische unpadded Base64URL-Nonce>"
+}
+```
+
+Die `nonce` im Transcript ist die kanonische unpadded Base64URL-Darstellung der 32 zufälligen Nonce-Bytes. Base64URL-Padding (`=`) ist in Broker-Challenges und Challenge-Responses ungültig.
+
+Der Broker MUSS ausgegebene, noch nicht akzeptierte Nonces an die konkrete WebSocket-Verbindung und an die zuvor empfangenen `register.did` / `register.deviceId` Werte binden. `challenge-response.did`, `challenge-response.deviceId` und `challenge-response.nonce` MÜSSEN exakt zu dieser ausstehenden Challenge passen, bevor die Signatur als gültig akzeptiert wird. Nach erfolgreicher Akzeptanz MUSS die Nonce als verbraucht gespeichert werden; ein erneuter Versuch mit derselben Nonce wird mit `NONCE_REPLAY` abgelehnt.
 
 ## Device-Registrierung
 
@@ -76,7 +96,7 @@ Der Broker MUSS pro DID eine Liste der zugehörigen Device-IDs führen. Das ist 
 Wenn ein Client mit einer `(did, deviceId)`-Kombination verbindet, die der Broker noch nicht kennt:
 
 1. Broker führt normale Challenge-Response durch (siehe oben)
-2. Nach erfolgreicher Authentisierung: Broker prüft, ob `deviceId` bereits für eine **andere DID** registriert ist
+2. Nach erfolgreicher Authentisierung: Broker prüft, ob `deviceId` bereits für eine **andere DID** registriert ist, egal ob dort `active` oder `revoked` (siehe [Device-Liste](#device-liste))
    - Falls ja: **Ablehnen** mit `DEVICE_ID_CONFLICT` — Device-IDs MÜSSEN global eindeutig sein
 3. Broker prüft, ob `deviceId` für diese DID in einer Revocation-Liste steht
    - Falls ja: **Ablehnen** mit `DEVICE_REVOKED`
@@ -108,15 +128,24 @@ Device-Deaktivierung wird über eine **signierte Revocation-Nachricht** kommuniz
 Signiert mit dem Identity Key der angegebenen DID. Der Broker MUSS prüfen:
 
 1. JWS-Signatur gültig gegen den Ed25519-Key aus `did`
-2. Der Broker markiert `(did, deviceId)` als `revoked`
-3. Ausstehende Inbox-Nachrichten für dieses Device werden gelöscht
-4. Zukünftige Verbindungsversuche mit dieser Kombination werden mit `DEVICE_REVOKED` abgelehnt
+2. `deviceId` ist eine kanonische lowercase UUID v4 und `revokedAt` ist ein RFC3339-Date-Time mit expliziter Zeitzone
+3. Der Broker markiert `(did, deviceId)` als `revoked`
+4. Ausstehende Inbox-Nachrichten für dieses Device werden gelöscht
+5. Zukünftige Verbindungsversuche mit dieser Kombination werden mit `DEVICE_REVOKED` abgelehnt
+
+Jede gültig mit dem Identity Key der DID signierte `device-revoke` Nachricht DARF jedes Device derselben DID deaktivieren. Im Shared-Seed-Modell ist keine zusätzliche Signatur eines device-spezifischen Keys erforderlich.
+
+Eine gültige Revocation für ein unbekanntes `(did, deviceId)` MUSS der Broker als revoked Tombstone speichern und idempotent akzeptieren. Eine gültige Revocation für ein bereits revoked Device MUSS ebenfalls idempotent akzeptiert werden; die zuerst gespeicherten Revocation-Metadaten bleiben autoritativ und werden durch spätere Duplikate nicht überschrieben. Für Duplikate MUSS der Broker keine Inbox-Nachrichten erneut löschen, DARF aber dieselbe Cleanup-Operation idempotent ausführen.
+
+Malformed `device-revoke` Nachrichten werden mit `MALFORMED_MESSAGE` abgelehnt. Ungültige Signaturen, Signaturen eines anderen DID-Schlüssels oder ein `did`/Signer-Mismatch werden mit `AUTH_INVALID` abgelehnt.
 
 **Limitation im Shared-Seed-Modell:** Wer den Seed hat, kann eine neue `deviceId` generieren und sich als "neues Device" registrieren. Device-Deaktivierung schützt nicht gegen Seed-Kompromittierung — siehe [Identity 001](../01-wot-identity/001-identitaet-und-schluesselableitung.md#multi-device--shared-seed-modell). Für echten Schutz muss die Identität rotiert werden.
 
 ### Device-Liste im Broker
 
 Der Broker speichert pro DID mindestens `deviceId`, `firstSeenAt`, `lastSeenAt`, `status` (`active` oder `revoked`) und optional `revokedAt`. Diese Liste ist Broker-Metadatum und liegt im Klartext vor.
+
+`active` und `revoked` sind die einzigen normativen Device-Statuswerte in `wot-sync@0.1`. Ein `revoked` Record ist ein Tombstone: solange der Broker ihn speichert, gilt die `deviceId` weiter als registriert und reserviert für Konfliktprüfungen. Eine für eine andere DID retained revoked `deviceId` führt daher weiterhin zu `DEVICE_ID_CONFLICT`.
 
 ### Race Conditions
 
@@ -141,7 +170,7 @@ ACKs sind pro Device scoped. Ein Broker MUSS ein ACK nur fuer die Inbox des auth
 ### Retention und Garbage Collection
 
 - Nachrichten, die älter sind als ein definiertes TTL (z.B. 30 Tage) werden auch ohne ACK gelöscht — Implementierer dürfen das konfigurieren
-- Wenn ein Device für längere Zeit (z.B. 90 Tage) nicht verbindet, DARF der Broker es als inaktiv behandeln und seine ausstehenden Nachrichten löschen
+- Wenn ein Device für längere Zeit (z.B. 90 Tage) nicht verbindet, DARF der Broker es nach lokaler Retention-Policy als inaktiv behandeln und seine ausstehenden Nachrichten löschen. `inactive` ist kein normativer Statuswert; der Broker modelliert solche GCs lokal, ohne die `active`/`revoked`-Statusmenge zu erweitern.
 - Für kritische Nachrichten (Space-Einladungen, Key-Rotationen) SOLLTE der Sender einen Liefernachweis implementieren (z.B. erneutes Senden nach Timeout)
 
 Der pro-Device-Zustellpfad stellt sicher, dass jedes aktive Device kritische Nachrichten wie Space-Einladungen und Key-Rotationen mindestens einmal erhält.
@@ -302,6 +331,8 @@ Persistente WoT-Objekte (Attestation-JWS, Capability-JWS, Log-Entry-JWS, verschl
 | `thid` | UUID v4 | Optional | Thread-ID. Verknüpft Nachrichten die zu einer Konversation gehören (z.B. Request + Response). Die erste Nachricht eines Threads setzt `thid = id`; Folgenachrichten tragen denselben `thid`. |
 | `pthid` | UUID v4 | Optional | Parent-Thread-ID. Verweist auf einen übergeordneten Thread — für verschachtelte Konversationen (z.B. ein Sub-Protokoll das innerhalb eines größeren Flows läuft). |
 | `body` | Object | Ja | Nachrichteninhalt. Struktur abhängig vom `type`. |
+
+Das generische Plaintext-Envelope-Format DARF `to` weglassen, wenn der konkrete Nachrichtentyp seine Empfänger aus dem authentifizierten Transportkontext oder aus dem Body ableitet, z.B. bei Broker-gebundenen `sync-request`/`sync-response` Nachrichten. Konkrete Nachrichtentypen DÜRFEN strengere Regeln definieren. Inbox- und direkt adressierte Nachrichten MÜSSEN `to` setzen.
 
 ### Autoritätsgrenze (MUSS)
 
@@ -545,6 +576,9 @@ Normative Error-Codes:
 | `DEVICE_REVOKED` | Device-ID ist als revoked markiert |
 | `DEVICE_ID_CONFLICT` | Device-ID bereits für eine andere DID registriert |
 | `SEQ_COLLISION_DETECTED` | Log-Eintrag mit `(docId, deviceId, seq)` existiert bereits mit anderem Content-Hash — Client MUSS neue `deviceId` generieren (Restore/Clone-Szenario) |
+| `MALFORMED_MESSAGE` | Nachricht oder Pflichtfeld ist syntaktisch ungültig, inklusive JSON-Parse-Fehler, malformed DID, malformed UUID v4 `deviceId`, malformed Base64URL-Nonce oder fehlender Pflichtfelder |
+| `AUTH_INVALID` | Challenge-Response, Envelope-JWS oder Device-Revocation-Signatur ist ungültig oder passt nicht zu DID, Device oder ausstehender Challenge |
+| `NONCE_REPLAY` | Broker-Challenge-Nonce wurde bereits akzeptiert oder ist nicht mehr als ausstehende Challenge gültig |
 | `RATE_LIMITED` | Rate-Limit überschritten |
 | `INTERNAL_ERROR` | Server-Fehler |
 
@@ -556,7 +590,7 @@ Neue Nachrichtentypen DÜRFEN von Extensions definiert werden. Ein Client der ei
 
 ### Envelope-Kompatibilität
 
-Das Plaintext-Envelope-Format ist **DIDComm-v2.1-kompatibel** auf Envelope-Ebene: `id`, `typ`, `type`, `from`, `to`, `created_time` (Unix-Seconds), `body`, `thid`/`pthid`. DIDComm-Bibliotheken können unsere Plaintext-Messages lesen und routen. Dieser Anspruch endet an der Envelope-Grenze: Verschlüsselung, Signaturen, persistente WoT-Objekte, Broker-Authentisierung und Sync-Semantik bleiben WoT-spezifisch.
+Das Plaintext-Envelope-Format ist **DIDComm-v2.1-kompatibel** auf Envelope-Ebene: `id`, `typ`, `type`, `from`, optional `to`, `created_time` (Unix-Seconds), `body`, `thid`/`pthid`. DIDComm-Bibliotheken können unsere Plaintext-Messages lesen und routen. Dieser Anspruch endet an der Envelope-Grenze: Verschlüsselung, Signaturen, persistente WoT-Objekte, Broker-Authentisierung und Sync-Semantik bleiben WoT-spezifisch.
 
 Für die Hintergründe dieser Entscheidung siehe [Research: Interop und Zielgruppe](../research/interop-und-zielgruppe.md).
 
