@@ -163,7 +163,7 @@ Damit zwei beliebige Verification-Attestations nicht automatisch eine gegenseiti
    - Der Pending-Counter-State ist noch nicht abgelaufen.
 6. Fehlt `inResponseTo`, fehlt der passende Pending-Counter-State oder ist der Pending-Counter-State abgelaufen, DARF die Gegen-Verification NICHT als In-Person-Mutual-Verifikation zaehlen. Sie DARF als ungebundene Remote-Verifikation gespeichert oder angezeigt werden.
 
-Eine Implementierung DARF den Pending-Counter-State kuerzer halten oder den User jederzeit einen neuen QR-Flow starten lassen. Sie DARF ihn jedoch nicht unbegrenzt als In-Person-Beweis verwenden.
+Eine Implementierung DARF den Pending-Counter-State kuerzer halten oder den User jederzeit einen neuen QR-Flow starten lassen. Sie DARF ihn jedoch NICHT unbegrenzt als In-Person-Beweis verwenden.
 
 Hinweis zur Validierbarkeit: JSON-Schema kann nur die Feldform von `inResponseTo` validieren. Die Existenz und Integritaet des lokalen `pendingCounterVerification`-Eintrags, `inResponseTo`-Exact-Match, `issuer`/`iss`-Bindung an `counterpartyDid`, lokale DID-Bindung und `expiresAt`-Ablaufpruefung sind zustands- und zeitabhaengig. Sie MUESSEN durch Laufzeitlogik und Conformance-Tests mit kontrolliertem lokalen State und kontrollierter Uhr geprueft werden.
 
