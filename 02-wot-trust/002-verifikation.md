@@ -83,6 +83,7 @@ Im Normalfall sind beide Parteien mit einem Broker verbunden. Ein einziger QR-Sc
 3. Bob erstellt eine Verification-Attestation (from: Bob, to: Alice)
    → Die Nonce aus Alices QR-Code fließt in die Attestation-ID ein
    → Bob speichert Alice als Kontakt (DID + enc + Name)
+   → Bob speichert lokal einen Pending-Counter-State fuer diese Attestation
    → Bob sendet die Attestation über den Broker an Alice
 
 4. Alice empfängt die Attestation über den Broker
@@ -93,10 +94,15 @@ Im Normalfall sind beide Parteien mit einem Broker verbunden. Ein einziger QR-Sc
 
 5. Alice bestätigt
    → Alice erstellt eine Gegen-Verification-Attestation (from: Alice, to: Bob)
+   → Die Gegen-Verification referenziert Bobs Attestation über `inResponseTo`
    → Alice speichert Bob als Kontakt
    → Alice sendet die Attestation über den Broker an Bob
 
-6. Gegenseitige Verifikation abgeschlossen
+6. Bob empfängt die Gegen-Verification
+   → Signatur verifizieren
+   → `inResponseTo` matcht Bobs lokalen Pending-Counter-State
+   → Pending-Counter-State ist noch nicht abgelaufen
+   → Gegenseitige In-Person-Verifikation abgeschlossen
 ```
 
 ### Warum die Nonce entscheidend ist
@@ -134,6 +140,30 @@ Eine eingehende Verification-Attestation DARF im Online-Ein-QR-Scan-Flow nur dan
 5. Die Nonce wurde noch nicht in der Nonce-History konsumiert.
 
 Fehlt eine aktive Challenge-Nonce, MUSS die Attestation als ungebundene Remote-Verifikation behandelt werden. Sie DARF gespeichert oder dem User als separate Remote-Anfrage angezeigt werden, aber sie DARF NICHT als Beweis fuer eine physische Begegnung gelten. Damit wird verhindert, dass beliebige signierte Verification-Attestations als In-Person-Begegnung in den Trust Graph gelangen.
+
+### Gegen-Verifikation und Pending-Counter-State (MUSS)
+
+Der Online-Ein-QR-Scan-Flow benoetigt keinen zweiten QR-Scan. Der zweite QR-Scan wuerde nur erneut kopierbare QR-Daten uebertragen; die Sicherheitsbindung entsteht durch die frische Challenge-Nonce, die Signatur, den lokalen Pending-State und die bewusste Bestaetigung durch den User.
+
+Damit zwei beliebige Verification-Attestations nicht automatisch eine gegenseitige In-Person-Verifikation ergeben, MUESSEN Implementierungen Gegen-Verifikationen an lokalen State binden:
+
+1. Wenn Bob nach dem Scan von Alices QR-Code eine Verification-Attestation an Alice erstellt, MUSS Bob lokal einen `pendingCounterVerification`-Eintrag speichern.
+2. Dieser Eintrag MUSS mindestens enthalten:
+   - `counterpartyDid`: Alices DID
+   - `originalVerificationId`: die `jti` von Bobs Verification-Attestation
+   - `createdAt`: Erstellungszeitpunkt
+   - `expiresAt`: Ablaufzeitpunkt des Pending-Counter-Fensters
+3. Das Pending-Counter-Fenster DARF hoechstens 24 Stunden betragen. Nach Ablauf MUSS eine eingehende Gegen-Verification als ungebundene Remote-Verifikation behandelt werden oder einen neuen QR-Flow erfordern.
+4. Wenn Alice Bobs nonce-gebundene Verification-Attestation akzeptiert und Bob bestaetigt, MUSS Alices Gegen-Verification-Attestation ein Top-Level-Feld `inResponseTo` enthalten. Der Wert MUSS exakt der `jti` von Bobs urspruenglicher Verification-Attestation entsprechen.
+5. Wenn Bob Alices Gegen-Verification empfaengt, DARF er sie nur dann als Abschluss einer gegenseitigen In-Person-Verifikation akzeptieren, wenn alle Bedingungen erfuellt sind:
+   - Die Signatur der Gegen-Verification ist gueltig.
+   - Die Gegen-Verification richtet sich an Bobs lokale DID.
+   - `issuer`/`iss` der Gegen-Verification entspricht `counterpartyDid` im Pending-Counter-State.
+   - `inResponseTo` entspricht `originalVerificationId`.
+   - Der Pending-Counter-State ist noch nicht abgelaufen.
+6. Fehlt `inResponseTo`, fehlt der passende Pending-Counter-State oder ist der Pending-Counter-State abgelaufen, DARF die Gegen-Verification NICHT als In-Person-Mutual-Verifikation zaehlen. Sie DARF als ungebundene Remote-Verifikation gespeichert oder angezeigt werden.
+
+Eine Implementierung DARF den Pending-Counter-State kuerzer halten oder den User jederzeit einen neuen QR-Flow starten lassen. Sie DARF ihn jedoch nicht unbegrenzt als In-Person-Beweis verwenden.
 
 ### Nonce-History (MUSS)
 
@@ -203,11 +233,14 @@ Jede Partei erstellt eine Verification-Attestation für die andere — als JWS-s
   "iss": "did:key:z6Mk...bob",
   "sub": "did:key:z6Mk...alice",
   "nbf": 1745280000,
-  "jti": "urn:uuid:ver-<nonce>-<did-suffix>"
+  "jti": "urn:uuid:ver-<nonce>-<did-suffix>",
+  "inResponseTo": "urn:uuid:ver-<original-nonce>-<original-did-suffix>"
 }
 ```
 
 Die `jti` (Attestation-ID) enthält die Nonce aus dem QR-Code, damit der Empfänger sie seiner aktiven Challenge zuordnen kann.
+
+Bei einer Gegen-Verification enthält `jti` eine neue eindeutige ID der Gegen-Verification. Das optionale Feld `inResponseTo` MUSS gesetzt werden, wenn die Attestation als Gegen-Verification im Online-Ein-QR-Scan-Flow akzeptiert werden soll. `inResponseTo` referenziert die `jti` der urspruenglichen nonce-gebundenen Verification-Attestation.
 
 Die Verification-Attestation sagt: **"Ich habe diese Person getroffen und ihre Identität verifiziert."** Sie wird wie jede andere Attestation behandelt — der Empfänger besitzt sie und entscheidet ob er sie akzeptiert und zeigt (Empfängerprinzip, siehe [Trust 001](001-attestations.md)).
 
