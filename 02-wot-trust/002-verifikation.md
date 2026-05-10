@@ -165,6 +165,8 @@ Damit zwei beliebige Verification-Attestations nicht automatisch eine gegenseiti
 
 Eine Implementierung DARF den Pending-Counter-State kuerzer halten oder den User jederzeit einen neuen QR-Flow starten lassen. Sie DARF ihn jedoch nicht unbegrenzt als In-Person-Beweis verwenden.
 
+Hinweis zur Validierbarkeit: JSON-Schema kann nur die Feldform von `inResponseTo` validieren. Die Existenz und Integritaet des lokalen `pendingCounterVerification`-Eintrags, `inResponseTo`-Exact-Match, `issuer`/`iss`-Bindung an `counterpartyDid`, lokale DID-Bindung und `expiresAt`-Ablaufpruefung sind zustands- und zeitabhaengig. Sie MUESSEN durch Laufzeitlogik und Conformance-Tests mit kontrolliertem lokalen State und kontrollierter Uhr geprueft werden.
+
 ### Nonce-History (MUSS)
 
 Empfänger MÜSSEN eine Liste bereits verwendeter Nonces führen um Replay-Angriffe zu verhindern. Ohne diese Prüfung könnte ein Angreifer eine aufgezeichnete gültige Attestation erneut vorlegen.
