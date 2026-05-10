@@ -64,6 +64,7 @@ Eine Implementierung ist `wot-trust@0.1`-konform, wenn sie zusaetzlich `wot-iden
 - Verification-Attestations als VC-JWS erzeugen und verifizieren.
 - Nonces gegen aktive Challenges und Nonce-History pruefen.
 - Online-In-Person-Verifikationen nur bei aktiver, noch nicht verbrauchter Challenge-Nonce akzeptieren.
+- Implementierungen MUESSEN Gegen-Verifikationen nur dann als gegenseitige In-Person-Verifikation akzeptieren, wenn `inResponseTo` auf einen noch nicht abgelaufenen lokalen Pending-Counter-State verweist.
 
 ## `wot-sync@0.1`
 

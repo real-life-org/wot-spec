@@ -37,6 +37,7 @@
     "sub": { "type": "string", "minLength": 1 },
     "nbf": { "type": "integer", "minimum": 0 },
     "exp": { "type": "integer", "minimum": 0 },
-    "jti": { "type": "string", "minLength": 1 }
+    "jti": { "type": "string", "minLength": 1 },
+    "inResponseTo": { "type": "string", "minLength": 1 }
   }
 }
