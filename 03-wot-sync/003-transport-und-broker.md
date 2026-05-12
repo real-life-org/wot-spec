@@ -3,7 +3,7 @@
 - **Status:** Entwurf
 - **Autoren:** Anton Tranelis
 - **Datum:** 2026-04-13
-- **Scope:** Broker, Transport, Capabilities, DIDComm-kompatible Plaintext Envelopes und P2P-Sync
+- **Scope:** Broker, Transport, Capabilities, WoT Transport Envelopes (DIDComm-v2-kompatibel), Broker Control-Frames und P2P-Sync
 - **Depends on:** Identity 002, Trust 002, Identity 003, Sync 001, Sync 002, Sync 005, Sync 006
 - **Conformance profile:** `wot-sync@0.1`
 
@@ -14,7 +14,7 @@ Dieses Dokument spezifiziert wie Daten zwischen Peers transportiert werden und w
 ## Referenzierte Standards
 
 - **WebSocket** (RFC 6455) — Primärer Transportkanal
-- **DIDComm v2** (DIF) — kompatibler Plaintext Message Envelope am Transportrand (keine DIDComm-JWE/Authcrypt-Verschlüsselung)
+- **DIDComm v2** (DIF) — Format-Kompatibilität auf der Envelope-Schicht für peer-to-peer Messages (keine DIDComm-JWE/Authcrypt-Verschlüsselung, keine Mediator-Protokolle)
 - **Ed25519** (RFC 8032) — Signatur im Message Envelope
 - **ECIES** (siehe [Sync 001](001-verschluesselung.md)) — 1:1-Verschlüsselung für Inbox-Nachrichten
 
@@ -82,6 +82,24 @@ Die Signatur in `challenge-response` wird nicht über die rohen Nonce-Bytes und 
 Die `nonce` im Transcript ist die kanonische unpadded Base64URL-Darstellung der 32 zufälligen Nonce-Bytes. Base64URL-Padding (`=`) ist in Broker-Challenges und Challenge-Responses ungültig.
 
 Der Broker MUSS ausgegebene, noch nicht akzeptierte Nonces an die konkrete WebSocket-Verbindung und an die zuvor empfangenen `register.did` / `register.deviceId` Werte binden. `challenge-response.did`, `challenge-response.deviceId` und `challenge-response.nonce` MÜSSEN exakt zu dieser ausstehenden Challenge passen, bevor die Signatur als gültig akzeptiert wird. Nach erfolgreicher Akzeptanz MUSS die Nonce als verbraucht gespeichert werden; ein erneuter Versuch mit derselben Nonce wird mit `NONCE_REPLAY` abgelehnt.
+
+> Diese Bindung ist nicht durch JSON-Schema oder ein statisches Vektor-Fixture validierbar — sie ist Protokollzustand pro Verbindung. Implementierungen MÜSSEN sie zur Laufzeit durchsetzen (Nonce-zu-Verbindungs-Map + Verbrauchsliste, Abgleich von `did`/`deviceId`/`nonce` vor jeder Signaturverifikation).
+
+### Wire-Encoding der `signature` (MUSS)
+
+Das `signature`-Feld im `challenge-response`-Control-Frame MUSS die **kanonische unpadded Base64URL**-Encodierung der 64-Byte Ed25519-Signatur über die JCS-kanonisierten Bytes des Broker-Auth-Transcripts enthalten (RFC 4648 §5 ohne Padding). Daraus folgt:
+
+- Die encodierte Form hat exakt 86 Base64URL-Zeichen.
+- Base64URL-Padding (`=`) ist ungültig.
+- Standard-Base64 (Zeichensatz `+`/`/`) ist ungültig.
+- Hex, Multibase oder andere Encodings sind ungültig.
+
+Fehlerbehandlung:
+
+- **`MALFORMED_MESSAGE`** — Signature-Feld fehlt, hat nicht 86 Zeichen, enthält Padding oder nicht-Base64URL-Zeichen, oder dekodiert nicht zu genau 64 Bytes.
+- **`AUTH_INVALID`** — Signature ist well-formed, dekodiert zu 64 Bytes, aber Ed25519-Verifikation gegen den Public Key der DID schlägt fehl.
+
+Challenge-Response ist bewusst **kein** WoT-JWS. Der Transcript ist explizit im Control-Frame-Body, Algorithmus-Agility ist auf Sync-003-Ebene nicht spezifiziert (Ed25519 fest), und die Authentisierung ist transient — nur für den Verbindungsaufbau, nicht für persistente Claims.
 
 ## Device-Registrierung
 
@@ -293,13 +311,30 @@ Der Broker bietet zwei Kanäle:
 - **Log-Sync:** Pull-basierter Austausch von Log-Einträgen für Dokumente. Der Broker kann verbundene Clients über neue Einträge informieren.
 - **Inbox:** Store-and-Forward für direkte verschlüsselte Nachrichten. Inbox-Nachrichten werden pro aktivem Device vorgehalten und erst nach ACK des jeweiligen Devices gelöscht.
 
-## WoT Message Envelope (DIDComm-kompatibel)
+## Zwei Message-Familien (NORMATIV)
 
-WoT-Peer-Nachrichten (über Broker oder direkt) verwenden einen eigenen **WoT Message Envelope**, dessen Plaintext-Form absichtlich mit dem DIDComm v2 Plaintext Message Format ([DIF DIDComm Messaging v2](https://identity.foundation/didcomm-messaging/spec/v2.0/)) kompatibel ist. Der Kompatibilitaetsanspruch ist bewusst eng: etablierte DIDComm-v2-Libraries sollen Plaintext-Envelopes parsen und routen koennen. WoT uebernimmt nicht den DIDComm-Crypto-Stack, keine DIDComm-JWE/Authcrypt-Verschluesselung und keine Mediator-Protokolle.
+Sync 003 definiert **zwei distinkte Message-Familien** mit unterschiedlichen Envelopes, Schemata und Authentisierungsmodellen:
 
-Persistente WoT-Objekte (Attestation-JWS, Capability-JWS, Log-Entry-JWS, verschlüsselte Dokument-Payloads) sind **keine DIDComm Messages**. Sie DÜRFEN im `body` eines WoT Plaintext Envelopes transportiert werden. Ihre Autorität und Integrität ergeben sich aus dem inneren JWS, der Capability, Broker-Authentisierung oder der dokumentenspezifischen Verschlüsselung — nicht aus `from`, `to` oder anderen Envelope-Feldern.
+| Familie | Zweck | Envelope | Authentisierung | Beispiele |
+|---|---|---|---|---|
+| **WoT Transport Envelope** | Peer-zu-Peer-Nachrichten (über Broker oder direkt P2P), inklusive persistierter Inhalte und replayable Transporte | DIDComm-v2-kompatible Hülle mit `id`, `typ`, `type`, `from`, `to?`, `created_time`, `body`, `thid?`, `pthid?` | Inner-Crypto im `body` (JWS, ECIES) **oder** authentifizierter Transportkanal — siehe [Authentizität pro Message-Typ](#authentizität-pro-message-typ-normativ) | `log-entry/1.0`, `space-invite/1.0`, `member-update/1.0`, `key-rotation/1.0`, `sync-request/1.0`, `sync-response/1.0`, `ack/1.0`, `inbox/1.0` |
+| **Broker Control-Frame** | Transiente Client↔Broker-Steuernachrichten für Auth-Handshake und Fehlerrückmeldung. Nicht persistiert, nicht replayable, nicht DIDComm-kompatibel | Schlanke Form `{ type, thid?, body? }` plus typspezifische Felder | Vor dem Handshake: explizite Felder (z. B. `signature` in `challenge-response`). Nach dem Handshake: authentifizierter WebSocket-Kontext | `register`, `challenge`, `challenge-response`, `registered`, `device-revoke`, `error/1.0` |
 
-### Plaintext Message
+Daraus folgt normativ:
+
+- Eine **WoT Transport Envelope MUSS** dem in [WoT Transport Envelope](#wot-transport-envelope-didcomm-v2-kompatibel) definierten Format genügen und in der dortigen Typtabelle erscheinen.
+- Ein **Broker Control-Frame DARF NICHT** WoT Transport Envelope-Felder (`id`, `typ`, `from`, `to`, `created_time`) tragen. Er erscheint nur in der [Control-Frame-Typtabelle](#broker-control-frames-normativ).
+- DIDComm-v2-Bibliotheken werden **nur** Transport Envelopes parsen können, **nicht** Control-Frames. Das ist beabsichtigt: Control-Frames sind Broker-Protokoll-Interna ohne Anspruch auf Interop.
+
+## WoT Transport Envelope (DIDComm-v2-kompatibel)
+
+WoT-Peer-Nachrichten (über Broker oder direkt) verwenden einen einheitlichen **WoT Transport Envelope**, dessen Format absichtlich mit dem DIDComm v2 Plaintext Message Format ([DIF DIDComm Messaging v2](https://identity.foundation/didcomm-messaging/spec/v2.0/)) kompatibel ist. Der Kompatibilitätsanspruch ist bewusst eng: etablierte DIDComm-v2-Libraries sollen Transport Envelopes parsen und routen können. WoT übernimmt nicht den DIDComm-Crypto-Stack, keine DIDComm-JWE/Authcrypt-Verschlüsselung und keine Mediator-Protokolle.
+
+> **Naming hint:** In DIDComm-v2-Terminologie heißt dieses Format "Plaintext Message". Wir verwenden in WoT-Spec und Implementierungen den Begriff **"Transport Envelope"**, um klarzustellen, dass die *Envelope-Schicht* keine Crypto trägt, der *Inhalt im `body`* aber praktisch immer kryptographisch geschützt ist (JWS, ECIES, oder über den authentifizierten Transportkanal). Siehe [Authentizität pro Message-Typ](#authentizität-pro-message-typ-normativ).
+
+Persistente WoT-Objekte (Attestation-JWS, Capability-JWS, Log-Entry-JWS, verschlüsselte Dokument-Payloads) sind **keine DIDComm Messages**. Sie DÜRFEN im `body` eines WoT Transport Envelopes transportiert werden. Ihre Autorität und Integrität ergeben sich aus dem inneren JWS, der Capability, Broker-Authentisierung oder der dokumentenspezifischen Verschlüsselung — nicht aus `from`, `to` oder anderen Envelope-Feldern.
+
+### Transport Envelope (Beispiel)
 
 ```json
 {
@@ -323,7 +358,7 @@ Persistente WoT-Objekte (Attestation-JWS, Capability-JWS, Log-Entry-JWS, verschl
 | Feld | Typ | Pflicht | Beschreibung |
 |------|-----|---------|-------------|
 | `id` | UUID v4 | Ja | Eindeutige Nachrichten-ID |
-| `typ` | String | Ja | Media Type. Für Plaintext Messages MUSS `application/didcomm-plain+json` gesetzt sein. |
+| `typ` | String | Ja | Media Type. Für WoT Transport Envelopes MUSS `application/didcomm-plain+json` gesetzt sein. |
 | `type` | URI | Ja | Nachrichtentyp als URI (siehe Tabelle unten) |
 | `from` | DID | Ja | Absender-DID |
 | `to` | Array von DIDs | Bedingt | Empfänger-DID(s). Pflicht bei Inbox-Nachrichten. |
@@ -332,7 +367,9 @@ Persistente WoT-Objekte (Attestation-JWS, Capability-JWS, Log-Entry-JWS, verschl
 | `pthid` | UUID v4 | Optional | Parent-Thread-ID. Verweist auf einen übergeordneten Thread — für verschachtelte Konversationen (z.B. ein Sub-Protokoll das innerhalb eines größeren Flows läuft). |
 | `body` | Object | Ja | Nachrichteninhalt. Struktur abhängig vom `type`. |
 
-Das generische Plaintext-Envelope-Format DARF `to` weglassen, wenn der konkrete Nachrichtentyp seine Empfänger aus dem authentifizierten Transportkontext oder aus dem Body ableitet, z.B. bei Broker-gebundenen `sync-request`/`sync-response` Nachrichten. Konkrete Nachrichtentypen DÜRFEN strengere Regeln definieren. Inbox- und direkt adressierte Nachrichten MÜSSEN `to` setzen.
+Das generische Transport-Envelope-Format DARF `to` weglassen, wenn der konkrete Nachrichtentyp seine Empfänger aus dem authentifizierten Transportkontext oder aus dem Body ableitet, z.B. bei Broker-gebundenen `sync-request`/`sync-response` Nachrichten. Konkrete Nachrichtentypen DÜRFEN strengere Regeln definieren. Inbox- und direkt adressierte Nachrichten MÜSSEN `to` setzen.
+
+`thid` und `pthid` MÜSSEN — wenn gesetzt — kanonische lowercase UUID v4 sein, identisch zur `id`-Form. Das stimmt das generische Schema mit den message-typ-spezifischen Schemas überein (`space-invite`, `member-update`, `key-rotation`, etc.), die diese Striktheit bereits durchsetzen.
 
 ### Autoritätsgrenze (MUSS)
 
@@ -354,31 +391,39 @@ Implementierungen MÜSSEN Envelope-Felder als Transport- und Routing-Metadaten b
 
 Nachrichten ohne `thid` sind Einzelnachrichten ohne Konversationskontext. Nachrichten die eine andere Nachricht direkt beantworten (z.B. `ack`, `sync-response`) MÜSSEN den `thid` der Original-Nachricht tragen.
 
-### Authentifizierung: drei Envelope-Varianten
+### Authentizität pro Message-Typ (NORMATIV)
 
-Unser Message-Envelope kann in drei WoT-Formen vorliegen. Nur die Plaintext-Form beansprucht DIDComm-v2-Parser-Kompatibilitaet; Signatur und Verschluesselung sind WoT-spezifisch:
+Der **Envelope selbst trägt keine Crypto** — das ist Absicht. Authentizität und Integrität liegen entweder im `body` (Inner-JWS oder ECIES-Wrap) oder werden durch den authentifizierten Transportkanal hergestellt (post-handshake WebSocket nach Broker-Challenge-Response, oder authentifizierter P2P-Kanal). Doppelte Authentifizierung (Envelope-JWS über Body mit innerer JWS) ist zu vermeiden — sie erhöht nur Größe und Verarbeitungsaufwand ohne Sicherheitsgewinn.
 
-1. **Plaintext Message** — nackte JSON, keine Envelope-Signatur, keine Envelope-Verschlüsselung
-2. **Signed Message** — Plaintext in JWS verpackt (Envelope-Signatur)
-3. **Encrypted Message** — Body mit **ECIES** verschlüsselt (siehe [Sync 001](001-verschluesselung.md#peer-to-peer-verschlüsselung-ecies)). Der Sender wird nicht durch die Verschlüsselung selbst gebunden, sondern durch eine separate JWS-Signatur im Body oder im Envelope
+Drei Envelope-Formen sind definiert:
 
-### Wann wird welche Form verwendet (NORMATIV)
+1. **Plaintext** — JSON-Envelope ohne Envelope-Signatur, ohne Envelope-Verschlüsselung. Der Inhalt im `body` ist entweder selbst-authentifizierend (Inner-JWS) oder wird über den Transportkanal authentifiziert. **Standard für die meisten Sync-Messages.**
+2. **Encrypted** — Body mit **ECIES** verschlüsselt (siehe [Sync 001](001-verschluesselung.md#peer-to-peer-verschlüsselung-ecies)). Der Inner-JWS innerhalb des verschlüsselten Bodys bindet den Sender; ECIES allein bindet ihn nicht. Standard für Inbox- und Membership-Messages.
+3. **Signed** — Envelope-JWS. Mechanismus für zukünftige ephemere Nachrichten ohne sinnvollen Inhalts-Body. Aktuell verwendet kein in dieser Spec definierter Message-Typ diese Form; zukünftige Slices, die sie nutzen, MÜSSEN ihren Message-Typ in der unten stehenden Authentizitätsmatrix sowie in einer dedizierten Wire-Format-Sektion ergänzen.
 
-Der Envelope wird NUR dann als **Signed Message** verpackt, wenn der Body nicht bereits kryptographisch authentifiziert ist. Doppelte Authentifizierung (Envelope-JWS über Body mit innerer JWS) ist zu vermeiden — sie erhöht nur Größe und Verarbeitungsaufwand, bringt keinen Sicherheitsgewinn.
+Die folgende Tabelle ist normativ. Eine Implementation MUSS diese Authentisierung für jeden Message-Typ durchsetzen:
 
-| Nachrichtentyp | Authentifizierung durch | Envelope |
-|---|---|---|
-| `log-entry` | Innerer Log-Entry-JWS im Body (persistentes WoT-Objekt) | Plaintext |
-| `sync-request`, `sync-response` | Kontext der authentifizierten WebSocket-Verbindung | Plaintext |
-| `inbox` (Attestation, etc.) | Innerer JWS im Klartext-Body (bindet Sender) + ECIES-Wrap | Encrypted (ECIES) |
-| `space-invite`, `key-rotation`, `member-update` | Innerer JWS im Klartext-Body + ECIES-Wrap | Encrypted (ECIES) |
-| `state-digest`, `state-digest-request` | Envelope-JWS (ephemer) | Signed |
+| Familie | Nachrichtentyp | Authentizität durch | Envelope-Form |
+|---|---|---|---|
+| Transport | `log-entry/1.0` | Inner Log-Entry-JWS im Body (persistentes WoT-Objekt, bindet `authorKid`) | Plaintext |
+| Transport | `sync-request/1.0`, `sync-response/1.0` | Authentifizierter WebSocket-Kontext (Sender-Identität aus Challenge-Response) | Plaintext |
+| Transport | `ack/1.0` | Authentifizierter WebSocket-Kontext | Plaintext |
+| Transport | `inbox/1.0` | Inner JWS im Klartext-Body (bindet Sender) + ECIES-Wrap | Encrypted (ECIES) |
+| Transport | `space-invite/1.0`, `member-update/1.0`, `key-rotation/1.0` | Inner JWS im Klartext-Body + ECIES-Wrap | Encrypted (ECIES) |
+| Control-Frame | `register` | Kein Crypto im Frame — Identität wird erst durch nachfolgenden `challenge-response` gebunden | (kein Envelope) |
+| Control-Frame | `challenge` | Broker→Client, vor Handshake; vertrauenswürdig durch Transport (HTTPS/WSS) | (kein Envelope) |
+| Control-Frame | `challenge-response` | Explizites `signature`-Feld im Frame: unpadded Base64URL einer Ed25519-Signatur über den JCS-kanonisierten Broker-Auth-Transcript (siehe [Wire-Encoding der signature](#wire-encoding-der-signature-muss)) | (kein Envelope) |
+| Control-Frame | `registered` | Authentifizierter WebSocket-Kontext (post-handshake) | (kein Envelope) |
+| Control-Frame | `device-revoke` | Inner JWS gegen den Identity Key der `did` (persistenter Revocation-Claim) | (kein Envelope) |
+| Control-Frame | `error/1.0` | Authentifizierter WebSocket-Kontext, Broker→Client (Broker spricht in seinem eigenen Namen) | (kein Envelope) |
+
+**Konsequenz für Control-Frames:** nur `challenge-response` und `device-revoke` tragen eigene Signaturen, weil sie kryptographische Claims machen, die vor oder über den Kanal hinaus gelten. Alle anderen Control-Frames sind reine Transport-Steuerung und brauchen keine zusätzliche Signatur.
 
 ### Signatur (WoT Envelope-JWS)
 
-Wenn ein Envelope signiert wird, geschieht das als **JWS Compact Serialization** — identisch mit unseren Attestations ([Identity 002](../01-wot-identity/002-signaturen-und-verifikation.md)). Anders als beim Plaintext Envelope beanspruchen WoT Envelope-JWS keine DIDComm-Signed-Message-Kompatibilität; sie sind ein WoT-spezifisches Signaturprofil.
+Wenn ein Envelope signiert wird (Form 3 oben), geschieht das als **JWS Compact Serialization** — identisch mit unseren Attestations ([Identity 002](../01-wot-identity/002-signaturen-und-verifikation.md)). Anders als beim Transport Envelope beanspruchen WoT Envelope-JWS keine DIDComm-Signed-Message-Kompatibilität; sie sind ein WoT-spezifisches Signaturprofil.
 
-1. Plaintext Message mit JCS kanonisieren (RFC 8785)
+1. Transport Envelope mit JCS kanonisieren (RFC 8785)
 2. JCS-Bytes als Base64URL kodieren
 3. Signing Input: `BASE64URL(header) + "." + BASE64URL(jcs_payload)`
 4. Ed25519-Signatur über die Signing-Input-Bytes
@@ -549,20 +594,58 @@ Der Broker kann die Nachricht dann aus der Inbox **dieses authentifizierten Devi
 
 Ein `ack/1.0` ist ausschliesslich eine Transport-/Persistenzbestaetigung fuer genau dieses Device. Es bestaetigt nicht, dass ein Inhaltsartefakt semantisch angenommen, vertraut, gelesen, angezeigt oder veroeffentlicht wurde. Insbesondere definiert `wot-trust@0.1` kein `attestation-ack`; ob ein Empfaenger eine Attestation spaeter oeffentlich zeigt, ergibt sich nur aus seiner bewussten Profil-Veroeffentlichung.
 
-#### Fehler-Responses
+## Broker Control-Frames (NORMATIV)
 
-Wenn eine Sync-Anfrage nicht erfüllt werden kann, antwortet der Broker mit einer Error-Nachricht:
+Control-Frames sind die zweite Message-Familie neben dem WoT Transport Envelope (siehe [Zwei Message-Familien](#zwei-message-familien-normativ)). Sie fließen ausschließlich zwischen Client und Broker, sind transient und nicht persistiert, und folgen einem schlanken Format ohne DIDComm-Kompatibilitätsanspruch.
+
+### Allgemeines Format
+
+Ein Control-Frame ist ein JSON-Objekt mit mindestens dem Feld `type`, das den Frame-Typ als kurzen Bezeichner trägt (KEIN URI wie bei Transport Envelopes):
 
 ```json
 {
-  "type": "https://web-of-trust.de/protocols/error/1.0",
-  "thid": "<thid der Original-Anfrage>",
+  "type": "<frame-type>",
+  "thid": "<optional, korreliert zu einer vorherigen Frame oder einem Transport Envelope>",
+  ...typspezifische Felder
+}
+```
+
+Control-Frame-`type` MUSS aus folgendem geschlossenem Vokabular kommen:
+
+| Frame-Type | Richtung | Zweck | Body / typspezifische Felder |
+|---|---|---|---|
+| `register` | Client→Broker | Verbindungsaufbau, vor Challenge-Response | `did`, `deviceId` |
+| `challenge` | Broker→Client | Broker schickt Auth-Nonce | `nonce` (Base64URL) |
+| `challenge-response` | Client→Broker | Client beweist DID-Besitz | `did`, `deviceId`, `nonce`, `signature` (siehe [Wire-Encoding der signature](#wire-encoding-der-signature-muss)) |
+| `registered` | Broker→Client | Broker bestätigt erfolgreiche Auth | `did`, `deviceId`, `isNewDevice` |
+| `device-revoke` | Client→Broker | Signierter Revocation-Claim für eine Device-ID dieser DID | Innerer JWS (siehe [Device-Deaktivierung](#device-deaktivierung)) |
+| `error/1.0` | Broker→Client | Fehlerrückmeldung auf eine vorherige Nachricht | `thid` (Referenz auf ursprüngliche Anfrage), `body.code`, `body.message` |
+
+Implementierungen MÜSSEN unbekannte Frame-Types als `MALFORMED_MESSAGE` ablehnen — Control-Frames sind **nicht erweiterbar** durch Drittparteien.
+
+### Error-Response (`error/1.0`)
+
+Wenn eine Sync-Anfrage nicht erfüllt werden kann oder ein Frame zurückgewiesen wird, antwortet der Broker mit einem `error/1.0`-Control-Frame:
+
+```json
+{
+  "type": "error/1.0",
+  "thid": "<thid der Original-Anfrage, oder null wenn nicht zuordenbar>",
   "body": {
     "code": "DOC_NOT_FOUND",
     "message": "Unbekannte docId"
   }
 }
 ```
+
+`error/1.0` ist ein **Control-Frame**, kein WoT Transport Envelope. Es trägt keine `id`, kein `typ`-Media-Type-Feld, kein `from`, kein `to`, kein `created_time`. Der Broker spricht in seinem eigenen Namen über den authentifizierten WebSocket — eine zusätzliche Envelope-Signatur ist nicht erforderlich und wäre konzeptionell falsch (der Broker hat keine DID-Authority über den Sync-Inhalt).
+
+`body` enthält:
+
+- `code` — String aus der unten stehenden Tabelle.
+- `message` — frei wählbarer menschenlesbarer Hinweis, NICHT normativ.
+
+Implementierungen DÜRFEN zusätzliche Felder in `body` setzen (z.B. `details` für strukturierte Diagnose-Daten). Empfänger MÜSSEN unbekannte Felder ignorieren (forward-compatible Erweiterung).
 
 Normative Error-Codes:
 
@@ -576,21 +659,23 @@ Normative Error-Codes:
 | `DEVICE_REVOKED` | Device-ID ist als revoked markiert |
 | `DEVICE_ID_CONFLICT` | Device-ID bereits für eine andere DID registriert |
 | `SEQ_COLLISION_DETECTED` | Log-Eintrag mit `(docId, deviceId, seq)` existiert bereits mit anderem Content-Hash — Client MUSS neue `deviceId` generieren (Restore/Clone-Szenario) |
-| `MALFORMED_MESSAGE` | Nachricht oder Pflichtfeld ist syntaktisch ungültig, inklusive JSON-Parse-Fehler, malformed DID, malformed UUID v4 `deviceId`, malformed Base64URL-Nonce oder fehlender Pflichtfelder |
-| `AUTH_INVALID` | Challenge-Response, Envelope-JWS oder Device-Revocation-Signatur ist ungültig oder passt nicht zu DID, Device oder ausstehender Challenge |
+| `MALFORMED_MESSAGE` | Nachricht oder Pflichtfeld ist syntaktisch ungültig, inklusive JSON-Parse-Fehler, malformed DID, malformed UUID v4 `deviceId`, malformed Base64URL-Nonce, malformed `signature`-Encoding, fehlender Pflichtfelder oder unbekannter Frame-Type |
+| `AUTH_INVALID` | Challenge-Response-Signatur, Envelope-JWS oder Device-Revocation-Signatur ist well-formed aber kryptographisch ungültig — passt nicht zu DID, Device oder ausstehender Challenge |
 | `NONCE_REPLAY` | Broker-Challenge-Nonce wurde bereits akzeptiert oder ist nicht mehr als ausstehende Challenge gültig |
 | `RATE_LIMITED` | Rate-Limit überschritten |
 | `INTERNAL_ERROR` | Server-Fehler |
 
 Clients SOLLEN bei `CAPABILITY_EXPIRED` eine neue Capability anfordern (via Peer-Kontakt, da der Broker die Signatur nicht erzeugen kann).
 
-### Erweiterbarkeit
+### Erweiterbarkeit von Transport-Nachrichtentypen
 
-Neue Nachrichtentypen DÜRFEN von Extensions definiert werden. Ein Client der einen unbekannten Typ empfängt MUSS die Nachricht ignorieren (nicht verwerfen — der Broker speichert sie weiterhin für andere Clients die den Typ verstehen).
+Neue **WoT Transport Envelope**-Nachrichtentypen DÜRFEN von Extensions definiert werden — der `type`-URI ist offen erweiterbar. Ein Client, der einen ihm unbekannten Transport-`type` empfängt, MUSS die Nachricht ignorieren (nicht verwerfen — der Broker speichert sie weiterhin für andere Clients, die den Typ verstehen).
+
+Für **Broker Control-Frames** gilt das nicht: das Frame-Type-Vokabular ist geschlossen (siehe [Broker Control-Frames](#broker-control-frames-normativ)). Unbekannte Control-Frame-`type`-Werte MÜSSEN mit `MALFORMED_MESSAGE` abgelehnt werden, da Control-Frames Broker-Protokoll-Interna sind und keine Drittpartei-Erweiterung kennen.
 
 ### Envelope-Kompatibilität
 
-Das Plaintext-Envelope-Format ist **DIDComm-v2.1-kompatibel** auf Envelope-Ebene: `id`, `typ`, `type`, `from`, optional `to`, `created_time` (Unix-Seconds), `body`, `thid`/`pthid`. DIDComm-Bibliotheken können unsere Plaintext-Messages lesen und routen. Dieser Anspruch endet an der Envelope-Grenze: Verschlüsselung, Signaturen, persistente WoT-Objekte, Broker-Authentisierung und Sync-Semantik bleiben WoT-spezifisch.
+Das WoT Transport Envelope ist **DIDComm-v2.1-kompatibel** auf Envelope-Ebene: `id`, `typ`, `type`, `from`, optional `to`, `created_time` (Unix-Seconds), `body`, `thid`/`pthid`. DIDComm-Bibliotheken können WoT Transport Envelopes lesen und routen. Dieser Anspruch endet an der Envelope-Grenze: Verschlüsselung, Signaturen, persistente WoT-Objekte, Broker-Authentisierung und Sync-Semantik bleiben WoT-spezifisch. Control-Frames (siehe [Broker Control-Frames](#broker-control-frames-normativ)) sind ausdrücklich **nicht** DIDComm-kompatibel und werden von DIDComm-Bibliotheken nicht erkannt — sie sind broker-protokoll-intern.
 
 Für die Hintergründe dieser Entscheidung siehe [Research: Interop und Zielgruppe](../research/interop-und-zielgruppe.md).
 
