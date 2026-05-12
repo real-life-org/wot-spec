@@ -83,6 +83,8 @@ Die `nonce` im Transcript ist die kanonische unpadded Base64URL-Darstellung der 
 
 Der Broker MUSS ausgegebene, noch nicht akzeptierte Nonces an die konkrete WebSocket-Verbindung und an die zuvor empfangenen `register.did` / `register.deviceId` Werte binden. `challenge-response.did`, `challenge-response.deviceId` und `challenge-response.nonce` MÜSSEN exakt zu dieser ausstehenden Challenge passen, bevor die Signatur als gültig akzeptiert wird. Nach erfolgreicher Akzeptanz MUSS die Nonce als verbraucht gespeichert werden; ein erneuter Versuch mit derselben Nonce wird mit `NONCE_REPLAY` abgelehnt.
 
+> Diese Bindung ist nicht durch JSON-Schema oder ein statisches Vektor-Fixture validierbar — sie ist Protokollzustand pro Verbindung. Implementierungen MÜSSEN sie zur Laufzeit durchsetzen (Nonce-zu-Verbindungs-Map + Verbrauchsliste, Abgleich von `did`/`deviceId`/`nonce` vor jeder Signaturverifikation).
+
 ### Wire-Encoding der `signature` (MUSS)
 
 Das `signature`-Feld im `challenge-response`-Control-Frame MUSS die **kanonische unpadded Base64URL**-Encodierung der 64-Byte Ed25519-Signatur über die JCS-kanonisierten Bytes des Broker-Auth-Transcripts enthalten (RFC 4648 §5 ohne Padding). Daraus folgt:
@@ -665,9 +667,11 @@ Normative Error-Codes:
 
 Clients SOLLEN bei `CAPABILITY_EXPIRED` eine neue Capability anfordern (via Peer-Kontakt, da der Broker die Signatur nicht erzeugen kann).
 
-### Erweiterbarkeit
+### Erweiterbarkeit von Transport-Nachrichtentypen
 
-Neue Nachrichtentypen DÜRFEN von Extensions definiert werden. Ein Client der einen unbekannten Typ empfängt MUSS die Nachricht ignorieren (nicht verwerfen — der Broker speichert sie weiterhin für andere Clients die den Typ verstehen).
+Neue **WoT Transport Envelope**-Nachrichtentypen DÜRFEN von Extensions definiert werden — der `type`-URI ist offen erweiterbar. Ein Client, der einen ihm unbekannten Transport-`type` empfängt, MUSS die Nachricht ignorieren (nicht verwerfen — der Broker speichert sie weiterhin für andere Clients, die den Typ verstehen).
+
+Für **Broker Control-Frames** gilt das nicht: das Frame-Type-Vokabular ist geschlossen (siehe [Broker Control-Frames](#broker-control-frames-normativ)). Unbekannte Control-Frame-`type`-Werte MÜSSEN mit `MALFORMED_MESSAGE` abgelehnt werden, da Control-Frames Broker-Protokoll-Interna sind und keine Drittpartei-Erweiterung kennen.
 
 ### Envelope-Kompatibilität
 
