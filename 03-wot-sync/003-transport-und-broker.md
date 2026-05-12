@@ -397,7 +397,7 @@ Drei Envelope-Formen sind definiert:
 
 1. **Plaintext** — JSON-Envelope ohne Envelope-Signatur, ohne Envelope-Verschlüsselung. Der Inhalt im `body` ist entweder selbst-authentifizierend (Inner-JWS) oder wird über den Transportkanal authentifiziert. **Standard für die meisten Sync-Messages.**
 2. **Encrypted** — Body mit **ECIES** verschlüsselt (siehe [Sync 001](001-verschluesselung.md#peer-to-peer-verschlüsselung-ecies)). Der Inner-JWS innerhalb des verschlüsselten Bodys bindet den Sender; ECIES allein bindet ihn nicht. Standard für Inbox- und Membership-Messages.
-3. **Signed** — Envelope-JWS (selten, nur für ephemere Nachrichten ohne sinnvollen Inhalts-Body).
+3. **Signed** — Envelope-JWS. Mechanismus für zukünftige ephemere Nachrichten ohne sinnvollen Inhalts-Body. Aktuell verwendet kein in dieser Spec definierter Message-Typ diese Form; zukünftige Slices, die sie nutzen, MÜSSEN ihren Message-Typ in der unten stehenden Authentizitätsmatrix sowie in einer dedizierten Wire-Format-Sektion ergänzen.
 
 Die folgende Tabelle ist normativ. Eine Implementation MUSS diese Authentisierung für jeden Message-Typ durchsetzen:
 
@@ -408,7 +408,6 @@ Die folgende Tabelle ist normativ. Eine Implementation MUSS diese Authentisierun
 | Transport | `ack/1.0` | Authentifizierter WebSocket-Kontext | Plaintext |
 | Transport | `inbox/1.0` | Inner JWS im Klartext-Body (bindet Sender) + ECIES-Wrap | Encrypted (ECIES) |
 | Transport | `space-invite/1.0`, `member-update/1.0`, `key-rotation/1.0` | Inner JWS im Klartext-Body + ECIES-Wrap | Encrypted (ECIES) |
-| Transport | `state-digest/1.0`, `state-digest-request/1.0` | Envelope-JWS (ephemer, kein sinnvoller persistenter Inhalt) | Signed |
 | Control-Frame | `register` | Kein Crypto im Frame — Identität wird erst durch nachfolgenden `challenge-response` gebunden | (kein Envelope) |
 | Control-Frame | `challenge` | Broker→Client, vor Handshake; vertrauenswürdig durch Transport (HTTPS/WSS) | (kein Envelope) |
 | Control-Frame | `challenge-response` | Explizites `signature`-Feld im Frame: unpadded Base64URL einer Ed25519-Signatur über den JCS-kanonisierten Broker-Auth-Transcript (siehe [Wire-Encoding der signature](#wire-encoding-der-signature-muss)) | (kein Envelope) |
