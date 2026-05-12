@@ -1,7 +1,8 @@
 {
   "$schema": "https://json-schema.org/draft/2020-12/schema",
   "$id": "https://web-of-trust.de/schemas/didcomm-plaintext-message.schema.json",
-  "title": "WoT Plaintext Transport Envelope",
+  "title": "WoT Transport Envelope",
+  "description": "WoT message envelope for peer-to-peer transport (over broker or direct). Compatible with DIDComm v2 Plaintext Message format on the envelope layer; content authenticity is provided by inner JWS, ECIES, or authenticated transport channel — never by the envelope itself. See Sync 003 §WoT Transport Envelope for the normative reference.",
   "type": "object",
   "required": ["id", "typ", "type", "from", "created_time", "body"],
   "additionalProperties": true,
@@ -12,8 +13,8 @@
     "from": { "type": "string", "pattern": "^did:[a-z0-9]+:.+" },
     "to": { "type": "array", "minItems": 1, "items": { "type": "string", "pattern": "^did:[a-z0-9]+:.+" } },
     "created_time": { "type": "integer", "minimum": 0 },
-    "thid": { "type": "string", "minLength": 1 },
-    "pthid": { "type": "string", "minLength": 1 },
+    "thid": { "type": "string", "format": "uuid", "pattern": "^[0-9a-f]{8}-[0-9a-f]{4}-4[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$" },
+    "pthid": { "type": "string", "format": "uuid", "pattern": "^[0-9a-f]{8}-[0-9a-f]{4}-4[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$" },
     "body": { "type": "object" }
   }
 }
