@@ -4,11 +4,12 @@
   "type": "module",
   "scripts": {
     "conformance": "npm run validate",
-    "validate": "npm run validate:conformance && npm run validate:schemas && npm run validate:vectors && npm run validate:didcomm",
+    "validate": "npm run validate:conformance && npm run validate:schemas && npm run validate:vectors && npm run validate:consistency && npm run validate:didcomm",
     "validate:conformance": "python3 scripts/validate_conformance_manifest.py",
     "validate:schemas": "python3 scripts/validate_schemas.py",
     "validate:vectors": "python3 scripts/validate_test_vectors.py",
-    "validate:didcomm": "node scripts/validate_didcomm_envelope.mjs"
+    "validate:didcomm": "node scripts/validate_didcomm_envelope.mjs",
+    "validate:consistency": "python3 scripts/validate_spec_consistency.py"
   },
   "devDependencies": {
     "@veramo/did-comm": "7.0.0",
