@@ -143,7 +143,15 @@ def validate_manifest(state: CheckState) -> dict:
         state.fail("conformance manifest must define profiles")
         return manifest
 
-    conformance_text = CONFORMANCE.read_text(encoding="utf-8")
+    if not CONFORMANCE.is_file():
+        state.fail("missing local file: CONFORMANCE.md")
+        conformance_text = ""
+    else:
+        try:
+            conformance_text = CONFORMANCE.read_text(encoding="utf-8")
+        except OSError as exc:
+            state.fail(f"cannot read file: CONFORMANCE.md: {exc}")
+            conformance_text = ""
     profile_ids = set(profiles)
     for profile_id, profile in sorted(profiles.items()):
         if profile_id not in conformance_text:
@@ -181,7 +189,12 @@ def require_file(relative_path: str, state: CheckState) -> Path | None:
     if not isinstance(relative_path, str):
         state.fail(f"file reference must be a string: {relative_path!r}")
         return None
-    path = ROOT / relative_path
+    path = (ROOT / relative_path).resolve()
+    try:
+        path.relative_to(ROOT)
+    except ValueError:
+        state.fail(f"file reference escapes repository: {relative_path}")
+        return None
     if not path.is_file():
         state.fail(f"missing local file: {relative_path}")
         return None
@@ -240,6 +253,7 @@ def validate_library_check(check: object, state: CheckState) -> None:
         return
     data = load_json(vector_path, state)
     if not isinstance(data, dict):
+        state.fail(f"library check file must be a JSON object: {vector_file}")
         return
     if section not in data:
         state.fail(f"missing library check section {section!r} in {vector_file}")
