@@ -66,9 +66,9 @@ Die JWT-Felder sind **JWT Registered Claims** (RFC 7519) — redundant zu den VC
 |---|---|---|
 | `iss` | `issuer` | DID des Issuers |
 | `sub` | `credentialSubject.id` | DID des Subjects |
-| `nbf` | `validFrom` | Unix-Timestamp (Sekunden seit Epoch) |
+| `nbf` | `validFrom` | JWT NumericDate Integer (Sekunden seit Epoch) |
 | `jti` | `id` (optional) | Eindeutige ID der Attestation |
-| `exp` | `validUntil` (optional) | Unix-Timestamp (nur wenn zeitlich begrenzt) |
+| `exp` | `validUntil` (optional) | JWT NumericDate Integer (nur wenn zeitlich begrenzt) |
 
 `validFrom` und das optionale `validUntil` MUESSEN in `wot-trust@0.1` RFC3339-`date-time`-Strings mit expliziter Zeitzone und Ganzsekunden-Präzision sein. Fractional Seconds sind ungültig. Gültig sind z.B. `2026-04-21T10:00:00Z` und `2026-04-21T12:00:00+02:00`; ungültig ist z.B. `2026-04-21T10:00:00.123Z`. Klein geschriebene RFC3339-Separatoren `t`/`z` sind ebenfalls gültig, werden aber nicht als kanonische Schreibweise für Beispiele verwendet.
 
