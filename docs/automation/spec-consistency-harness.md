@@ -12,7 +12,7 @@ The harness validates:
 - manifest test-vector sections and library-check sections exist as top-level keys in the referenced vector JSON;
 - local Markdown links and anchors in conformance docs, automation docs, test-vector documentation, and manifest-referenced spec documents resolve locally.
 
-The harness contains a narrow baseline for pre-existing broken anchors in normative documents that this automation-only slice cannot edit. Those entries are reported as `known anchor drift`, tracked in wot-spec#58, and should be removed from the baseline when a separate normative cleanup PR fixes the links.
+The harness does not maintain an active anchor-drift baseline. Broken local Markdown anchors are validation errors. The initial baseline for pre-existing normative anchor drift was removed by the wot-spec#58 cleanup.
 
 The harness reports open clarification markers such as `TODO`, `FIXME`, `TBD`, `Offene`, and `wot-spec#NN` as informational output only. These markers are useful during draft work, but the offline harness does not look up issue state.
 

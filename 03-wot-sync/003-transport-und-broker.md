@@ -114,7 +114,7 @@ Der Broker MUSS pro DID eine Liste der zugehörigen Device-IDs führen. Das ist 
 Wenn ein Client mit einer `(did, deviceId)`-Kombination verbindet, die der Broker noch nicht kennt:
 
 1. Broker führt normale Challenge-Response durch (siehe oben)
-2. Nach erfolgreicher Authentisierung: Broker prüft, ob `deviceId` bereits für eine **andere DID** registriert ist, egal ob dort `active` oder `revoked` (siehe [Device-Liste](#device-liste))
+2. Nach erfolgreicher Authentisierung: Broker prüft, ob `deviceId` bereits für eine **andere DID** registriert ist, egal ob dort `active` oder `revoked` (siehe [Device-Liste](#device-liste-im-broker))
    - Falls ja: **Ablehnen** mit `DEVICE_ID_CONFLICT` — Device-IDs MÜSSEN global eindeutig sein
 3. Broker prüft, ob `deviceId` für diese DID in einer Revocation-Liste steht
    - Falls ja: **Ablehnen** mit `DEVICE_REVOKED`
