@@ -465,7 +465,7 @@ Log-Einträge werden NICHT mit ECIES verschlüsselt — sie sind bereits mit dem
 | `.../sync-request/1.0` | Log-Sync | Anfrage: "Was hast du seit seq X für docId Y?" |
 | `.../sync-response/1.0` | Log-Sync | Antwort: fehlende Log-Einträge |
 | `.../inbox/1.0` | Inbox | Direkte verschlüsselte Nachricht (Attestation, etc.) |
-| `.../ack/1.0` | Beide | Empfangsbestätigung (referenziert `id` der Original-Nachricht) |
+| `.../ack/1.0` | Inbox | Per-Device Empfangs-/Persistenzbestätigung für Inbox-Nachrichten (referenziert `id` der Original-Nachricht). Log-Sync DARF `ack/1.0` NICHT verwenden; siehe [Log-Sync vs. Inbox-ACK](#log-sync-vs-inbox-ack-normativ). |
 
 #### Gruppen ([Sync 005](005-gruppen.md))
 
@@ -573,15 +573,30 @@ Antwort auf `sync-request`. Body:
 
 **Heads-Diskrepanz-Detection:** Der Fragende kann die erhaltenen `heads` mit denen anderer Broker/Peers vergleichen, um Censorship oder Split-Brain zu erkennen (siehe [Sync 002](002-sync-protokoll.md#censorship--und-split-brain-detection)).
 
-#### `ack/1.0` — Empfangsbestätigung
+#### `ack/1.0` — Empfangsbestätigung (NORMATIV)
 
-Wird nur für **Inbox-Nachrichten** verwendet (nicht für sync-request/response — dort ist die Bestätigung implizit). Body:
+`ack/1.0` ist **ausschließlich für den Inbox-Kanal** definiert (per-Device Store-and-Forward). Log-Sync DARF `ack/1.0` NICHT verwenden — dort ist die Bestätigung implizit durch den nächsten `sync-request` (siehe [Log-Sync vs. Inbox-ACK](#log-sync-vs-inbox-ack-normativ)).
+
+##### Envelope und Body
+
+Ein Inbox-ACK ist ein WoT Transport Envelope mit:
+
+- `type`: `https://web-of-trust.de/protocols/ack/1.0`
+- `thid`: MUSS gesetzt sein und MUSS die `id` der ursprünglichen Inbox-Nachricht tragen (lowercase UUID v4 nach generischem [Plaintext-thid-Pattern](#felder)).
+- `to`: OPTIONAL. Inbox-ACKs werden ausschließlich über den authentifizierten WebSocket-Kontext an den Broker zugestellt; die effektive Routing-Information steht in `body.messageId`. Implementierungen DÜRFEN `to` weglassen.
+- `body`:
 
 ```json
 {
-  "messageId": "uuid-der-empfangenen-nachricht"
+  "messageId": "550e8400-e29b-41d4-a716-446655440000"
 }
 ```
+
+- `body.messageId`: MUSS die kanonische lowercase UUID v4 der ursprünglichen Inbox-Nachricht (`id`) sein. MUSS mit `thid` übereinstimmen, wenn `thid` gesetzt ist. Weitere Body-Felder sind NICHT definiert; Empfänger MÜSSEN unbekannte Body-Felder ignorieren (forward-compat).
+
+> Diese Bindungen sind nicht durch JSON-Schema oder ein statisches Vektor-Fixture validierbar — sie sind Protokollzustand pro Verbindung und Inbox. Implementierungen MÜSSEN zur Laufzeit prüfen, dass (a) `thid` und `body.messageId` einer real existierenden, nicht bereits acknowledgten Inbox-Nachricht in der Inbox dieses authentifizierten Devices entsprechen, (b) `body.messageId` und `thid` (falls beide gesetzt) übereinstimmen, und (c) der `type` der referenzierten Nachricht ein Inbox-Type ist (siehe [Log-Sync vs. Inbox-ACK](#log-sync-vs-inbox-ack-normativ)). Diese Checks ersetzen NICHT die Schema-Validierung der Envelope-Form; sie ergänzen sie.
+
+##### ACK-Vorbedingungen
 
 Der Empfänger schickt `ack` nach erfolgreichem Verarbeiten einer Inbox-Nachricht. Erfolgreich verarbeitet bedeutet:
 
@@ -593,6 +608,20 @@ Der Empfänger schickt `ack` nach erfolgreichem Verarbeiten einer Inbox-Nachrich
 Der Broker kann die Nachricht dann aus der Inbox **dieses authentifizierten Devices** entfernen. Er DARF sie nicht aus anderen Device-Inboxen derselben DID entfernen. Wenn der Client eine Nachricht wegen fehlender Abhaengigkeiten nur volatil im Speicher haelt, DARF er sie noch nicht ACKen.
 
 Ein `ack/1.0` ist ausschliesslich eine Transport-/Persistenzbestaetigung fuer genau dieses Device. Es bestaetigt nicht, dass ein Inhaltsartefakt semantisch angenommen, vertraut, gelesen, angezeigt oder veroeffentlicht wurde. Insbesondere definiert `wot-trust@0.1` kein `attestation-ack`; ob ein Empfaenger eine Attestation spaeter oeffentlich zeigt, ergibt sich nur aus seiner bewussten Profil-Veroeffentlichung.
+
+##### Log-Sync vs. Inbox-ACK (NORMATIV)
+
+WoT-Sync hat zwei strukturell verschiedene Bestätigungsmechanismen, die NICHT gegenseitig austauschbar sind:
+
+| Aspekt | Inbox-ACK (`ack/1.0`) | Log-Sync (implicit) |
+|---|---|---|
+| Geltungsbereich | 1:1-Inbox-Nachrichten (Attestation, Space-Invite, Member-Update, Key-Rotation) | Log-Sync (`log-entry/1.0`, `sync-request/1.0`, `sync-response/1.0`) |
+| Form | Explizite Transport-Envelope-Nachricht | Implizit via `since-seq` im nächsten `sync-request` |
+| Pro Device? | Ja — jede Device-Inbox separat | Pro `(deviceId, docId, seq)`-Tupel, geräteübergreifend |
+| Was wird bestätigt? | Per-Device durable Persistenz oder Anwendung der Inbox-Nachricht | Dass der Client alle Log-Einträge bis zu einer bestimmten `seq` empfangen hat |
+| Konsequenz beim Broker | Inbox-Slot für `(device, messageId)` darf gelöscht werden | Keine — Log-Einträge bleiben für andere Clients erhalten |
+
+Implementierungen MÜSSEN `ack/1.0` ausschließlich für Inbox-Nachrichten erzeugen und akzeptieren. Ein `ack/1.0`, das auf einen `log-entry/1.0`, `sync-request/1.0` oder `sync-response/1.0` referenziert, ist normativ ungültig; Broker MÜSSEN ihn mit `MALFORMED_MESSAGE` ablehnen.
 
 ## Broker Control-Frames (NORMATIV)
 
