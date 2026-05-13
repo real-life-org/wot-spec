@@ -234,7 +234,7 @@ Jede Partei erstellt eine Verification-Attestation für die andere — als JWS-s
 
   "iss": "did:key:z6Mk...bob",
   "sub": "did:key:z6Mk...alice",
-  "nbf": 1745280000,
+  "nbf": 1776852000,
   "jti": "urn:uuid:ver-<nonce>-<did-suffix>",
   "inResponseTo": "urn:uuid:ver-<original-nonce>-<original-did-suffix>"
 }
