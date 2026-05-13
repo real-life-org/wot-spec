@@ -5,6 +5,13 @@
   "type": "object",
   "required": ["@context", "type", "issuer", "credentialSubject", "validFrom", "iss", "sub", "nbf"],
   "additionalProperties": true,
+  "$defs": {
+    "wholeSecondRfc3339DateTime": {
+      "type": "string",
+      "format": "date-time",
+      "pattern": "^\\d{4}-\\d{2}-\\d{2}[Tt]\\d{2}:\\d{2}:\\d{2}([Zz]|[+-]\\d{2}:\\d{2})$"
+    }
+  },
   "properties": {
     "@context": {
       "type": "array",
@@ -29,16 +36,8 @@
         "claim": { "type": "string", "minLength": 1 }
       }
     },
-    "validFrom": {
-      "type": "string",
-      "format": "date-time",
-      "pattern": "^\\d{4}-\\d{2}-\\d{2}[Tt]\\d{2}:\\d{2}:\\d{2}([Zz]|[+-]\\d{2}:\\d{2})$"
-    },
-    "validUntil": {
-      "type": "string",
-      "format": "date-time",
-      "pattern": "^\\d{4}-\\d{2}-\\d{2}[Tt]\\d{2}:\\d{2}:\\d{2}([Zz]|[+-]\\d{2}:\\d{2})$"
-    },
+    "validFrom": { "$ref": "#/$defs/wholeSecondRfc3339DateTime" },
+    "validUntil": { "$ref": "#/$defs/wholeSecondRfc3339DateTime" },
     "id": { "type": "string", "minLength": 1 },
     "credentialStatus": { "type": "object" },
     "iss": { "type": "string", "pattern": "^did:[a-z0-9]+:.+" },
