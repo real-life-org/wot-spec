@@ -132,7 +132,18 @@ Wenn derselbe `(did, deviceId)` wiederkommt:
 
 ### Device-Deaktivierung
 
-Device-Deaktivierung wird über eine **signierte Revocation-Nachricht** kommuniziert:
+Device-Deaktivierung wird über einen **Broker Control-Frame** mit einem inneren signierten Revocation-Claim kommuniziert. Die exakte äußere Wire-Form ist:
+
+```json
+{
+  "type": "device-revoke",
+  "revocationJws": "<JWS Compact Serialization>"
+}
+```
+
+Der `device-revoke`-Control-Frame MUSS genau die Top-Level-Felder `type` und `revocationJws` tragen. Er DARF kein `thid`, kein `body` und keine unbekannten Top-Level-Felder tragen. Broker MÜSSEN abweichende äußere Formen mit `MALFORMED_MESSAGE` ablehnen.
+
+`revocationJws` MUSS eine JWS Compact Serialization sein. Der dekodierte JWS-Payload MUSS exakt das Device-Deaktivierungsobjekt mit den Feldern `type`, `did`, `deviceId` und `revokedAt` sein:
 
 ```json
 {
@@ -143,13 +154,14 @@ Device-Deaktivierung wird über eine **signierte Revocation-Nachricht** kommuniz
 }
 ```
 
-Signiert mit dem Identity Key der angegebenen DID. Der Broker MUSS prüfen:
+Der innere JWS-Payload DARF keine weiteren Felder tragen. Er MUSS mit dem Identity Key der angegebenen DID signiert sein. Der Broker MUSS prüfen:
 
 1. JWS-Signatur gültig gegen den Ed25519-Key aus `did`
-2. `deviceId` ist eine kanonische lowercase UUID v4 und `revokedAt` ist ein RFC3339-Date-Time mit expliziter Zeitzone
-3. Der Broker markiert `(did, deviceId)` als `revoked`
-4. Ausstehende Inbox-Nachrichten für dieses Device werden gelöscht
-5. Zukünftige Verbindungsversuche mit dieser Kombination werden mit `DEVICE_REVOKED` abgelehnt
+2. `type` im JWS-Payload ist exakt `device-revoke`
+3. `deviceId` ist eine kanonische lowercase UUID v4 und `revokedAt` ist ein RFC3339-Date-Time mit expliziter Zeitzone
+4. Der Broker markiert `(did, deviceId)` als `revoked`
+5. Ausstehende Inbox-Nachrichten für dieses Device werden gelöscht
+6. Zukünftige Verbindungsversuche mit dieser Kombination werden mit `DEVICE_REVOKED` abgelehnt
 
 Jede gültig mit dem Identity Key der DID signierte `device-revoke` Nachricht DARF jedes Device derselben DID deaktivieren. Im Shared-Seed-Modell ist keine zusätzliche Signatur eines device-spezifischen Keys erforderlich.
 
@@ -318,7 +330,7 @@ Sync 003 definiert **zwei distinkte Message-Familien** mit unterschiedlichen Env
 | Familie | Zweck | Envelope | Authentisierung | Beispiele |
 |---|---|---|---|---|
 | **WoT Transport Envelope** | Peer-zu-Peer-Nachrichten (über Broker oder direkt P2P), inklusive persistierter Inhalte und replayable Transporte | DIDComm-v2-kompatible Hülle mit `id`, `typ`, `type`, `from`, `to?`, `created_time`, `body`, `thid?`, `pthid?` | Inner-Crypto im `body` (JWS, ECIES) **oder** authentifizierter Transportkanal — siehe [Authentizität pro Message-Typ](#authentizität-pro-message-typ-normativ) | `log-entry/1.0`, `space-invite/1.0`, `member-update/1.0`, `key-rotation/1.0`, `sync-request/1.0`, `sync-response/1.0`, `ack/1.0`, `inbox/1.0` |
-| **Broker Control-Frame** | Transiente Client↔Broker-Steuernachrichten für Auth-Handshake und Fehlerrückmeldung. Nicht persistiert, nicht replayable, nicht DIDComm-kompatibel | Schlanke Form `{ type, thid?, body? }` plus typspezifische Felder | Vor dem Handshake: explizite Felder (z. B. `signature` in `challenge-response`). Nach dem Handshake: authentifizierter WebSocket-Kontext | `register`, `challenge`, `challenge-response`, `registered`, `device-revoke`, `error/1.0` |
+| **Broker Control-Frame** | Transiente Client↔Broker-Steuernachrichten für Auth-Handshake und Fehlerrückmeldung. Nicht persistiert, nicht replayable, nicht DIDComm-kompatibel | Schlanke Form `{ type, thid?, body? }` plus typspezifische Felder; `device-revoke` verwendet stattdessen die geschlossene Form `{ type, revocationJws }` | Vor dem Handshake: explizite Felder (z. B. `signature` in `challenge-response`). Nach dem Handshake: authentifizierter WebSocket-Kontext | `register`, `challenge`, `challenge-response`, `registered`, `device-revoke`, `error/1.0` |
 
 Daraus folgt normativ:
 
@@ -647,7 +659,7 @@ Control-Frame-`type` MUSS aus folgendem geschlossenem Vokabular kommen:
 | `challenge` | Broker→Client | Broker schickt Auth-Nonce | `nonce` (Base64URL) |
 | `challenge-response` | Client→Broker | Client beweist DID-Besitz | `did`, `deviceId`, `nonce`, `signature` (siehe [Wire-Encoding der signature](#wire-encoding-der-signature-muss)) |
 | `registered` | Broker→Client | Broker bestätigt erfolgreiche Auth | `did`, `deviceId`, `isNewDevice` |
-| `device-revoke` | Client→Broker | Signierter Revocation-Claim für eine Device-ID dieser DID | Innerer JWS (siehe [Device-Deaktivierung](#device-deaktivierung)) |
+| `device-revoke` | Client→Broker | Signierter Revocation-Claim für eine Device-ID dieser DID | `revocationJws`; keine weiteren Top-Level-Felder (siehe [Device-Deaktivierung](#device-deaktivierung)) |
 | `error/1.0` | Broker→Client | Fehlerrückmeldung auf eine vorherige Nachricht | `thid` (Referenz auf ursprüngliche Anfrage), `body.code`, `body.message` |
 
 Implementierungen MÜSSEN unbekannte Frame-Types als `MALFORMED_MESSAGE` ablehnen — Control-Frames sind **nicht erweiterbar** durch Drittparteien.

@@ -154,6 +154,56 @@ def decode_jws(jws: str) -> tuple[dict, dict]:
     return json.loads(b64u_decode(header_b64)), json.loads(b64u_decode(payload_b64))
 
 
+def is_device_revoke_frame_shape(frame: dict) -> bool:
+    return set(frame) == {"type", "revocationJws"} and frame["type"] == "device-revoke" and isinstance(
+        frame["revocationJws"], str
+    )
+
+
+def verify_device_revoke_control_frame(vector: dict, identity: dict) -> None:
+    assert vector["identity_ref"] == "identity"
+    did = identity["did"]
+    device_id = vector["device_id"]
+    revoked_at = vector["revoked_at"]
+
+    payload = vector["payload"]
+    assert payload == {
+        "type": "device-revoke",
+        "did": did,
+        "deviceId": device_id,
+        "revokedAt": revoked_at,
+    }
+    assert set(payload) == {"type", "did", "deviceId", "revokedAt"}
+    assert re.fullmatch(
+        r"[0-9a-f]{8}-[0-9a-f]{4}-4[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}", device_id
+    )
+    assert re.fullmatch(r"\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}Z", revoked_at)
+
+    payload_jcs = jcs(payload)
+    assert payload_jcs.decode("utf-8") == vector["payload_jcs_canonical_string"]
+    assert hashlib.sha256(payload_jcs).hexdigest() == vector["payload_jcs_sha256"]
+
+    frame = vector["frame"]
+    assert is_device_revoke_frame_shape(frame)
+    assert frame["revocationJws"] == vector["revocation_jws"]
+
+    header, decoded_payload = decode_jws(vector["revocation_jws"])
+    assert header == vector["header"]
+    assert decoded_payload == payload
+    assert set(decoded_payload) == {"type", "did", "deviceId", "revokedAt"}
+    assert vector["header"]["alg"] == "EdDSA"
+    assert vector["header"]["kid"] == identity["kid"]
+
+    header_b64, payload_b64, sig_b64 = vector["revocation_jws"].split(".")
+    assert f"{header_b64}.{payload_b64}" == vector["signing_input"]
+    assert sig_b64 == vector["signature_b64"]
+    verify_jws(vector["revocation_jws"], bytes.fromhex(identity["ed25519_public_hex"]))
+
+    for name, malformed in vector["malformed_frames"].items():
+        if is_device_revoke_frame_shape(malformed):
+            raise AssertionError(f"malformed device-revoke frame accepted: {name}")
+
+
 def verify_broker_registration_control_frames(vector: dict, identity: dict) -> None:
     assert vector["identity_ref"] == "identity"
 
@@ -326,6 +376,9 @@ def main() -> None:
 
     verify_broker_registration_control_frames(data["broker_registration_control_frames"], identity)
     print("broker registration control frames ok")
+
+    verify_device_revoke_control_frame(data["broker_device_revoke_control_frame"], identity)
+    print("broker device revoke control frame ok")
 
     cap = data["space_capability_jws"]
     cap_pub = bytes.fromhex(cap["verification_key_hex"])

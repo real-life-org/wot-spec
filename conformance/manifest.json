@@ -65,6 +65,7 @@
             "log_payload_encryption",
             "log_entry_jws",
             "broker_registration_control_frames",
+            "broker_device_revoke_control_frame",
             "space_capability_jws",
             "space_membership_messages",
             "admin_key_derivation",
