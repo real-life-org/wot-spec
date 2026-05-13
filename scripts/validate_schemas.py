@@ -22,7 +22,10 @@ def schema_name_for_example(path: Path) -> str:
         if (SCHEMAS / schema_name).exists():
             return schema_name
         if "." not in stem:
-            return schema_name
+            raise SystemExit(
+                f"no matching schema for example: {path.relative_to(ROOT)} "
+                f"(last tried: {schema_name})"
+            )
         stem = stem.rsplit(".", 1)[0]
 
 
