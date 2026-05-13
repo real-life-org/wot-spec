@@ -20,8 +20,8 @@ INFO_MARKER_RE = re.compile(r"\b(?:TODO|FIXME|TBD|Offene|offene|Klaer|Klär)\b|w
 
 # Baseline for pre-existing normative spec anchor drift found when this
 # offline harness was introduced. This slice may not edit normative spec
-# files, so these links remain informational until a separate spec cleanup
-# PR fixes them deliberately.
+# files, so these links remain informational until wot-spec#58 fixes them
+# deliberately in a separate cleanup PR.
 KNOWN_ANCHOR_DRIFT = {
     ("03-wot-sync/003-transport-und-broker.md", 117, "#device-liste"),
     ("05-hmc-extensions/H03-gossip.md", 36, "../03-wot-sync/003-transport-und-broker.md#message-envelope-didcomm-kompatibel"),
