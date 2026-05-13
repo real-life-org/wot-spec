@@ -16,7 +16,14 @@ def load_json(path: Path):
 
 
 def schema_name_for_example(path: Path) -> str:
-    return f"{path.stem}.schema.json"
+    stem = path.stem
+    while True:
+        schema_name = f"{stem}.schema.json"
+        if (SCHEMAS / schema_name).exists():
+            return schema_name
+        if "." not in stem:
+            return schema_name
+        stem = stem.rsplit(".", 1)[0]
 
 
 def main() -> None:

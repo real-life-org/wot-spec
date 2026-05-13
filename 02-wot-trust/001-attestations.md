@@ -70,6 +70,10 @@ Die JWT-Felder sind **JWT Registered Claims** (RFC 7519) — redundant zu den VC
 | `jti` | `id` (optional) | Eindeutige ID der Attestation |
 | `exp` | `validUntil` (optional) | Unix-Timestamp (nur wenn zeitlich begrenzt) |
 
+`validFrom` und das optionale `validUntil` MÜSSEN in `wot-trust@0.1` RFC3339-`date-time`-Strings mit expliziter Zeitzone und Ganzsekunden-Präzision sein. Fractional Seconds sind ungültig. Gültig sind z.B. `2026-04-21T10:00:00Z` und `2026-04-21T12:00:00+02:00`; ungültig ist z.B. `2026-04-21T10:00:00.123Z`. Klein geschriebene RFC3339-Separatoren `t`/`z` sind ebenfalls gültig, werden aber nicht als kanonische Schreibweise für Beispiele verwendet.
+
+`nbf` und das optionale `exp` bleiben JWT NumericDate-Werte als Integer-Unix-Timestamps in Sekunden. `nbf` MUSS exakt denselben Zeitpunkt wie `validFrom` darstellen, nachdem die Zeitzone normalisiert wurde. Wenn `validUntil` vorhanden ist, MUSS `exp` exakt denselben Zeitpunkt wie `validUntil` darstellen, nachdem die Zeitzone normalisiert wurde.
+
 ### Transport: JWS Compact Serialization (VC-JOSE-COSE Profil)
 
 Die Attestation wird als JWS transportiert und gespeichert — konform mit dem **W3C VC-JOSE-COSE** Profil:
@@ -103,13 +107,13 @@ Es gibt kein eingebettetes `proof`-Objekt. Die Signatur ist der JWS selbst. Ein 
 | `issuer` | DID | Wer macht die Aussage |
 | `credentialSubject.id` | DID oder URI | Über wen/was die Aussage ist |
 | `credentialSubject.claim` | String | Die Aussage (Freitext) |
-| `validFrom` | ISO 8601 | Ausstellungs- bzw. Gueltigkeitsbeginn der Attestation |
+| `validFrom` | RFC3339 date-time | Ausstellungs- bzw. Gueltigkeitsbeginn der Attestation; explizite Zeitzone, Ganzsekunden-Praezision |
 
 ### Optionale Felder
 
 | Feld | Typ | Beschreibung |
 |------|-----|-------------|
-| `validUntil` | ISO 8601 | Nur fuer explizit zeitlich begrenzte Aussagen; fehlt bei unbefristeten Attestations |
+| `validUntil` | RFC3339 date-time | Nur fuer explizit zeitlich begrenzte Aussagen; fehlt bei unbefristeten Attestations; explizite Zeitzone, Ganzsekunden-Praezision |
 | `id` | URI | Eindeutige ID der Attestation (z.B. `urn:uuid:...`) |
 | `credentialStatus` | Object | Widerrufs-Mechanismus (siehe Unveränderlichkeit) |
 
