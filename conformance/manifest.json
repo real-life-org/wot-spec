@@ -64,6 +64,7 @@
             "ecies",
             "log_payload_encryption",
             "log_entry_jws",
+            "broker_registration_control_frames",
             "space_capability_jws",
             "space_membership_messages",
             "admin_key_derivation",

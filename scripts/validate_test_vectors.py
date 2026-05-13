@@ -154,6 +154,64 @@ def decode_jws(jws: str) -> tuple[dict, dict]:
     return json.loads(b64u_decode(header_b64)), json.loads(b64u_decode(payload_b64))
 
 
+def verify_broker_registration_control_frames(vector: dict, identity: dict) -> None:
+    assert vector["identity_ref"] == "identity"
+
+    did = identity["did"]
+    device_id = vector["device_id"]
+    nonce = vector["nonce"]
+    nonce_bytes = bytes.fromhex(nonce["bytes_hex"])
+    assert len(nonce_bytes) == 32
+    assert b64u_encode(nonce_bytes) == nonce["b64url"]
+
+    transcript = vector["transcript"]
+    transcript_jcs = jcs(transcript["object"])
+    assert transcript_jcs.decode("utf-8") == transcript["jcs_canonical_string"]
+    assert transcript_jcs.hex() == transcript["jcs_canonical_hex"]
+    assert bytes.fromhex(transcript["jcs_canonical_hex"]) == transcript["jcs_canonical_string"].encode("utf-8")
+
+    signature = vector["signature"]
+    signature_bytes = bytes.fromhex(signature["ed25519_signature_hex"])
+    assert len(signature_bytes) == 64
+    assert b64u_encode(signature_bytes) == signature["b64url"]
+    assert len(signature["b64url"]) == signature["length_chars"] == 86
+    ed25519.Ed25519PublicKey.from_public_bytes(bytes.fromhex(identity["ed25519_public_hex"])).verify(
+        signature_bytes, transcript_jcs
+    )
+
+    assert transcript["object"] == {
+        "deviceId": device_id,
+        "did": did,
+        "nonce": nonce["b64url"],
+        "protocol": "wot/broker-auth/v1",
+        "type": "challenge-response",
+    }
+
+    frames = vector["frames"]
+    assert frames["register"] == {
+        "type": "register",
+        "did": did,
+        "deviceId": device_id,
+    }
+    assert frames["challenge"] == {
+        "type": "challenge",
+        "nonce": nonce["b64url"],
+    }
+    assert frames["challenge_response"] == {
+        "type": "challenge-response",
+        "did": did,
+        "deviceId": device_id,
+        "nonce": nonce["b64url"],
+        "signature": signature["b64url"],
+    }
+    assert frames["registered"] == {
+        "type": "registered",
+        "did": did,
+        "deviceId": device_id,
+        "isNewDevice": True,
+    }
+
+
 def iso_to_unix(value: str) -> int:
     from datetime import datetime
 
@@ -265,6 +323,9 @@ def main() -> None:
 
     verify_jws(data["log_entry_jws"]["jws"], ed_pub)
     print("log jws ok")
+
+    verify_broker_registration_control_frames(data["broker_registration_control_frames"], identity)
+    print("broker registration control frames ok")
 
     cap = data["space_capability_jws"]
     cap_pub = bytes.fromhex(cap["verification_key_hex"])

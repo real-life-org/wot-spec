@@ -253,6 +253,7 @@ Die folgenden Vektoren sind in [`phase-1-interop.md`](phase-1-interop.md) dokume
 - **Attestation VC-JWS** - W3C VC 2.0 Payload mit `typ: "vc+jwt"` und `kid`.
 - **ECIES** - X25519 ECDH + HKDF + AES-256-GCM (Peer-to-Peer-Verschluesselung).
 - **Space Content Key** - Deterministische Nonce aus `(deviceId, seq)`, Verschluesselung/Entschluesselung.
+- **Broker Control-Frame Registrierung** - `register`/`challenge`/`challenge-response`/`registered`-Handshake mit JCS-Transcript und Ed25519-Signatur.
 - **Space Capability** - JWS-Signatur mit `spaceCapabilitySigningKey`, Broker-Verifikation.
 - **DID-Dokument** - `resolve()` fuer `did:key` plus Bootstrap-`keyAgreement`.
 - **Admin Key Ableitung** - HKDF mit Space-ID im Info-String.
