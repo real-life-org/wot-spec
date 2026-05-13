@@ -241,8 +241,8 @@ Eine konforme Implementierung MUSS fuer die jeweils beanspruchten Profile:
 4. Fuer alle JCS-Test-Vektoren dieselben SHA-256 Hashes erzeugen.
 5. Den Attestation-VC-JWS aus den Phase-1-Interop-Vektoren verifizieren koennen.
 6. Die Phase-1-Interop-Vektoren in [`phase-1-interop.md`](phase-1-interop.md) reproduzieren koennen.
-7. Fuer `wot-sync@0.1`: den `device-revoke`-Control-Frame mit `revocationJws` akzeptieren und die malformed Frame-Formen ablehnen koennen.
-8. Fuer `wot-device-delegation@0.1`: die Device-Delegation-Vektoren in [`device-delegation.json`](device-delegation.json) verifizieren und die Negativfaelle ablehnen koennen.
+7. Fuer `wot-sync@0.1` MUSS eine Implementierung den `device-revoke`-Control-Frame mit `revocationJws` akzeptieren und malformed Frame-Formen ablehnen.
+8. Fuer `wot-device-delegation@0.1` MUSS eine Implementierung die Device-Delegation-Vektoren in [`device-delegation.json`](device-delegation.json) verifizieren und Negativfaelle ablehnen.
 
 Wenn diese Tests bestehen, ist die kryptographische Basis interoperabel.
 

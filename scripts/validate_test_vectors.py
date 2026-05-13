@@ -155,6 +155,8 @@ def decode_jws(jws: str) -> tuple[dict, dict]:
 
 
 def is_device_revoke_frame_shape(frame: dict) -> bool:
+    if not isinstance(frame, dict):
+        return False
     return set(frame) == {"type", "revocationJws"} and frame["type"] == "device-revoke" and isinstance(
         frame["revocationJws"], str
     )

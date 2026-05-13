@@ -163,6 +163,8 @@ Der innere JWS-Payload DARF keine weiteren Felder tragen. Er MUSS mit dem Identi
 5. Ausstehende Inbox-Nachrichten für dieses Device werden gelöscht
 6. Zukünftige Verbindungsversuche mit dieser Kombination werden mit `DEVICE_REVOKED` abgelehnt
 
+Die Effekte aus 4-6 sind Runtime-/Protokollzustands-Prüfungen. Das Markieren von `(did, deviceId)`, die Inbox-Löschung und die Ablehnung mit `DEVICE_REVOKED` können nicht vollständig durch statische Schema- oder Vektor-Fixtures bewiesen werden; ihr Nachweis erfordert beobachtetes Broker-Laufzeitverhalten oder Protokoll-Logs.
+
 Jede gültig mit dem Identity Key der DID signierte `device-revoke` Nachricht DARF jedes Device derselben DID deaktivieren. Im Shared-Seed-Modell ist keine zusätzliche Signatur eines device-spezifischen Keys erforderlich.
 
 Eine gültige Revocation für ein unbekanntes `(did, deviceId)` MUSS der Broker als revoked Tombstone speichern und idempotent akzeptieren. Eine gültige Revocation für ein bereits revoked Device MUSS ebenfalls idempotent akzeptiert werden; die zuerst gespeicherten Revocation-Metadaten bleiben autoritativ und werden durch spätere Duplikate nicht überschrieben. Für Duplikate MUSS der Broker keine Inbox-Nachrichten erneut löschen, DARF aber dieselbe Cleanup-Operation idempotent ausführen.
