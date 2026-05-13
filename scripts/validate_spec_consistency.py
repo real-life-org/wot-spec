@@ -18,16 +18,6 @@ HEADING_RE = re.compile(r"^(#{1,6})\s+(.+?)\s*#*\s*$")
 HTML_ANCHOR_RE = re.compile(r"<a\s+(?:[^>]*?\s+)?(?:id|name)=[\"']([^\"']+)[\"']", re.IGNORECASE)
 INFO_MARKER_RE = re.compile(r"\b(?:TODO|FIXME|TBD|Offene|offene|Klaer|Klär)\b|wot-spec#\d+")
 
-# Baseline for pre-existing normative spec anchor drift found when this
-# offline harness was introduced. This slice may not edit normative spec
-# files, so these links remain informational until wot-spec#58 fixes them
-# deliberately in a separate cleanup PR.
-KNOWN_ANCHOR_DRIFT = {
-    ("03-wot-sync/003-transport-und-broker.md", 117, "#device-liste"),
-    ("05-hmc-extensions/H03-gossip.md", 36, "../03-wot-sync/003-transport-und-broker.md#message-envelope-didcomm-kompatibel"),
-}
-
-
 class CheckState:
     def __init__(self) -> None:
         self.errors: list[str] = []
@@ -125,10 +115,6 @@ def validate_markdown_links(paths: list[Path], state: CheckState) -> None:
                 if anchor and target_path.suffix == ".md":
                     anchors = anchor_cache.setdefault(target_path, markdown_anchors(target_path))
                     if anchor not in anchors:
-                        key = (rel(source), line_number, target)
-                        if key in KNOWN_ANCHOR_DRIFT:
-                            state.note(f"known anchor drift: {rel(source)}:{line_number}: {target}")
-                            continue
                         state.fail(f"broken local markdown anchor: {rel(source)}:{line_number}: {target}")
 
 

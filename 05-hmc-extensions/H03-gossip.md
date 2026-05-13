@@ -33,7 +33,7 @@ Broker sieht: verschlüsselte Inbox-Nachrichten
 
 ## Nachrichtentyp: `trust-list-delta`
 
-Im Message Envelope (siehe [Sync 003](../03-wot-sync/003-transport-und-broker.md#message-envelope-didcomm-kompatibel)) wird ein neuer Typ definiert, verschlüsselt mit ECIES:
+Im Message Envelope (siehe [Sync 003](../03-wot-sync/003-transport-und-broker.md#wot-transport-envelope-didcomm-v2-kompatibel)) wird ein neuer Typ definiert, verschlüsselt mit ECIES:
 
 ```json
 {
