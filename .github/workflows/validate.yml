@@ -28,14 +28,8 @@ jobs:
       - name: Install Node dependencies
         run: npm install --no-package-lock
 
-      - name: Validate JSON Schemas and examples
-        run: npm run validate:schemas
-
-      - name: Validate test vectors
-        run: npm run validate:vectors
-
-      - name: Validate DIDComm envelope compatibility
-        run: npm run validate:didcomm
+      - name: Validate spec
+        run: npm run validate
 
       - name: Check whitespace
         run: git diff --check
