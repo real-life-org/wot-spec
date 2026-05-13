@@ -465,7 +465,7 @@ Log-Einträge werden NICHT mit ECIES verschlüsselt — sie sind bereits mit dem
 | `.../sync-request/1.0` | Log-Sync | Anfrage: "Was hast du seit seq X für docId Y?" |
 | `.../sync-response/1.0` | Log-Sync | Antwort: fehlende Log-Einträge |
 | `.../inbox/1.0` | Inbox | Direkte verschlüsselte Nachricht (Attestation, etc.) |
-| `.../ack/1.0` | Inbox | Per-Device Empfangs-/Persistenzbestätigung für Inbox-Nachrichten (referenziert `id` der Original-Nachricht). Log-Sync verwendet KEIN `ack/1.0`; siehe [Log-Sync vs. Inbox-ACK](#log-sync-vs-inbox-ack-normativ). |
+| `.../ack/1.0` | Inbox | Per-Device Empfangs-/Persistenzbestätigung für Inbox-Nachrichten (referenziert `id` der Original-Nachricht). Log-Sync DARF `ack/1.0` NICHT verwenden; siehe [Log-Sync vs. Inbox-ACK](#log-sync-vs-inbox-ack-normativ). |
 
 #### Gruppen ([Sync 005](005-gruppen.md))
 
@@ -575,7 +575,7 @@ Antwort auf `sync-request`. Body:
 
 #### `ack/1.0` — Empfangsbestätigung (NORMATIV)
 
-`ack/1.0` ist **ausschließlich für den Inbox-Kanal** definiert (per-Device Store-and-Forward). Log-Sync verwendet KEIN `ack/1.0` — dort ist die Bestätigung implizit durch den nächsten `sync-request` (siehe [Log-Sync vs. Inbox-ACK](#log-sync-vs-inbox-ack-normativ)).
+`ack/1.0` ist **ausschließlich für den Inbox-Kanal** definiert (per-Device Store-and-Forward). Log-Sync DARF `ack/1.0` NICHT verwenden — dort ist die Bestätigung implizit durch den nächsten `sync-request` (siehe [Log-Sync vs. Inbox-ACK](#log-sync-vs-inbox-ack-normativ)).
 
 ##### Envelope und Body
 
@@ -593,6 +593,8 @@ Ein Inbox-ACK ist ein WoT Transport Envelope mit:
 ```
 
 - `body.messageId`: MUSS die kanonische lowercase UUID v4 der ursprünglichen Inbox-Nachricht (`id`) sein. MUSS mit `thid` übereinstimmen, wenn `thid` gesetzt ist. Weitere Body-Felder sind NICHT definiert; Empfänger MÜSSEN unbekannte Body-Felder ignorieren (forward-compat).
+
+> Diese Bindungen sind nicht durch JSON-Schema oder ein statisches Vektor-Fixture validierbar — sie sind Protokollzustand pro Verbindung und Inbox. Implementierungen MÜSSEN zur Laufzeit prüfen, dass (a) `thid` und `body.messageId` einer real existierenden, nicht bereits acknowledgten Inbox-Nachricht in der Inbox dieses authentifizierten Devices entsprechen, (b) `body.messageId` und `thid` (falls beide gesetzt) übereinstimmen, und (c) der `type` der referenzierten Nachricht ein Inbox-Type ist (siehe [Log-Sync vs. Inbox-ACK](#log-sync-vs-inbox-ack-normativ)). Diese Checks ersetzen NICHT die Schema-Validierung der Envelope-Form; sie ergänzen sie.
 
 ##### ACK-Vorbedingungen
 

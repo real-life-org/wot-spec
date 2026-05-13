@@ -56,7 +56,8 @@
       "ed25519_signature_hex": "1f656c58a66da47075a711b3eafe8296bf78a253b2fdeef9bbc1e4dc6f31f1ce5ca1988dcceaa85d4caf9e8acaff9a0652d10aebb580d8e9077420e8dc2b2509",
       "b64url": "H2VsWKZtpHB1pxGz6v6Clr94olOy_e75u8Hk3G8x8c5coZiNzOqoXUyvnorK_5oGUtEK67WA2OkHdCDo3CslCQ",
       "length_chars": 86,
-      "note": "Canonical unpadded Base64URL (RFC 4648 §5 ohne Padding) of the 64-byte Ed25519 signature over `transcript.jcs_canonical_hex`. See 03-wot-sync/003-transport-und-broker.md#wire-encoding-der-signature-muss."
+      "signing_input_note": "Signing input is the canonical UTF-8 byte sequence of the JCS-canonicalized transcript JSON (230 bytes for this fixture). `transcript.jcs_canonical_hex` is a HEX REPRESENTATION of those bytes for human cross-checking; implementations MUST sign and verify the decoded byte sequence, NOT the ASCII characters of the hex string. Equivalently: signing-input is `hex_decode(transcript.jcs_canonical_hex)`, which is the same as `utf8_encode(transcript.jcs_canonical_string)`.",
+      "note": "Canonical unpadded Base64URL (RFC 4648 §5 ohne Padding) of the 64-byte Ed25519 signature. See 03-wot-sync/003-transport-und-broker.md#wire-encoding-der-signature-muss."
     },
     "frames": {
       "register": {
