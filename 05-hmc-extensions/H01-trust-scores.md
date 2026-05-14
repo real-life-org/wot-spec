@@ -64,6 +64,8 @@ Alices gesamte Vertrauensliste als ein signiertes Dokument mit mehreren Einträg
 
 **Issuer-signed JWT Payload** (was Alice signiert):
 
+Der `vct`-Wert `https://humanmoney.example/credentials/TrustList/v1` in diesem Beispiel und in den Testvektoren ist beispielhaft und nutzt bewusst die reservierte `.example`-Domain (RFC 2606). Er ist kein normativer Produktions-`vct` für `wot-hmc@0.1`; siehe Abschnitt [SD-JWT VC Validation (MUSS)](#sd-jwt-vc-validation-muss).
+
 ```json
 {
   "iss": "did:key:z6Mk...alice",
@@ -157,7 +159,7 @@ Vertrauenslisten werden via Gossip verteilt:
 Verifier einer Trust-List MÜSSEN mindestens prüfen:
 
 1. **JWT-Signatur** verifizieren (Ed25519, `iss` → DID-Dokument via [Identity 003](../01-wot-identity/003-did-resolution.md) resolve())
-2. **`vct`** (Verifiable Credential Type) prüfen — MUSS mit dem erwarteten Credential-Typ übereinstimmen
+2. **`vct`** (Verifiable Credential Type) prüfen — `wot-hmc@0.1` legt keinen festen normativen `vct`-Wert für produktive Trust-Lists fest. Verifier MÜSSEN den erwarteten `vct`-Wert per Anwendungs- oder Profil-Konfiguration erhalten und MÜSSEN jede Trust-List ablehnen, deren `vct` davon byte-genau abweicht. Implementierungen DÜRFEN keinen `vct`-Wert hartkodieren. Der Beispiel-Wert `https://humanmoney.example/credentials/TrustList/v1` aus Beispielen und Testvektoren ist ausdrücklich nicht normativ und darf in Produktion nicht als erwarteter `vct` konfiguriert werden.
 3. **`exp`** prüfen — nicht abgelaufen
 4. **`iat`** prüfen — liegt in der Vergangenheit
 5. **Disclosure-Hashes** prüfen — jede Disclosure MUSS gegen den korrespondierenden `_sd`-Digest im JWT verifiziert werden

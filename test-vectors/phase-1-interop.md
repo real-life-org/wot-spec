@@ -196,6 +196,8 @@ Document-ID: ed3b3cbe-c944-4630-81a1-5cf14be4c2ae
 
 Minimaler Draft-Vektor fuer eine Trust-List mit einem selectively-disclosable Eintrag.
 
+Der `vct`-Wert `https://humanmoney.example/credentials/TrustList/v1` im signierten JWT-Payload ist ausdruecklich nur ein Vektor-/Beispielwert (RFC 2606 `.example`-Domain) und kein normativer Produktions-`vct`. `wot-hmc@0.1` legt keinen festen `vct`-Wert fest; Verifier MUESSEN den erwarteten `vct` per Anwendungs- oder Profil-Konfiguration erhalten und Trust-Lists mit abweichendem `vct` ablehnen. Siehe [H01 SD-JWT VC Validation (MUSS)](../05-hmc-extensions/H01-trust-scores.md#sd-jwt-vc-validation-muss).
+
 Disclosure JSON (JCS):
 
 ```json

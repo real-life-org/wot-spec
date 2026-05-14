@@ -262,5 +262,5 @@ Die folgenden Vektoren sind in [`phase-1-interop.md`](phase-1-interop.md) dokume
 - **DID-Dokument** - `resolve()` fuer `did:key` plus Bootstrap-`keyAgreement`.
 - **Admin Key Ableitung** - HKDF mit Space-ID im Info-String.
 - **Personal Doc Key** - deterministische Document-ID.
-- **SD-JWT VC** (HMC) - Trust-List-Signatur, Disclosure-Hashes, Selective Disclosure.
+- **SD-JWT VC** (HMC) - Trust-List-Signatur, Disclosure-Hashes, Selective Disclosure. Der `vct`-Wert im Vektor ist beispielhaft (RFC 2606 `.example`-Domain); `wot-hmc@0.1` legt keinen festen Produktions-`vct` fest und Verifier MUESSEN den erwarteten `vct` per Konfiguration erhalten (siehe [H01](../05-hmc-extensions/H01-trust-scores.md#sd-jwt-vc-validation-muss)).
 - **Device Delegation** - DeviceKeyBinding-JWS, Delegated-Attestation-Bundle und Negativfaelle fuer abgelaufene Delegation, fehlende Capability und `kid`-Mismatch.
