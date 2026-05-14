@@ -50,11 +50,11 @@ Eine Implementierung ist `wot-identity@0.1`-konform, wenn sie die folgenden Faeh
 
 `wot-identity@0.1` verlangt fuer Seed-Schutz die drei-Schichten-Bar aus Identity 001 (siehe [ADR 0001](decisions/0001-identity-seed-protection-conformance-bar.md)):
 
-- **Persistence MUST** — Seed-Material at rest MUSS verschluesselt gespeichert werden (z.B. Passphrase, Biometrie, OS-Keychain).
-- **API Surface MUST** — Die Anwendungs-/Port-API DARF keine Operation anbieten, die rohe Seed-Bytes an Anwendungs- oder Workflow-Code zurueckgibt (kein `getSeed()`, kein `export()`).
-- **Runtime SHOULD** — Implementierungen SOLLTEN die Klartext-Lebensdauer im Prozessspeicher minimieren und auf Plattformen mit entsprechender Unterstuetzung non-extractable Key-Handles verwenden.
+- **Persistence MUSS** — Seed-Material at rest MUSS verschluesselt gespeichert werden (z.B. Passphrase, Biometrie, OS-Keychain).
+- **API Surface MUSS** — Die Anwendungs-/Port-API DARF keine Operation anbieten, die rohe Seed-Bytes an Anwendungs- oder Workflow-Code zurueckgibt (kein `getSeed()`, kein `export()`).
+- **Runtime SOLLTE** — Implementierungen SOLLTEN die Klartext-Lebensdauer im Prozessspeicher minimieren und auf Plattformen mit entsprechender Unterstuetzung non-extractable Key-Handles verwenden.
 
-Eine Konformitaetserklaerung MUSS die ersten beiden Schichten erfuellen und MUSS die Runtime-SHOULD-Haltung deklarativ angeben (z.B. `nonExtractableHandles: yes | no | partial` zusammen mit der genutzten Plattformfunktion). Das Runtime-Verhalten selbst bleibt SHOULD und ist kein Bestandteil der MUSS-Pruefliste; die Pflicht betrifft ausschliesslich die Offenlegung der gewaehlten Haltung.
+Eine Konformitaetserklaerung MUSS die ersten beiden Schichten erfuellen und MUSS die Runtime-SOLLTE-Haltung deklarativ angeben (z.B. `nonExtractableHandles: yes | no | partial` zusammen mit der genutzten Plattformfunktion). Das Runtime-Verhalten selbst bleibt eine SOLLTE-Empfehlung und ist kein Bestandteil der MUSS-Pruefliste; die Pflicht betrifft ausschliesslich die Offenlegung der gewaehlten Haltung.
 
 ## `wot-trust@0.1`
 

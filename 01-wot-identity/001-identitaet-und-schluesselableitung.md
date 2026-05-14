@@ -110,7 +110,7 @@ Der geplante Upgrade-Pfad ist deshalb stufenweise: Phase 2 erlaubt Device Keys �
 
 ### Seed-Schutz auf dem Gerät
 
-Der Seed MUSS auf dem Gerät angemessen geschützt werden und darf auf keinen Fall im Klartext extrahierbar sein. Wer den Seed hat, hat die vollständige Kontrolle über die Identität — einschließlich aller Schlüssel und aller Entschlüsselungsfähigkeiten.
+Der Seed MUSS auf dem Gerät angemessen geschützt werden und DARF über Persistenz oder Anwendungs-/Port-APIs nicht im Klartext extrahierbar sein. Kurzlebiger Seed-Klartext im Prozessspeicher ist nur im engen Rahmen der Runtime-Schicht unten zulässig. Wer den Seed hat, hat die vollständige Kontrolle über die Identität — einschließlich aller Schlüssel und aller Entschlüsselungsfähigkeiten.
 
 Wie der Schutz konkret umgesetzt wird — Verschlüsselung at rest, Biometrie, Hardware-Keystore, Passwort — hängt vom jeweiligen Gerät und der Plattform ab und ist Sache der Implementierung.
 
@@ -118,9 +118,9 @@ Wie der Schutz konkret umgesetzt wird — Verschlüsselung at rest, Biometrie, H
 
 `wot-identity@0.1` operationalisiert den Seed-Schutz für JS/TS-Runtimes (und analog für andere Runtimes) über eine drei-Schichten-Conformance-Bar. Die Rationale steht in [ADR 0001 — Three-Layer Conformance Bar for Identity 001 Seed Protection](../decisions/0001-identity-seed-protection-conformance-bar.md); dieser Abschnitt ist die normative Kurzfassung.
 
-1. **Persistence MUST** — Seed-Material at rest MUSS verschlüsselt gespeichert werden. Akzeptable Unlock-Faktoren sind z.B. Passphrase, Biometrie oder OS-Keychain. Eine Klartext-Persistierung des Seeds (z.B. ungeschütztes IndexedDB-Feld, Klartextdatei, Klartext-`localStorage`) ist nicht konform.
-2. **API Surface MUST** — Die Anwendungs-/Port-API DARF keine Operation anbieten, die rohe Seed-Bytes an Anwendungs- oder Workflow-Code zurückgibt. Es DARF kein `getSeed()`, kein `export()` und kein vergleichbarer Aufruf existieren. Seed-nutzende Operationen (Signieren, Subkey-Ableitung, Entschlüsseln) werden stattdessen angeboten; der Seed bleibt hinter der Port-Grenze.
-3. **Runtime MAY + SHOULD** — Implementierungen DÜRFEN Seed-Klartext kurzfristig im Prozessspeicher halten, solange Ableitung oder Signatur dies erfordern. Sie SOLLTEN diese Lebensdauer minimieren und SOLLTEN auf Plattformen mit entsprechender Unterstützung non-extractable Key-Handles verwenden (z.B. Web Crypto `Ed25519`/`X25519` `CryptoKey` mit `extractable: false`, iOS Keychain, Android Keystore, Secure Enclave). Die konkrete Plattformfunktion ist nicht normativ — verlangt ist die Minimierung extrahierbarer Klartext-Lebensdauer, nicht ein bestimmter Hersteller-Mechanismus.
+1. **Persistence MUSS** — Seed-Material at rest MUSS verschlüsselt gespeichert werden. Akzeptable Unlock-Faktoren sind z.B. Passphrase, Biometrie oder OS-Keychain. Eine Klartext-Persistierung des Seeds (z.B. ungeschütztes IndexedDB-Feld, Klartextdatei, Klartext-`localStorage`) ist nicht konform.
+2. **API Surface MUSS** — Die Anwendungs-/Port-API DARF keine Operation anbieten, die rohe Seed-Bytes an Anwendungs- oder Workflow-Code zurückgibt. Es DARF kein `getSeed()`, kein `export()` und kein vergleichbarer Aufruf existieren. Seed-nutzende Operationen (Signieren, Subkey-Ableitung, Entschlüsseln) werden stattdessen angeboten; der Seed bleibt hinter der Port-Grenze.
+3. **Runtime DARF + SOLLTE** — Implementierungen DÜRFEN Seed-Klartext kurzfristig im Prozessspeicher halten, solange Ableitung oder Signatur dies erfordern. Sie SOLLTEN diese Lebensdauer minimieren und SOLLTEN auf Plattformen mit entsprechender Unterstützung non-extractable Key-Handles verwenden (z.B. Web Crypto `Ed25519`/`X25519` `CryptoKey` mit `extractable: false`, iOS Keychain, Android Keystore, Secure Enclave). Die konkrete Plattformfunktion ist nicht normativ — verlangt ist die Minimierung extrahierbarer Klartext-Lebensdauer, nicht ein bestimmter Hersteller-Mechanismus.
 
 ## Migration (Schlüsselrotation)
 
