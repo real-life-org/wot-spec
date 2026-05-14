@@ -114,6 +114,14 @@ Der Seed MUSS auf dem Gerät angemessen geschützt werden und darf auf keinen Fa
 
 Wie der Schutz konkret umgesetzt wird — Verschlüsselung at rest, Biometrie, Hardware-Keystore, Passwort — hängt vom jeweiligen Gerät und der Plattform ab und ist Sache der Implementierung.
 
+#### Conformance
+
+`wot-identity@0.1` operationalisiert den Seed-Schutz für JS/TS-Runtimes (und analog für andere Runtimes) über eine drei-Schichten-Conformance-Bar. Die Rationale steht in [ADR 0001 — Three-Layer Conformance Bar for Identity 001 Seed Protection](../decisions/0001-identity-seed-protection-conformance-bar.md); dieser Abschnitt ist die normative Kurzfassung.
+
+1. **Persistence MUST** — Seed-Material at rest MUSS verschlüsselt gespeichert werden. Akzeptable Unlock-Faktoren sind z.B. Passphrase, Biometrie oder OS-Keychain. Eine Klartext-Persistierung des Seeds (z.B. ungeschütztes IndexedDB-Feld, Klartextdatei, Klartext-`localStorage`) ist nicht konform.
+2. **API Surface MUST** — Die Anwendungs-/Port-API DARF keine Operation anbieten, die rohe Seed-Bytes an Anwendungs- oder Workflow-Code zurückgibt. Es DARF kein `getSeed()`, kein `export()` und kein vergleichbarer Aufruf existieren. Seed-nutzende Operationen (Signieren, Subkey-Ableitung, Entschlüsseln) werden stattdessen angeboten; der Seed bleibt hinter der Port-Grenze.
+3. **Runtime MAY + SHOULD** — Implementierungen DÜRFEN Seed-Klartext kurzfristig im Prozessspeicher halten, solange Ableitung oder Signatur dies erfordern. Sie SOLLTEN diese Lebensdauer minimieren und SOLLTEN auf Plattformen mit entsprechender Unterstützung non-extractable Key-Handles verwenden (z.B. Web Crypto `Ed25519`/`X25519` `CryptoKey` mit `extractable: false`, iOS Keychain, Android Keystore, Secure Enclave). Die konkrete Plattformfunktion ist nicht normativ — verlangt ist die Minimierung extrahierbarer Klartext-Lebensdauer, nicht ein bestimmter Hersteller-Mechanismus.
+
 ## Migration (Schlüsselrotation)
 
 Wenn eine Implementierung ihren Ableitungspfad ändern muss um dieser Spec zu entsprechen, werden bestehende Identitäten über Schlüsselrotation migriert. Siehe [Identity Migration](../research/identity-migration.md) (Entwurf).
