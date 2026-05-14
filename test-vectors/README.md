@@ -240,8 +240,9 @@ Eine konforme Implementierung MUSS fuer die jeweils beanspruchten Profile:
 3. Den AES-256-GCM Ciphertext mit dem gegebenen Key und Nonce entschluesseln koennen.
 4. Fuer alle JCS-Test-Vektoren dieselben SHA-256 Hashes erzeugen.
 5. Den Attestation-VC-JWS aus den Phase-1-Interop-Vektoren verifizieren koennen.
-6. Die Phase-1-Interop-Vektoren in [`phase-1-interop.md`](phase-1-interop.md) reproduzieren koennen.
-7. Fuer `wot-device-delegation@0.1`: die Device-Delegation-Vektoren in [`device-delegation.json`](device-delegation.json) verifizieren und die Negativfaelle ablehnen koennen.
+6. Fuer `wot-trust@0.1`: die Trust-002-`jti`-Nonce-Binding-Faelle aus `phase-1-interop.json` reproduzieren koennen.
+7. Die Phase-1-Interop-Vektoren in [`phase-1-interop.md`](phase-1-interop.md) reproduzieren koennen.
+8. Fuer `wot-device-delegation@0.1`: die Device-Delegation-Vektoren in [`device-delegation.json`](device-delegation.json) verifizieren und die Negativfaelle ablehnen koennen.
 
 Wenn diese Tests bestehen, ist die kryptographische Basis interoperabel.
 
@@ -251,6 +252,7 @@ Die folgenden Vektoren sind in [`phase-1-interop.md`](phase-1-interop.md) dokume
 
 - **WoT Plaintext Envelope** - DIDComm-v2-kompatibler Envelope, validiert mit etablierten DIDComm-v2-Libraries.
 - **Attestation VC-JWS** - W3C VC 2.0 Payload mit `typ: "vc+jwt"` und `kid`.
+- **Trust 002 `jti` Nonce Binding** - Full-String-`urn:uuid:<uuid>`-Grammatik, UUID-Kleinschreibungsnormalisierung, Replay- und Unbound-Klassifikation.
 - **ECIES** - X25519 ECDH + HKDF + AES-256-GCM (Peer-to-Peer-Verschluesselung).
 - **Space Content Key** - Deterministische Nonce aus `(deviceId, seq)`, Verschluesselung/Entschluesselung.
 - **Broker Control-Frame Registrierung** - `register`/`challenge`/`challenge-response`/`registered`-Handshake mit JCS-Transcript und Ed25519-Signatur.

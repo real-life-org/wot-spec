@@ -32,7 +32,7 @@
       "test_vectors": [
         {
           "file": "test-vectors/phase-1-interop.json",
-          "sections": ["attestation_vc_jws"]
+          "sections": ["attestation_vc_jws", "trust002_jti_nonce_binding"]
         }
       ]
     },
