@@ -124,7 +124,7 @@ Die Sicherheitsgarantie der Online-Verifikation ist deshalb bewusst enger defini
 Der Empfänger einer Verification-Attestation prüft:
 
 1. Ist die JWS-Signatur gültig für den `issuer`? (inklusive `alg=EdDSA` Whitelist, siehe [Identity 002](../01-wot-identity/002-signaturen-und-verifikation.md#algorithmus-validierung-muss))
-2. Enthält die Attestation-ID die aktive Challenge-Nonce?
+2. Bindet die Attestation-ID (`jti`) exakt die aktive Challenge-Nonce gemaess [Verification-Attestation](#verification-attestation)?
 3. Ist der `ts` aus der Challenge aktuell (nicht älter als 5 Minuten)?
 
 Die aktive Challenge (mindestens `nonce` und `ts`) MUSS nur bis zur Verifikation oder Regenerierung des QR-Codes lokal gehalten werden. Sie MUSS nicht dauerhaft persistiert werden. Bei App-Neustart ist der sichere Fallback, alte aktive Challenges zu verwerfen und einen neuen QR-Code zu erzeugen.
@@ -135,11 +135,13 @@ Eine eingehende Verification-Attestation DARF im Online-Ein-QR-Scan-Flow nur dan
 
 1. Die Signatur der Attestation ist gueltig.
 2. Die Attestation richtet sich an die lokale DID.
-3. Die Attestation-ID (`jti`) enthaelt eine lokal aktive, noch nicht verbrauchte Challenge-Nonce.
+3. Die Attestation-ID (`jti`) bindet exakt eine lokal aktive, noch nicht verbrauchte Challenge-Nonce gemaess der unten definierten `jti`-Grammatik.
 4. Die aktive Challenge ist zeitlich gueltig.
 5. Die Nonce wurde noch nicht in der Nonce-History konsumiert.
 
 Fehlt eine aktive Challenge-Nonce, MUSS die Attestation als ungebundene Remote-Verifikation behandelt werden. Sie DARF gespeichert oder dem User als separate Remote-Anfrage angezeigt werden, aber sie DARF NICHT als Beweis fuer eine physische Begegnung gelten. Damit wird verhindert, dass beliebige signierte Verification-Attestations als In-Person-Begegnung in den Trust Graph gelangen.
+
+Der Empfaenger MUSS die Nonce-Bindung ausschliesslich ueber einen Full-String-Match der `jti` pruefen. Unbeschraenkte Substring-Suche nach UUIDs ist ungueltig.
 
 ### Gegen-Verifikation und Pending-Counter-State (MUSS)
 
@@ -177,6 +179,8 @@ Empfänger MÜSSEN eine Liste bereits verwendeter Nonces führen um Replay-Angri
 - Nonce-Storage kann volatil sein (In-Memory reicht)
 - Bei Neustart: sicherer Fallback ist, alle Challenges der letzten 5 Minuten abzulehnen
 - Eine Nonce wird konsumiert sobald eine passende Attestation empfangen wird — sie kann nicht erneut verwendet werden
+- Die Nonce-History MUSS dieselbe normalisierte Nonce verwenden, die aus der `jti` extrahiert und mit der aktiven Challenge verglichen wurde.
+- Wenn eine spaetere Attestation eine gueltige `jti`-Grammatik hat und ihre normalisierte Nonce bereits in der Nonce-History steht, MUSS sie als `nonce-consumed` abgelehnt werden, auch wenn gerade keine aktive Challenge mit dieser Nonce existiert.
 
 ## Offline-Verifikation (Bidirektionaler QR-Scan)
 
@@ -235,14 +239,32 @@ Jede Partei erstellt eine Verification-Attestation für die andere — als JWS-s
   "iss": "did:key:z6Mk...bob",
   "sub": "did:key:z6Mk...alice",
   "nbf": 1776852000,
-  "jti": "urn:uuid:ver-<nonce>-<did-suffix>",
-  "inResponseTo": "urn:uuid:ver-<original-nonce>-<original-did-suffix>"
+  "jti": "urn:uuid:550e8400-e29b-41d4-a716-446655440000"
 }
 ```
 
-Die `jti` (Attestation-ID) enthält die Nonce aus dem QR-Code, damit der Empfänger sie seiner aktiven Challenge zuordnen kann.
+Die `jti` (Attestation-ID) einer online nonce-gebundenen Verification-Attestation MUSS die Nonce aus dem QR-Code exakt in dieser Form binden:
 
-Bei einer Gegen-Verification enthält `jti` eine neue eindeutige ID der Gegen-Verification. Das optionale Feld `inResponseTo` MUSS gesetzt werden, wenn die Attestation als Gegen-Verification im Online-Ein-QR-Scan-Flow akzeptiert werden soll. `inResponseTo` referenziert die `jti` der urspruenglichen nonce-gebundenen Verification-Attestation.
+```abnf
+verification-jti = "urn:uuid:" uuid
+uuid = 8HEXDIG "-" 4HEXDIG "-" 4HEXDIG "-" 4HEXDIG "-" 12HEXDIG
+```
+
+Der `uuid`-Teil MUSS genau die QR-Challenge-Nonce sein. Implementierungen MUESSEN die `jti` gegen den gesamten String matchen, die UUID-Gruppe extrahieren und fuer Vergleich sowie Nonce-History auf Kleinbuchstaben normalisieren. UUID-Buchstaben `A-F` in der `jti` oder in der lokal aktiven Challenge sind deshalb gueltig, solange die normalisierten Werte exakt gleich sind.
+
+Fuer das Acceptance Gate gilt:
+
+| Eingehende `jti` | Ergebnis |
+|---|---|
+| `urn:uuid:<active-nonce>` mit beliebiger UUID-Gross-/Kleinschreibung | als nonce-gebundene In-Person-Verifikation akzeptierbar, wenn alle anderen Gates erfuellt sind |
+| `urn:uuid:<consumed-nonce>` | als `nonce-consumed` ablehnen |
+| `urn:uuid:<uuid>`, aber UUID ist weder aktive noch konsumierte Nonce | als ungebundene Remote-Verifikation behandeln |
+| `jti` mit mehreren UUID-foermigen Tokens | als ungebundene Remote-Verifikation behandeln |
+| `jti` mit zusaetzlichem Prefix/Suffix, falschem URN-Namespace oder ungueltigen Trennzeichen | als ungebundene Remote-Verifikation behandeln |
+
+Eine `jti` wie `urn:uuid:ver-<nonce>-<did-suffix>` ist fuer Trust 002 nonce-gebundene Verification-Attestations ungueltig, weil sie weder eine gueltige UUID-URN noch eine eindeutige Nonce-Bindung ist.
+
+Bei einer Gegen-Verification enthält `jti` eine neue eindeutige ID der Gegen-Verification, z.B. `urn:uuid:123e4567-e89b-12d3-a456-426614174000`. Das optionale Feld `inResponseTo` MUSS gesetzt werden, wenn die Attestation als Gegen-Verification im Online-Ein-QR-Scan-Flow akzeptiert werden soll. `inResponseTo` referenziert die `jti` der urspruenglichen nonce-gebundenen Verification-Attestation, z.B. `urn:uuid:550e8400-e29b-41d4-a716-446655440000`.
 
 Die Verification-Attestation sagt: **"Ich habe diese Person getroffen und ihre Identität verifiziert."** Sie wird wie jede andere Attestation behandelt — der Empfänger besitzt sie und entscheidet ob er sie akzeptiert und zeigt (Empfängerprinzip, siehe [Trust 001](001-attestations.md)).
 

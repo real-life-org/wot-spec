@@ -16,6 +16,9 @@ ROOT = Path(__file__).resolve().parents[1]
 VECTOR = ROOT / "test-vectors" / "phase-1-interop.json"
 DEVICE_VECTOR = ROOT / "test-vectors" / "device-delegation.json"
 B58_ALPHABET = "123456789ABCDEFGHJKLMNPQRSTUVWXYZabcdefghijkmnopqrstuvwxyz"
+TRUST002_JTI_RE = re.compile(
+    r"^urn:uuid:([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12})$"
+)
 
 
 def b64u_decode(value: str) -> bytes:
@@ -264,6 +267,30 @@ def verify_broker_registration_control_frames(vector: dict, identity: dict) -> N
     }
 
 
+def classify_trust002_jti(jti: str, active_nonce: str, consumed_nonces: set[str]) -> tuple[str | None, str]:
+    match = TRUST002_JTI_RE.fullmatch(jti)
+    if not match:
+        return None, "unbound-remote"
+
+    nonce = match.group(1).lower()
+    if nonce in consumed_nonces:
+        return nonce, "nonce-consumed"
+    if nonce == active_nonce.lower():
+        return nonce, "accept-in-person"
+    return nonce, "unbound-remote"
+
+
+def verify_trust002_jti_nonce_binding(vector: dict) -> None:
+    active_nonce = vector["activeNonce"]
+    assert vector["activeNonceUppercase"].lower() == active_nonce
+    consumed_nonces = {nonce.lower() for nonce in vector["consumedNonces"]}
+
+    for case in vector["cases"]:
+        extracted_nonce, disposition = classify_trust002_jti(case["jti"], active_nonce, consumed_nonces)
+        assert extracted_nonce == case["extractedNonce"], case["name"]
+        assert disposition == case["expectedDisposition"], case["name"]
+
+
 def iso_to_unix(value: str) -> int:
     from datetime import datetime
 
@@ -378,6 +405,9 @@ def main() -> None:
 
     verify_broker_registration_control_frames(data["broker_registration_control_frames"], identity)
     print("broker registration control frames ok")
+
+    verify_trust002_jti_nonce_binding(data["trust002_jti_nonce_binding"])
+    print("trust002 jti nonce binding ok")
 
     verify_device_revoke_control_frame(data["broker_device_revoke_control_frame"], identity)
     print("broker device revoke control frame ok")
