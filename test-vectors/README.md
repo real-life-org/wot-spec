@@ -263,4 +263,4 @@ Die folgenden Vektoren sind in [`phase-1-interop.md`](phase-1-interop.md) dokume
 - **Admin Key Ableitung** - HKDF mit Space-ID im Info-String.
 - **Personal Doc Key** - deterministische Document-ID.
 - **SD-JWT VC** (HMC) - Trust-List-Signatur, Disclosure-Hashes, Selective Disclosure.
-- **Device Delegation** - DeviceKeyBinding-JWS, Delegated-Attestation-Bundle und Negativfaelle fuer abgelaufene Delegation, fehlende Capability und `kid`-Mismatch.
+- **Device Delegation** - DeviceKeyBinding-JWS, Delegated-Attestation-Bundle und Negativfaelle fuer abgelaufene Delegation, fehlende Capability, `kid`-Mismatch und fractional-second DeviceKeyBinding-Gueltigkeitsgrenzen.
