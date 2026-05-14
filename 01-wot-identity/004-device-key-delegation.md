@@ -94,7 +94,7 @@ Ein DeviceKeyBinding autorisiert einen Device Key, fuer eine Identity DID bestim
 
 `validFrom` und `validUntil` begrenzen nur die Signaturberechtigung des Device Keys. Sie sind kein Gueltigkeitsfenster fuer Attestations, die waehrend des Delegationszeitraums ausgestellt wurden. `iat` im Binding ist der Ausstellungszeitpunkt des Bindings; `iat` in der Attestation ist der Ausstellungszeitpunkt der Attestation.
 
-`validFrom` und `validUntil` im DeviceKeyBinding MUESSEN RFC3339-`date-time`-Strings mit expliziter Zeitzone (`Z` oder `+/-HH:MM`) und Ganzsekunden-Praezision sein. Fractional seconds sind in DeviceKeyBinding-Gueltigkeitsgrenzen nicht erlaubt. Das `iat` einer delegierten Attestation MUSS ein nicht-negativer ganzzahliger JWT NumericDate in Sekunden sein; fractional NumericDate-Werte sind fuer diesen Device-Delegation-Vergleich nicht erlaubt.
+`validFrom` und `validUntil` im DeviceKeyBinding MUESSEN RFC3339-`date-time`-Strings mit expliziter Zeitzone (`Z` oder `+/-HH:MM`) und Ganzsekunden-Praezision sein. Fractional seconds DUERFEN in DeviceKeyBinding-Gueltigkeitsgrenzen nicht vorkommen. Das `iat` einer delegierten Attestation MUSS ein nicht-negativer ganzzahliger JWT NumericDate in Sekunden sein; fractional NumericDate-Werte DUERFEN fuer diesen Device-Delegation-Vergleich nicht verwendet werden.
 
 Verifier MUESSEN Zeitvergleiche als Instant-Vergleich durchfuehren: `validFrom` und `validUntil` werden inklusive Zeitzonen-Offset auf UTC normalisiert, `iat` wird als Unix-Sekunde auf denselben UTC-Zeitstrahl abgebildet. Die Delegation ist fuer die Attestation genau dann zeitlich gueltig, wenn `validFrom <= iat <= validUntil` gilt. Beide Grenzen sind inklusive; Gleichheit an `validFrom` oder `validUntil` MUSS akzeptiert werden.
 
