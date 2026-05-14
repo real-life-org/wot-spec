@@ -100,7 +100,7 @@ Assertions:
 - `_sd_alg` is `sha-256`.
 - `iss` is a DID that resolves to the verification key.
 - The compact form reconstructs as `<issuer_signed_jwt>~<disclosure>~`.
-- The verifier accepts an application/profile-configured expected `vct` and rejects any byte-different `vct`. The vector `vct` (`https://humanmoney.example/credentials/TrustList/v1`) is example-only; `wot-hmc@0.1` does not pin a normative production `vct`. See `05-hmc-extensions/H01-trust-scores.md#sd-jwt-vc-validation-muss`.
+- Verifier MUESSEN einen konfigurierten erwarteten `vct` erhalten und MUESSEN ablehnen, wenn dieser fehlt oder leer ist. Verifier MUESSEN ebenfalls jeden byte-ungleichen `vct` ablehnen. Der Vektor-`vct` (`https://humanmoney.example/credentials/TrustList/v1`) ist nur Beispielmaterial; `wot-hmc@0.1` pinnt keinen normativen Produktions-`vct`. Diese Konfigurationspflicht wird nicht durch den Positivvektor allein validiert und braucht Negativtests oder einen Conformance-Harness. Siehe `05-hmc-extensions/H01-trust-scores.md#sd-jwt-vc-validation-muss`.
 
 This is vector-level SD-JWT VC coverage, not a full SD-JWT VC implementation.
 
