@@ -9,7 +9,11 @@
     "did": { "type": "string", "pattern": "^did:[a-z0-9]+:.+" },
     "name": { "type": "string", "minLength": 1 },
     "enc": { "type": "string", "pattern": "^[A-Za-z0-9_-]+$" },
-    "nonce": { "type": "string", "format": "uuid" },
+    "nonce": {
+      "type": "string",
+      "format": "uuid",
+      "pattern": "^[0-9a-f]{8}-[0-9a-f]{4}-4[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$"
+    },
     "ts": { "type": "string", "format": "date-time" },
     "broker": { "type": "string", "pattern": "^(wss?|https?)://.+" }
   }
