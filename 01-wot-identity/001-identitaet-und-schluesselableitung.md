@@ -110,7 +110,7 @@ Der geplante Upgrade-Pfad ist deshalb stufenweise: Phase 2 erlaubt Device Keys �
 
 ### Seed-Schutz auf dem Gerät
 
-Der Seed MUSS auf dem Gerät angemessen geschützt werden und DARF über Persistenz oder Anwendungs-/Port-APIs nicht im Klartext extrahierbar sein. Kurzlebiger Seed-Klartext im Prozessspeicher ist nur im engen Rahmen der Runtime-Schicht unten zulässig. Wer den Seed hat, hat die vollständige Kontrolle über die Identität — einschließlich aller Schlüssel und aller Entschlüsselungsfähigkeiten.
+Der Seed MUSS auf dem Gerät gemäß den Conformance-Anforderungen unten geschützt werden und DARF über Persistenz oder Anwendungs-/Port-APIs nicht im Klartext extrahierbar sein. Kurzlebiger Seed-Klartext im Prozessspeicher ist nur im engen Rahmen der Runtime-Schicht unten zulässig. Wer den Seed hat, hat die vollständige Kontrolle über die Identität — einschließlich aller Schlüssel und aller Entschlüsselungsfähigkeiten.
 
 Wie der Schutz konkret umgesetzt wird — Verschlüsselung at rest, Biometrie, Hardware-Keystore, Passwort — hängt vom jeweiligen Gerät und der Plattform ab und ist Sache der Implementierung.
 
@@ -121,6 +121,8 @@ Wie der Schutz konkret umgesetzt wird — Verschlüsselung at rest, Biometrie, H
 1. **Persistence MUSS** — Seed-Material at rest MUSS verschlüsselt gespeichert werden. Akzeptable Unlock-Faktoren sind z.B. Passphrase, Biometrie oder OS-Keychain. Eine Klartext-Persistierung des Seeds (z.B. ungeschütztes IndexedDB-Feld, Klartextdatei, Klartext-`localStorage`) ist nicht konform.
 2. **API Surface MUSS** — Die Anwendungs-/Port-API DARF keine Operation anbieten, die rohe Seed-Bytes an Anwendungs- oder Workflow-Code zurückgibt. Es DARF kein `getSeed()`, kein `export()` und kein vergleichbarer Aufruf existieren. Seed-nutzende Operationen (Signieren, Subkey-Ableitung, Entschlüsseln) werden stattdessen angeboten; der Seed bleibt hinter der Port-Grenze.
 3. **Runtime DARF + SOLLTE** — Implementierungen DÜRFEN Seed-Klartext kurzfristig im Prozessspeicher halten, solange Ableitung oder Signatur dies erfordern. Sie SOLLTEN diese Lebensdauer minimieren und SOLLTEN auf Plattformen mit entsprechender Unterstützung non-extractable Key-Handles verwenden (z.B. Web Crypto `Ed25519`/`X25519` `CryptoKey` mit `extractable: false`, iOS Keychain, Android Keystore, Secure Enclave). Die konkrete Plattformfunktion ist nicht normativ — verlangt ist die Minimierung extrahierbarer Klartext-Lebensdauer, nicht ein bestimmter Hersteller-Mechanismus.
+
+Hinweis: Die Anforderungen in **Persistence MUSS**, **API Surface MUSS** und **Runtime DARF + SOLLTE** sind nicht vollständig durch Schema oder deterministische Testvektoren validierbar, da sie Speicherung, API-Design und Laufzeitverhalten betreffen. Konformität erfordert daher zusätzlich eine Implementierungs-/Sicherheitsprüfung, z.B. Review der Port-API, Nachweis der verschlüsselten Persistenz und runtime-spezifische Prüfung der Klartext-Lebensdauer.
 
 ## Migration (Schlüsselrotation)
 
