@@ -64,6 +64,8 @@ Alices gesamte Vertrauensliste als ein signiertes Dokument mit mehreren Einträg
 
 **Issuer-signed JWT Payload** (was Alice signiert):
 
+Der `vct`-Wert `https://humanmoney.example/credentials/TrustList/v1` in diesem Beispiel und in den Testvektoren ist beispielhaft und nutzt bewusst die reservierte `.example`-Domain (RFC 2606). Er ist kein normativer Produktions-`vct` für `wot-hmc@0.1`; siehe Abschnitt [SD-JWT VC Validation (MUSS)](#sd-jwt-vc-validation-muss).
+
 ```json
 {
   "iss": "did:key:z6Mk...alice",
@@ -157,7 +159,9 @@ Vertrauenslisten werden via Gossip verteilt:
 Verifier einer Trust-List MÜSSEN mindestens prüfen:
 
 1. **JWT-Signatur** verifizieren (Ed25519, `iss` → DID-Dokument via [Identity 003](../01-wot-identity/003-did-resolution.md) resolve())
-2. **`vct`** (Verifiable Credential Type) prüfen — MUSS mit dem erwarteten Credential-Typ übereinstimmen
+2. **`vct`** (Verifiable Credential Type) prüfen — `wot-hmc@0.1` legt keinen festen normativen `vct`-Wert für produktive Trust-Lists fest. Verifier MÜSSEN bei jeder Trust-List-Verifikation einen erwarteten `vct`-Wert als expliziten Eingabeparameter aus Anwendungs- oder Profil-Konfiguration erhalten. Verifier MÜSSEN die Trust-List ablehnen, wenn dieser erwartete `vct`-Wert fehlt oder leer ist, und MÜSSEN sie ebenfalls ablehnen, wenn der `vct`-Wert des Issuer-signed JWT byte-genau von der konfigurierten Erwartung abweicht. Verifier DÜRFEN den Beispiel-Wert `https://humanmoney.example/credentials/TrustList/v1` aus Beispielen und Testvektoren NICHT als impliziten Default behandeln, wenn die Konfiguration keinen `vct` liefert; dieser Wert nutzt bewusst die reservierte `.example`-Domain (RFC 2606) und ist ausschließlich Beispiel- und Testvektor-Material.
+
+   **Validierbarkeit:** Der byte-genaue `vct`-Abgleich im Issuer-signed JWT kann durch positive Vektoren belegt werden; fehlende oder leere erwartete `vct`-Werte sowie die verbotene Default-Behandlung des Beispiel-`vct` MÜSSEN zusätzlich durch Negativtests oder einen Conformance-Harness geprüft werden.
 3. **`exp`** prüfen — nicht abgelaufen
 4. **`iat`** prüfen — liegt in der Vergangenheit
 5. **Disclosure-Hashes** prüfen — jede Disclosure MUSS gegen den korrespondierenden `_sd`-Digest im JWT verifiziert werden

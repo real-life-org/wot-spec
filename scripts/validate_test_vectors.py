@@ -444,6 +444,11 @@ def main() -> None:
     assert digest == sd["disclosure_digest"]
     verify_jws(sd["issuer_signed_jwt"], ed_pub)
     assert sd["sd_jwt_compact"] == f"{sd['issuer_signed_jwt']}~{disclosure.decode('ascii')}~"
+    _, sd_payload = decode_jws(sd["issuer_signed_jwt"])
+    # H01 #sd-jwt-vc-validation-muss: vct is application/profile-configured, not pinned by wot-hmc@0.1.
+    # The vector value uses the reserved .example domain (RFC 2606) and is intentionally non-normative.
+    assert sd_payload["vct"] == "https://humanmoney.example/credentials/TrustList/v1"
+    assert sd_payload["_sd_alg"] == "sha-256"
     print("sd-jwt vc ok")
 
     device_data = json.loads(DEVICE_VECTOR.read_text(encoding="utf-8"))
