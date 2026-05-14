@@ -88,11 +88,15 @@ Ein DeviceKeyBinding autorisiert einen Device Key, fuer eine Identity DID bestim
 | `devicePublicKeyMultibase` | Ja | Ed25519 Public Key des Devices, redundant fuer Offline-Pruefung |
 | `deviceName` | Nein | Lokaler Anzeigename; nicht sicherheitskritisch |
 | `capabilities` | Ja | Zweckgebundene Signaturrechte |
-| `validFrom` | Ja | Beginn der Device-Signaturberechtigung |
-| `validUntil` | Ja | Ende der Device-Signaturberechtigung |
+| `validFrom` | Ja | Beginn der Device-Signaturberechtigung als RFC3339 `date-time` mit expliziter Zeitzone und Ganzsekunden-Praezision |
+| `validUntil` | Ja | Ende der Device-Signaturberechtigung als RFC3339 `date-time` mit expliziter Zeitzone und Ganzsekunden-Praezision |
 | `iat` | Ja | Ausstellungszeitpunkt des Bindings als Unix-Timestamp |
 
-`validFrom` und `validUntil` begrenzen nur die Signaturberechtigung des Device Keys. Sie sind kein Gueltigkeitsfenster fuer Attestations, die waehrend des Delegationszeitraums ausgestellt wurden. `iat` im Binding ist der Ausstellungszeitpunkt des Bindings; `iat` in der Attestation ist der Ausstellungszeitpunkt der Attestation. Verifier MUESSEN Zeitvergleiche als Instant-Vergleich durchfuehren, also ISO-8601-Zeitpunkte und Unix-Timestamps vor dem Vergleich normalisieren.
+`validFrom` und `validUntil` begrenzen nur die Signaturberechtigung des Device Keys. Sie sind kein Gueltigkeitsfenster fuer Attestations, die waehrend des Delegationszeitraums ausgestellt wurden. `iat` im Binding ist der Ausstellungszeitpunkt des Bindings; `iat` in der Attestation ist der Ausstellungszeitpunkt der Attestation.
+
+`validFrom` und `validUntil` im DeviceKeyBinding MUESSEN RFC3339-`date-time`-Strings mit expliziter Zeitzone (`Z` oder `+/-HH:MM`) und Ganzsekunden-Praezision sein. Fractional seconds DUERFEN in DeviceKeyBinding-Gueltigkeitsgrenzen nicht vorkommen. Das `iat` einer delegierten Attestation MUSS ein nicht-negativer ganzzahliger JWT NumericDate in Sekunden sein; fractional NumericDate-Werte DUERFEN fuer diesen Device-Delegation-Vergleich nicht verwendet werden.
+
+Verifier MUESSEN Zeitvergleiche als Instant-Vergleich durchfuehren: `validFrom` und `validUntil` werden inklusive Zeitzonen-Offset auf UTC normalisiert, `iat` wird als Unix-Sekunde auf denselben UTC-Zeitstrahl abgebildet. Die Delegation ist fuer die Attestation genau dann zeitlich gueltig, wenn `validFrom <= iat <= validUntil` gilt. Beide Grenzen sind inklusive; Gleichheit an `validFrom` oder `validUntil` MUSS akzeptiert werden.
 
 ### Capabilities
 
@@ -148,7 +152,7 @@ Ein Verifier einer delegierten Attestation MUSS:
 6. `devicePublicKeyMultibase` gegen den aus `deviceKid` aufgeloesten Public Key pruefen.
 7. Attestation-JWS mit dem Device Key verifizieren.
 8. `issuer` / `iss` der Attestation gegen `iss` des Bindings pruefen.
-9. `iat` der Attestation pruefen und sicherstellen, dass `validFrom <= iat <= validUntil` als normalisierter Instant-Vergleich gilt.
+9. `iat` der Attestation als nicht-negativen ganzzahligen JWT NumericDate pruefen und sicherstellen, dass `validFrom <= iat <= validUntil` als normalisierter inklusiver UTC-Instant-Vergleich gilt.
 10. Benoetigte Capability pruefen: `sign-attestation` oder `sign-verification`.
 11. Die normalen Trust-001-Regeln fuer Attestation-Payload, `nbf`, optionales `exp` und optionales `credentialStatus` anwenden.
 
@@ -182,9 +186,12 @@ verifyDelegatedAttestationBundle(bundle, requiredCapability):
   require requiredCapability in bindingPayload.capabilities
   require attPayload.iat exists
 
-  attestationTime = instantFromUnix(attPayload.iat)
-  require instantFromIso(bindingPayload.validFrom) <= attestationTime
-  require attestationTime <= instantFromIso(bindingPayload.validUntil)
+  require attPayload.iat is non-negative integer NumericDate
+  attestationTime = instantFromUnixSeconds(attPayload.iat)
+  require bindingPayload.validFrom is RFC3339 date-time with explicit timezone and whole seconds
+  require bindingPayload.validUntil is RFC3339 date-time with explicit timezone and whole seconds
+  require instantFromRfc3339WholeSeconds(bindingPayload.validFrom) <= attestationTime
+  require attestationTime <= instantFromRfc3339WholeSeconds(bindingPayload.validUntil)
 
   apply Trust-001 verification rules to attPayload
   return ok

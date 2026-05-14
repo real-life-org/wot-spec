@@ -19,6 +19,9 @@ B58_ALPHABET = "123456789ABCDEFGHJKLMNPQRSTUVWXYZabcdefghijkmnopqrstuvwxyz"
 TRUST002_JTI_RE = re.compile(
     r"^urn:uuid:([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12})$"
 )
+RFC3339_WHOLE_SECOND_RE = re.compile(
+    r"^\d{4}-\d{2}-\d{2}[Tt]\d{2}:\d{2}:\d{2}([Zz]|[+-]\d{2}:\d{2})$"
+)
 
 
 def b64u_decode(value: str) -> bytes:
@@ -294,7 +297,9 @@ def verify_trust002_jti_nonce_binding(vector: dict) -> None:
 def iso_to_unix(value: str) -> int:
     from datetime import datetime
 
-    return int(datetime.fromisoformat(value.replace("Z", "+00:00")).timestamp())
+    if not RFC3339_WHOLE_SECOND_RE.fullmatch(value):
+        raise ValueError("expected explicit-timezone whole-second RFC3339 date-time")
+    return int(datetime.fromisoformat(value.replace("Z", "+00:00").replace("z", "+00:00")).timestamp())
 
 
 def verify_delegated_attestation_bundle(bundle: dict, required_capability: str = "sign-attestation") -> None:
@@ -322,6 +327,7 @@ def verify_delegated_attestation_bundle(bundle: dict, required_capability: str =
     assert att_payload["iss"] == binding_payload["iss"]
     assert required_capability in binding_payload["capabilities"]
     assert "iat" in att_payload
+    assert type(att_payload["iat"]) is int and att_payload["iat"] >= 0
     assert iso_to_unix(binding_payload["validFrom"]) <= att_payload["iat"] <= iso_to_unix(binding_payload["validUntil"])
 
 
