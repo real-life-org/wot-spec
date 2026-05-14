@@ -39,7 +39,7 @@ Jeder User zeigt einen QR-Code, der als Challenge fungiert. Er enthält die Info
   "did": "did:key:z6MkhaXgBZDvotDkL5257faiztiGiC2QtKLGpbnnEGta2doK",
   "name": "Alice",
   "enc": "<Base64URL-kodierter X25519 Public Key, 32 Bytes>",
-  "nonce": "<UUID>",
+  "nonce": "<kanonische lowercase UUID v4>",
   "ts": "<ISO 8601>",
   "broker": "wss://broker.example.com"
 }
@@ -50,11 +50,13 @@ Jeder User zeigt einen QR-Code, der als Challenge fungiert. Er enthält die Info
 | `did` | DID | Ja | Die DID des Users (enthält den Ed25519 Signing Key) |
 | `name` | String | Ja | Anzeigename |
 | `enc` | String | Ja | X25519 Encryption Public Key (Base64URL, 32 Bytes) |
-| `nonce` | UUID | Ja | Einmalige Nonce für diese Challenge |
+| `nonce` | UUID v4 | Ja | Einmalige Nonce für diese Challenge |
 | `ts` | ISO 8601 | Ja | Zeitstempel der Challenge-Erstellung |
 | `broker` | URL | Nein | Broker-URL für die Zustellung von Nachrichten |
 
 Der QR-Code enthält den JSON-String direkt (kein URL-Encoding, keine externe URL).
+
+Das `nonce`-Feld einer QR-Challenge MUSS als kanonische lowercase UUID v4 serialisiert werden: 36 ASCII-Zeichen, Hex-Ziffern `0-9a-f`, Bindestriche in der `8-4-4-4-12`-Gruppierung, Versions-Nibble `4` und Variant-Nibble `8`, `9`, `a` oder `b`. Andere UUID-Versionen, uppercase Hex-Ziffern und nicht-kanonische UUID-Schreibweisen sind im QR-Challenge-Feld ungueltig. Diese Anforderung betrifft die QR-Challenge-Serialisierung; die Verification-Attestation-`jti`-Grammatik wird hier nicht geaendert.
 
 **Warum kein separater Ed25519 Public Key?** Der Signing Key ist in der `did:key` kodiert — er muss nicht zusätzlich übertragen werden.
 
@@ -250,7 +252,7 @@ verification-jti = "urn:uuid:" uuid
 uuid = 8HEXDIG "-" 4HEXDIG "-" 4HEXDIG "-" 4HEXDIG "-" 12HEXDIG
 ```
 
-Der `uuid`-Teil MUSS genau die QR-Challenge-Nonce sein. Implementierungen MUESSEN die `jti` gegen den gesamten String matchen, die UUID-Gruppe extrahieren und fuer Vergleich sowie Nonce-History auf Kleinbuchstaben normalisieren. UUID-Buchstaben `A-F` in der `jti` oder in der lokal aktiven Challenge sind deshalb gueltig, solange die normalisierten Werte exakt gleich sind.
+Der `uuid`-Teil MUSS genau die QR-Challenge-Nonce sein. Implementierungen MUESSEN die `jti` gegen den gesamten String matchen, die UUID-Gruppe extrahieren und fuer Vergleich sowie Nonce-History auf Kleinbuchstaben normalisieren. UUID-Buchstaben `A-F` in der `jti` sind deshalb gueltig, solange der normalisierte Wert exakt der lokal aktiven Challenge-Nonce entspricht.
 
 Fuer das Acceptance Gate gilt:
 
