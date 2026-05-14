@@ -241,7 +241,8 @@ Eine konforme Implementierung MUSS fuer die jeweils beanspruchten Profile:
 4. Fuer alle JCS-Test-Vektoren dieselben SHA-256 Hashes erzeugen.
 5. Den Attestation-VC-JWS aus den Phase-1-Interop-Vektoren verifizieren koennen.
 6. Die Phase-1-Interop-Vektoren in [`phase-1-interop.md`](phase-1-interop.md) reproduzieren koennen.
-7. Fuer `wot-device-delegation@0.1`: die Device-Delegation-Vektoren in [`device-delegation.json`](device-delegation.json) verifizieren und die Negativfaelle ablehnen koennen.
+7. Fuer `wot-sync@0.1` MUSS eine Implementierung den `device-revoke`-Control-Frame mit `revocationJws` akzeptieren und malformed Frame-Formen ablehnen.
+8. Fuer `wot-device-delegation@0.1` MUSS eine Implementierung die Device-Delegation-Vektoren in [`device-delegation.json`](device-delegation.json) verifizieren und Negativfaelle ablehnen.
 
 Wenn diese Tests bestehen, ist die kryptographische Basis interoperabel.
 
@@ -254,6 +255,7 @@ Die folgenden Vektoren sind in [`phase-1-interop.md`](phase-1-interop.md) dokume
 - **ECIES** - X25519 ECDH + HKDF + AES-256-GCM (Peer-to-Peer-Verschluesselung).
 - **Space Content Key** - Deterministische Nonce aus `(deviceId, seq)`, Verschluesselung/Entschluesselung.
 - **Broker Control-Frame Registrierung** - `register`/`challenge`/`challenge-response`/`registered`-Handshake mit JCS-Transcript und Ed25519-Signatur.
+- **Broker Control-Frame Device-Revoke** - geschlossener `device-revoke`-Frame mit `revocationJws`, innerem JWS-Payload und malformed Top-Level-Formen.
 - **Space Capability** - JWS-Signatur mit `spaceCapabilitySigningKey`, Broker-Verifikation.
 - **DID-Dokument** - `resolve()` fuer `did:key` plus Bootstrap-`keyAgreement`.
 - **Admin Key Ableitung** - HKDF mit Space-ID im Info-String.
