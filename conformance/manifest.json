@@ -115,7 +115,8 @@
       "test_vectors": [
         {
           "file": "test-vectors/phase-1-interop.json",
-          "sections": ["sd_jwt_vc_trust_list"]
+          "sections": ["sd_jwt_vc_trust_list"],
+          "notes": "Includes H01 Trust List exp/iat NumericDate boundary and invalid-claim cases under sd_jwt_vc_trust_list.numericdate_semantics."
         }
       ]
     }

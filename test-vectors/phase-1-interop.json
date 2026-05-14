@@ -594,6 +594,33 @@
     ],
     "disclosure_digest": "IgJ4myRVC6HCY4dk1zsagaGdOlXsm_21Uj7EFPQ74sY",
     "issuer_signed_jwt": "eyJhbGciOiJFZERTQSIsImtpZCI6ImRpZDprZXk6ejZNa28zWkVqS0pXUUFNNW5EWEtvWjlqRXJ2dnhiV2JZZ1M4S0pYWXBDNUhidThhI3NpZy0wIiwidHlwIjoidmMrc2Qtand0In0.eyJfc2RfYWxnIjoic2hhLTI1NiIsImVudHJpZXMiOlt7Il9zZCI6WyJJZ0o0bXlSVkM2SENZNGRrMXpzYWdhR2RPbFhzbV8yMVVqN0VGUFE3NHNZIl19XSwiZXhwIjoxODA4MDUwODAwLCJpYXQiOjE3NzY1MTQ4MDAsImlzcyI6ImRpZDprZXk6ejZNa28zWkVqS0pXUUFNNW5EWEtvWjlqRXJ2dnhiV2JZZ1M4S0pYWXBDNUhidThhIiwidmN0IjoiaHR0cHM6Ly9odW1hbm1vbmV5LmV4YW1wbGUvY3JlZGVudGlhbHMvVHJ1c3RMaXN0L3YxIiwidmVyc2lvbiI6MTJ9.yDMUg74umfxSnD7RJUSIj3NYu7ml6wSv9W7tLocVdPBIJ0hil-QuIT9lkAFSyGV9Qa2ctEBTon8wxNvbUwuRCg",
-    "sd_jwt_compact": "eyJhbGciOiJFZERTQSIsImtpZCI6ImRpZDprZXk6ejZNa28zWkVqS0pXUUFNNW5EWEtvWjlqRXJ2dnhiV2JZZ1M4S0pYWXBDNUhidThhI3NpZy0wIiwidHlwIjoidmMrc2Qtand0In0.eyJfc2RfYWxnIjoic2hhLTI1NiIsImVudHJpZXMiOlt7Il9zZCI6WyJJZ0o0bXlSVkM2SENZNGRrMXpzYWdhR2RPbFhzbV8yMVVqN0VGUFE3NHNZIl19XSwiZXhwIjoxODA4MDUwODAwLCJpYXQiOjE3NzY1MTQ4MDAsImlzcyI6ImRpZDprZXk6ejZNa28zWkVqS0pXUUFNNW5EWEtvWjlqRXJ2dnhiV2JZZ1M4S0pYWXBDNUhidThhIiwidmN0IjoiaHR0cHM6Ly9odW1hbm1vbmV5LmV4YW1wbGUvY3JlZGVudGlhbHMvVHJ1c3RMaXN0L3YxIiwidmVyc2lvbiI6MTJ9.yDMUg74umfxSnD7RJUSIj3NYu7ml6wSv9W7tLocVdPBIJ0hil-QuIT9lkAFSyGV9Qa2ctEBTon8wxNvbUwuRCg~WyJzYWx0LTAwMDEiLCJlbnRyeSIseyJob3BMaW1pdCI6MiwiaWQiOiJkaWQ6a2V5Ono2TWtvM1pFaktKV1FBTTVuRFhLb1o5akVydnZ4YldiWWdTOEtKWFlwQzVIYnU4YSIsImxpYWJpbGl0eSI6IjQuMGgiLCJ0cnVzdExldmVsIjozfV0~"
+    "sd_jwt_compact": "eyJhbGciOiJFZERTQSIsImtpZCI6ImRpZDprZXk6ejZNa28zWkVqS0pXUUFNNW5EWEtvWjlqRXJ2dnhiV2JZZ1M4S0pYWXBDNUhidThhI3NpZy0wIiwidHlwIjoidmMrc2Qtand0In0.eyJfc2RfYWxnIjoic2hhLTI1NiIsImVudHJpZXMiOlt7Il9zZCI6WyJJZ0o0bXlSVkM2SENZNGRrMXpzYWdhR2RPbFhzbV8yMVVqN0VGUFE3NHNZIl19XSwiZXhwIjoxODA4MDUwODAwLCJpYXQiOjE3NzY1MTQ4MDAsImlzcyI6ImRpZDprZXk6ejZNa28zWkVqS0pXUUFNNW5EWEtvWjlqRXJ2dnhiV2JZZ1M4S0pYWXBDNUhidThhIiwidmN0IjoiaHR0cHM6Ly9odW1hbm1vbmV5LmV4YW1wbGUvY3JlZGVudGlhbHMvVHJ1c3RMaXN0L3YxIiwidmVyc2lvbiI6MTJ9.yDMUg74umfxSnD7RJUSIj3NYu7ml6wSv9W7tLocVdPBIJ0hil-QuIT9lkAFSyGV9Qa2ctEBTon8wxNvbUwuRCg~WyJzYWx0LTAwMDEiLCJlbnRyeSIseyJob3BMaW1pdCI6MiwiaWQiOiJkaWQ6a2V5Ono2TWtvM1pFaktKV1FBTTVuRFhLb1o5akVydnZ4YldiWWdTOEtKWFlwQzVIYnU4YSIsImxpYWJpbGl0eSI6IjQuMGgiLCJ0cnVzdExldmVsIjozfV0~",
+    "numericdate_semantics": {
+      "notes": "Closes real-life-org/wot-spec#40. Pure HMC H01 Trust List exp/iat claim-shape and boundary disposition vectors. Payloads here are exercised against the H01 #sd-jwt-vc-validation-muss exp/iat checks only; they are not re-signed and do not exercise JWT signature verification, _sd_alg, vct, or disclosure verification. Verifier time is the floor-of-milliseconds Unix-seconds value below.",
+      "verification_time_unix_seconds": 1776852000,
+      "valid_payload_signed_vector": { "iat": 1776514800, "exp": 1808050800 },
+      "boundary_cases": [
+        {
+          "name": "iat-equal-verification-time-is-accepted",
+          "payload": { "iat": 1776852000, "exp": 1776852001 },
+          "expected_disposition": "accept"
+        }
+      ],
+      "invalid_claim_cases": [
+        { "name": "missing-exp", "payload": { "iat": 1776514800 }, "expected_error": "missing-exp" },
+        { "name": "missing-iat", "payload": { "exp": 1808050800 }, "expected_error": "missing-iat" },
+        { "name": "string-exp", "payload": { "iat": 1776514800, "exp": "1808050800" }, "expected_error": "invalid-exp" },
+        { "name": "boolean-exp", "payload": { "iat": 1776514800, "exp": true }, "expected_error": "invalid-exp" },
+        { "name": "fractional-exp", "payload": { "iat": 1776514800, "exp": 1808050800.5 }, "expected_error": "invalid-exp" },
+        { "name": "negative-exp", "payload": { "iat": 1776514800, "exp": -1 }, "expected_error": "invalid-exp" },
+        { "name": "expired-exp", "payload": { "iat": 1776514800, "exp": 1776851999 }, "expected_error": "expired-exp" },
+        { "name": "exp-equal-verification-time-is-expired", "payload": { "iat": 1776514800, "exp": 1776852000 }, "expected_error": "expired-exp" },
+        { "name": "string-iat", "payload": { "iat": "1776514800", "exp": 1808050800 }, "expected_error": "invalid-iat" },
+        { "name": "boolean-iat", "payload": { "iat": false, "exp": 1808050800 }, "expected_error": "invalid-iat" },
+        { "name": "fractional-iat", "payload": { "iat": 1776514800.5, "exp": 1808050800 }, "expected_error": "invalid-iat" },
+        { "name": "negative-iat", "payload": { "iat": -1, "exp": 1808050800 }, "expected_error": "invalid-iat" },
+        { "name": "future-iat", "payload": { "iat": 1776852001, "exp": 1808050800 }, "expected_error": "future-iat" }
+      ]
+    }
   }
 }
