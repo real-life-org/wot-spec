@@ -253,7 +253,7 @@ Die folgenden Vektoren sind in [`phase-1-interop.md`](phase-1-interop.md) dokume
 
 - **WoT Plaintext Envelope** - DIDComm-v2-kompatibler Envelope, validiert mit etablierten DIDComm-v2-Libraries.
 - **Attestation VC-JWS** - W3C VC 2.0 Payload mit `typ: "vc+jwt"` und `kid`.
-- **Trust 002 `jti` Nonce Binding** - Full-String-`urn:uuid:<uuid>`-Grammatik, UUID-Kleinschreibungsnormalisierung, Replay- und Unbound-Klassifikation.
+- **Trust 002 `jti` Nonce Binding** - Full-String-`urn:uuid:<uuid>`-Grammatik mit lowercase Prefix-Match, UUID-Kleinschreibungsnormalisierung, Replay- und Unbound-Klassifikation.
 - **ECIES** - X25519 ECDH + HKDF + AES-256-GCM (Peer-to-Peer-Verschluesselung).
 - **Space Content Key** - Deterministische Nonce aus `(deviceId, seq)`, Verschluesselung/Entschluesselung.
 - **Broker Control-Frame Registrierung** - `register`/`challenge`/`challenge-response`/`registered`-Handshake mit JCS-Transcript und Ed25519-Signatur.

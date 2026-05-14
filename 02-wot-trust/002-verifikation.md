@@ -248,11 +248,11 @@ Jede Partei erstellt eine Verification-Attestation für die andere — als JWS-s
 Die `jti` (Attestation-ID) einer online nonce-gebundenen Verification-Attestation MUSS die Nonce aus dem QR-Code exakt in dieser Form binden:
 
 ```abnf
-verification-jti = "urn:uuid:" uuid
+verification-jti = %s"urn:uuid:" uuid
 uuid = 8HEXDIG "-" 4HEXDIG "-" 4HEXDIG "-" 4HEXDIG "-" 12HEXDIG
 ```
 
-Der `uuid`-Teil MUSS genau die QR-Challenge-Nonce sein. Implementierungen MUESSEN die `jti` gegen den gesamten String matchen, die UUID-Gruppe extrahieren und fuer Vergleich sowie Nonce-History auf Kleinbuchstaben normalisieren. UUID-Buchstaben `A-F` in der `jti` sind deshalb gueltig, solange der normalisierte Wert exakt der lokal aktiven Challenge-Nonce entspricht.
+Der Literal-Prefix `urn:uuid:` in `verification-jti` ist case-sensitiv und MUSS exakt lowercase geschrieben sein. Das ABNF verwendet deshalb den case-sensitiven Literal-Marker `%s`; Implementierungen DUERFEN nicht die standardmaessige case-insensitive ABNF-Literal-Semantik auf den Prefix anwenden. Der `uuid`-Teil MUSS genau die QR-Challenge-Nonce sein. Implementierungen MUESSEN die `jti` gegen den gesamten String matchen, die UUID-Gruppe extrahieren und fuer Vergleich sowie Nonce-History auf Kleinbuchstaben normalisieren. UUID-Buchstaben `A-F` in der `jti` sind deshalb gueltig, solange der normalisierte Wert exakt der lokal aktiven Challenge-Nonce entspricht.
 
 Fuer das Acceptance Gate gilt:
 
@@ -261,6 +261,7 @@ Fuer das Acceptance Gate gilt:
 | `urn:uuid:<active-nonce>` mit beliebiger UUID-Gross-/Kleinschreibung | als nonce-gebundene In-Person-Verifikation akzeptierbar, wenn alle anderen Gates erfuellt sind |
 | `urn:uuid:<consumed-nonce>` | als `nonce-consumed` ablehnen |
 | `urn:uuid:<uuid>`, aber UUID ist weder aktive noch konsumierte Nonce | als ungebundene Remote-Verifikation behandeln |
+| `URN:UUID:<uuid>` oder `Urn:Uuid:<uuid>` mit uppercase oder mixed-case Prefix | als ungebundene Remote-Verifikation behandeln; nicht als In-Person-Beweis akzeptieren und nicht als `nonce-consumed` ablehnen |
 | `jti` mit mehreren UUID-foermigen Tokens | als ungebundene Remote-Verifikation behandeln |
 | `jti` mit zusaetzlichem Prefix/Suffix, falschem URN-Namespace oder ungueltigen Trennzeichen | als ungebundene Remote-Verifikation behandeln |
 
