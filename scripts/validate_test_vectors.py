@@ -302,6 +302,53 @@ def iso_to_unix(value: str) -> int:
     return int(datetime.fromisoformat(value.replace("Z", "+00:00").replace("z", "+00:00")).timestamp())
 
 
+def is_hmc_trust_list_numericdate(value) -> bool:
+    # H01 #sd-jwt-vc-validation-muss items 3/4: NumericDate MUST be a non-negative integer
+    # encoded as a JSON number. JSON booleans MUST NOT be treated as integers.
+    return type(value) is int and value >= 0
+
+
+def evaluate_hmc_trust_list_numericdate_claims(payload: dict, verification_time_seconds: int) -> str | None:
+    if "exp" not in payload:
+        return "missing-exp"
+    if "iat" not in payload:
+        return "missing-iat"
+    if not is_hmc_trust_list_numericdate(payload["exp"]):
+        return "invalid-exp"
+    if not is_hmc_trust_list_numericdate(payload["iat"]):
+        return "invalid-iat"
+    if payload["exp"] <= verification_time_seconds:
+        return "expired-exp"
+    if payload["iat"] > verification_time_seconds:
+        return "future-iat"
+    return None
+
+
+def verify_hmc_trust_list_numericdate_semantics(sd_vector: dict) -> None:
+    semantics = sd_vector["numericdate_semantics"]
+    verification_time = semantics["verification_time_unix_seconds"]
+    assert is_hmc_trust_list_numericdate(verification_time)
+
+    _, signed_payload = decode_jws(sd_vector["issuer_signed_jwt"])
+    expected_valid = semantics["valid_payload_signed_vector"]
+    assert signed_payload["iat"] == expected_valid["iat"]
+    assert signed_payload["exp"] == expected_valid["exp"]
+    assert is_hmc_trust_list_numericdate(signed_payload["iat"])
+    assert is_hmc_trust_list_numericdate(signed_payload["exp"])
+
+    for case in semantics["boundary_cases"]:
+        disposition = evaluate_hmc_trust_list_numericdate_claims(case["payload"], verification_time)
+        expected = case["expected_disposition"]
+        if expected == "accept":
+            assert disposition is None, case["name"]
+        else:
+            assert disposition == expected, case["name"]
+
+    for case in semantics["invalid_claim_cases"]:
+        disposition = evaluate_hmc_trust_list_numericdate_claims(case["payload"], verification_time)
+        assert disposition == case["expected_error"], case["name"]
+
+
 def verify_delegated_attestation_bundle(bundle: dict, required_capability: str = "sign-attestation") -> None:
     assert bundle["type"] == "wot-delegated-attestation-bundle/v1"
 
@@ -449,6 +496,9 @@ def main() -> None:
     # The vector value uses the reserved .example domain (RFC 2606) and is intentionally non-normative.
     assert sd_payload["vct"] == "https://humanmoney.example/credentials/TrustList/v1"
     assert sd_payload["_sd_alg"] == "sha-256"
+    # H01 #sd-jwt-vc-validation-muss items 3/4: real-life-org/wot-spec#40 — Trust List exp/iat
+    # MUST be non-negative integer Unix-seconds NumericDate values.
+    verify_hmc_trust_list_numericdate_semantics(sd)
     print("sd-jwt vc ok")
 
     device_data = json.loads(DEVICE_VECTOR.read_text(encoding="utf-8"))
