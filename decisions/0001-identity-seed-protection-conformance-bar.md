@@ -22,7 +22,7 @@ This decision resolves [wot-spec#45](https://github.com/real-life-org/wot-spec/i
 
 `wot-identity@0.1` seed protection conformance is structured as three layers:
 
-1. **Persistence MUSS** — Ruhendes Seed-Material MUSS verschluesselt gespeichert werden. Zulässige Unlock-Faktoren sind Passphrase, Biometrie oder OS-Keychain-Unlock. Unverschluesselte Seed-Speicherung (plain IndexedDB entry, plain file, plain localStorage, etc.) ist nicht konform.
+1. **Persistence MUSS** — Ruhendes Seed-Material MUSS verschluesselt gespeichert werden. Zulässige Unlock-Faktoren sind beispielsweise Passphrase, Biometrie oder OS-Keychain-Unlock. Unverschluesselte Seed-Speicherung (plain IndexedDB entry, plain file, plain localStorage, etc.) ist nicht konform.
 
 2. **API Surface MUSS** — Die Anwendungs-/Port-API, die Application- und Workflow-Code erreicht, DARF keine Operation enthalten, die rohe Seed-Bytes zurueckgibt. Es DARF kein `getSeed()`, kein `export()`, kein `loadSeed(): Uint8Array` und kein Aequivalent geben. Stattdessen werden seed-nutzende Operationen (sign, derive subkey, decrypt) angeboten; der Seed selbst bleibt hinter der Port-Grenze.
 
