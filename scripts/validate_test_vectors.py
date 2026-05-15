@@ -294,6 +294,69 @@ def verify_trust002_jti_nonce_binding(vector: dict) -> None:
         assert disposition == case["expectedDisposition"], case["name"]
 
 
+MAX_SAFE_INTEGER = (1 << 53) - 1
+
+
+def is_sync_head_seq(value) -> bool:
+    # Phase 1 head seq values are non-negative JSON integers within the JS safe-integer range.
+    # JSON booleans MUST NOT be treated as integers; fractional and negative values are rejected.
+    return type(value) is int and 0 <= value <= MAX_SAFE_INTEGER
+
+
+def derive_sync_start_seq(heads: dict, device_id: str):
+    if device_id not in heads:
+        return 0
+    head = heads[device_id]
+    if not is_sync_head_seq(head):
+        raise ValueError("invalid-head-seq")
+    if head == MAX_SAFE_INTEGER:
+        raise ValueError("sync-head-seq-overflow")
+    return head + 1
+
+
+def evaluate_sync_response_disposition(response: dict) -> str:
+    return "request-next-page" if response["truncated"] else "complete"
+
+
+def compare_sync_heads(left: dict, right: dict) -> str:
+    for seq in list(left.values()) + list(right.values()):
+        if not is_sync_head_seq(seq):
+            raise ValueError("invalid-head-seq")
+    if set(left) != set(right):
+        return "divergent"
+    for device_id, seq in left.items():
+        if right[device_id] != seq:
+            return "divergent"
+    return "consistent"
+
+
+def verify_sync_heads_disposition(vector: dict) -> None:
+    for case in vector["derive_start_seq_cases"]:
+        assert derive_sync_start_seq(case["heads"], case["deviceId"]) == case["expected_start_seq"], case["name"]
+
+    for case in vector["invalid_head_seq_cases"]:
+        try:
+            derive_sync_start_seq(case["heads"], case["deviceId"])
+        except ValueError as exc:
+            assert str(exc) == case["expected_error"], case["name"]
+            continue
+        raise AssertionError(f"invalid head seq accepted: {case['name']}")
+
+    for case in vector["derive_start_seq_overflow_cases"]:
+        try:
+            derive_sync_start_seq(case["heads"], case["deviceId"])
+        except ValueError as exc:
+            assert str(exc) == case["expected_error"], case["name"]
+            continue
+        raise AssertionError(f"overflow case accepted: {case['name']}")
+
+    for case in vector["response_truncation_cases"]:
+        assert evaluate_sync_response_disposition(case["response"]) == case["expected_disposition"], case["name"]
+
+    for case in vector["heads_comparison_cases"]:
+        assert compare_sync_heads(case["left"], case["right"]) == case["expected_disposition"], case["name"]
+
+
 def iso_to_unix(value: str) -> int:
     from datetime import datetime
 
@@ -469,6 +532,9 @@ def main() -> None:
     cap_pub = bytes.fromhex(cap["verification_key_hex"])
     verify_jws(cap["jws"], cap_pub)
     print("capability jws ok")
+
+    verify_sync_heads_disposition(data["sync_heads_disposition"])
+    print("sync heads disposition ok")
 
     admin = data["admin_key_derivation"]
     admin_seed = hkdf(seed, admin["hkdf_info"])

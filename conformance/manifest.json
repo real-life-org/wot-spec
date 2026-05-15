@@ -68,6 +68,7 @@
             "broker_device_revoke_control_frame",
             "space_capability_jws",
             "space_membership_messages",
+            "sync_heads_disposition",
             "admin_key_derivation",
             "personal_doc"
           ]

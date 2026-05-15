@@ -259,6 +259,7 @@ Die folgenden Vektoren sind in [`phase-1-interop.md`](phase-1-interop.md) dokume
 - **Broker Control-Frame Registrierung** - `register`/`challenge`/`challenge-response`/`registered`-Handshake mit JCS-Transcript und Ed25519-Signatur.
 - **Broker Control-Frame Device-Revoke** - geschlossener `device-revoke`-Frame mit `revocationJws`, innerem JWS-Payload und malformed Top-Level-Formen.
 - **Space Capability** - JWS-Signatur mit `spaceCapabilitySigningKey`, Broker-Verifikation.
+- **Sync Heads Disposition** - Schliesst real-life-org/wot-spec#49 fuer Phase 1: reine JSON-Dispositionsvektoren fuer das Ableiten der naechsten `seq` aus `heads`, das Ablehnen ungueltiger Head-`seq`-Werte, den `Number.MAX_SAFE_INTEGER`-Overflow-Guard, die `sync-response`-`truncated`-Disposition (`request-next-page` vs. `complete`) und den Heads-Vergleich (identisch -> `consistent`, abweichende Werte oder fehlende/extra Device-Keys -> `divergent`). Keine Signaturen, keine generierten Bytes. Opake Nicht-UUID-`deviceId`-Keys bleiben bewusst prosegestuetzt und sind nicht durch diesen Abschnitt abgedeckt.
 - **DID-Dokument** - `resolve()` fuer `did:key` plus Bootstrap-`keyAgreement`.
 - **Admin Key Ableitung** - HKDF mit Space-ID im Info-String.
 - **Personal Doc Key** - deterministische Document-ID.
