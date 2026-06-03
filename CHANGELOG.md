@@ -13,6 +13,7 @@ Das Format folgt grob [Keep a Changelog](https://keepachangelog.com/en/1.1.0/). 
 
 ### Changed
 
+- Sync 001 Nonce-Konstruktion: Geltungsbereich der deterministischen Nonce `SHA-256(deviceId || "|" || seq)[0:12]` auf Log-Payloads gemaess Sync 002 eingeschraenkt. Snapshots, Messaging- und Personal-OneShot-Payloads unter demselben Space Content Key muessen eine zufaellige 12-Byte-Nonce verwenden. Konformanzanforderung in `CONFORMANCE.md` ergaenzt. Klaerung adressiert wot-spec#82.
 - Erste Terminologie-Korrekturen in Sync-Dokumenten: `Master Key`/`Space Private Key`/`authorDid` durch aktuelle Begriffe ersetzt.
 - Normative Dokumente in profilbezogene Ordner verschoben und Nummerierung pro Profil neu gestartet (`01-wot-identity/`, `02-wot-trust/`, `03-wot-sync/`).
 - `wot-device-delegation@0.1` als geplantes Phase-2-Profil mit Identity 004, DeviceKeyBinding- und Delegated-Attestation-Bundle-Schemas vorbereitet.
