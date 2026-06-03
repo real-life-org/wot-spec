@@ -84,17 +84,25 @@ AES-256-GCM ist **katastrophal unsicher** wenn dieselbe (Key, Nonce)-Kombination
 Nonce = SHA-256(deviceId || "|" || seq)[0:12]
 ```
 
-Eindeutigkeit folgt aus den Protokoll-Garantien:
+**Geltungsbereich (MUSS):** Die deterministische Nonce-Konstruktion gilt **ausschließlich** für Log-Payloads gemäß [Sync 002](002-sync-protokoll.md) — also Einträge, die als sequenzierter Log-Eintrag `(deviceId, docId, seq)` über das Sync-Protokoll geschrieben werden. Für alle anderen Payloads, die unter demselben Space Content Key verschlüsselt werden (z. B. Full-State-Snapshots, Messaging-Payloads, Personal-Doc-OneShots, sonstige Out-of-Band-Daten), MUSS eine zufällige 12-Byte-Nonce verwendet werden. Implementierungen MÜSSEN die beiden Pfade in der Verschlüsselungs-API getrennt halten — etwa durch zwei separate Funktionen `encryptLogEntry` und `encryptOneShot` —, sodass ein versehentlicher Aufruf der deterministischen Variante außerhalb des Log-Pfades ausgeschlossen ist.
+
+Begründung: Die Sicherheit der deterministischen Nonce hängt davon ab, dass `(deviceId, seq)` unter einem gegebenen Space Content Key niemals zweimal vorkommt. Diese Garantie wird ausschließlich vom Log-Schreibpfad in Sync 002 hergestellt. Würde dieselbe Konstruktion auf Snapshots oder andere Payloads angewendet, die nicht durch den `seq`-Counter des Log-Pfades abgedeckt sind, entstünde ein realer (Key, Nonce)-Reuse-Vektor mit Authentication-Key-Recovery in AES-GCM.
+
+Eindeutigkeit innerhalb des Log-Pfades folgt aus den Protokoll-Garantien:
 
 - `seq` ist monoton aufsteigend pro `deviceId` pro `docId` (siehe [Sync 002](002-sync-protokoll.md))
 - `deviceId` ist per UUID v4 eindeutig pro Device
 - Damit ist `(deviceId, seq)` eindeutig innerhalb eines Dokuments
 - **Jeder Space Content Key wird exakt für eine `docId` verwendet** — ein Space hat genau ein Dokument, ein Dokument hat genau einen Key pro Generation. Derselbe Key wird NIEMALS für mehrere docIds verwendet.
-- Folge: `(Space Content Key, Nonce)` kann nicht kollidieren — die Nonce ist pro docId eindeutig und der Key ist pro docId eindeutig
+- Folge: `(Space Content Key, Nonce)` kann auf dem Log-Pfad nicht kollidieren — die Nonce ist pro docId eindeutig und der Key ist pro docId eindeutig
 
 Voraussetzung: der Client MUSS vor jedem Schreibvorgang den aktuellen `seq`-Stand aus dem Sync-Protokoll abrufen, nicht nur auf lokalen State vertrauen. Bei einer Divergenz (z.B. nach Device-Restore) MUSS der höhere Wert verwendet werden. Siehe [Sync 002](002-sync-protokoll.md#seq-konsistenz-muss).
 
 Deterministische Nonces vermeiden Birthday-Kollisionen zufälliger 96-Bit-Nonces und reduzieren Abhängigkeit von RNG-Qualität.
+
+**Für sonstige Payloads unter einem Space Content Key (Snapshots, Messaging, Personal-OneShot): zufällig**
+
+Snapshots, Messaging-Payloads und Personal-Doc-OneShots werden außerhalb des Log-Schreibpfades unter demselben Space Content Key (oder einem davon abgeleiteten Subkey) verschlüsselt. Für diese Payloads MUSS eine kryptografisch zufällige 12-Byte-Nonce verwendet werden. Implementierungen DÜRFEN für diese Pfade die deterministische Konstruktion NICHT verwenden, auch nicht "aus Konsistenzgründen".
 
 **Für P2P-Verschlüsselung (ECIES): zufällig**
 

@@ -87,6 +87,7 @@ Eine Implementierung ist `wot-sync@0.1`-konform, wenn sie zusaetzlich `wot-ident
 - Gruppen- und Personal-Doc-Payloads vor dem Sync verschluesseln.
 - Implementierungen MUESSEN leere Klartexte und tag-only Ciphertexts fuer ECIES- und Log-Payloads ablehnen.
 - Die Nonce-Konstruktion des jeweiligen Dokuments einhalten.
+- Die deterministische Nonce `SHA-256(deviceId || "|" || seq)[0:12]` ausschliesslich fuer Log-Payloads gemaess Sync 002 verwenden. Snapshots, Messaging- und Personal-OneShot-Payloads unter demselben Space Content Key MUESSEN eine zufaellige 12-Byte-Nonce verwenden. Verschluesselungs-APIs MUESSEN beide Pfade getrennt halten (z. B. `encryptLogEntry` vs. `encryptOneShot`).
 
 ### Log-Sync
 
