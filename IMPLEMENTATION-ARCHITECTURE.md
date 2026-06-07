@@ -31,7 +31,7 @@ Der Pfeil zeigt zur erlaubten Abhaengigkeit: `application` darf `protocol` verwe
 |---|---|---|---|---|
 | `protocol` | Deterministische Spec-Objekte, Encoding, Signatur-/Payload-Verifikation, Testvektor-nahe Funktionen. | Kleine Crypto-Ports, reine Typen. | Storage, Network, CRDT, React, App-Services. | `web-of-trust/packages/wot-core/src/protocol/` |
 | `application` | Use-Cases und Workflows: Identity, Verification, Attestations, Spaces, Sync-Orchestrierung. | `protocol`, `ports`, reine Domain-Typen. | Browser APIs, konkrete Datenbanken, konkrete Broker/CRDT-Adapter, UI. | `web-of-trust/packages/wot-core/src/application/`, Teile von `src/services/` |
-| `ports` | Interfaces fuer Storage, Crypto, Network, Discovery, Replication, Outbox, Authorization, Clock/Random. | Reine Typen aus `protocol` oder Domain-Typen. | Adapter-Implementierungen, UI, Produktlogik. | `web-of-trust/packages/wot-core/src/ports/`, aktuell auch `src/adapters/interfaces/` |
+| `ports` | Interfaces fuer Storage, Crypto, Network, Discovery, Replication, Outbox, Authorization, Clock/Random. | Reine Typen aus `protocol` oder Domain-Typen. | Adapter-Implementierungen, UI, Produktlogik. | `web-of-trust/packages/wot-core/src/ports/` |
 | `adapters` | Konkrete Implementierungen fuer Browser, Server, CRDTs, Broker, Profil-Service, Vault oder lokale Persistenz. | `ports`, ggf. `protocol` fuer Wire-Objekte. | `application`-Use-Cases als harte Abhaengigkeit, UI-State als Protokollautoritaet. | `src/adapters/`, `packages/adapter-yjs/`, `packages/adapter-automerge/`, App-lokale Adapter |
 | `react` | Wiederverwendbare Hooks und Contexts ueber Application-Use-Cases. | `application`-Interfaces, View-Model-Typen. | Rohe Protokollinternals, konkrete Adapter, Browser-Persistenz ausserhalb von App-Wiring. | Derzeit app-lokal in `apps/demo/src/hooks/` und `apps/demo/src/context/` |
 | `app` | Runtime Composition, Routing, Produkt-UI, Konfiguration, Deployment-spezifisches Wiring. | `react`, `application`, konkrete Adapter an der Composition Root. | Eigene Protokollregeln oder alternative Verifikation. | `apps/demo/src/runtime/appRuntime.ts`, `apps/demo/src/App.tsx`, `apps/demo/src/pages/` |
@@ -55,8 +55,7 @@ Der Pfeil zeigt zur erlaubten Abhaengigkeit: `application` darf `protocol` verwe
 | `packages/wot-core/src/protocol/` | Bereits als Spec-nahe Protocol-Core-Schicht angelegt. | Bleibt die deterministische Protokollbasis und orientiert sich an `wot-spec` Test-Vektoren. |
 | `packages/wot-core/src/application/` | Workflows fuer Identity, Verification, Attestations und Spaces. | App-nutzbare Use-Cases, die gegen Ports orchestrieren. |
 | `packages/wot-core/src/services/` | Gemischte Orchestrierung und Infrastrukturhilfen, z.B. Profile, Encrypted Sync, Group Keys, Vault Push. | Aufteilen in Application-Use-Cases oder Adapter-/Infra-Services. |
-| `packages/wot-core/src/adapters/interfaces/` | Effektiv viele Ports, aber unter Adapter-Pfad. | Nach `src/ports/` konsolidieren. |
-| `packages/wot-core/src/adapters/` | Browser-/Memory-/HTTP-/WebSocket-/Storage-Implementierungen im Core-Paket. | Konkrete Adapter klar von Application/Protocol trennen; ggf. eigene Adapter-Entry-Points oder Pakete. |
+| `packages/wot-core/src/adapters/` | Browser-/Memory-/HTTP-/WebSocket-/Storage-Implementierungen im Core-Paket. | Konkrete Adapter klar von Application/Protocol trennen; ggf. eigene Adapter-Entry-Points oder Pakete. (Frueheres `adapters/interfaces/`-Unterverzeichnis ist erledigt — alle Ports liegen in `src/ports/`.) |
 | `packages/adapter-yjs/` | Yjs Personal Doc, Storage, Sync und Replication. | CRDT-/DocStore-/Replication-Adapter, nicht normative Sync-State-Machine-Autoritaet. |
 | `packages/adapter-automerge/` | Automerge Personal Doc, Replication, Storage und Outbox. | CRDT-/DocStore-/Replication-Adapter mit denselben Port-Grenzen wie Yjs. |
 | `apps/demo/` | App, React, Runtime Composition und app-lokale Adapter. | Composition Root plus Produkt-UI; Hooks konsumieren Application-Use-Cases statt rohe Protokollinternals. |
@@ -83,7 +82,7 @@ Diese Punkte sind Implementierungsdebt, keine Spec-Aussagen.
 | Punkt | Aktueller Zustand | Ziel |
 |---|---|---|
 | Root-Export | `packages/wot-core/src/index.ts` exportiert Typen, Protocol, Application, Ports, Services, Adapter und Debug-Hilfen zusammen. | Oeffentliche API in Schichten gliedern; Apps importieren bevorzugt aus klaren Namespaces. |
-| Ports | Nur wenige Interfaces liegen in `src/ports/`; viele liegen in `src/adapters/interfaces/`. | Alle Ports in `src/ports/`, Adapter implementieren sie. |
+| ~~Ports~~ (erledigt) | ~~Nur wenige Interfaces liegen in `src/ports/`; viele liegen in `src/adapters/interfaces/`.~~ Alle 16 Port-Interfaces liegen jetzt in `src/ports/`; `src/adapters/interfaces/` wurde entfernt. | Erreicht. |
 | Browser-Adapter im Core | `HttpDiscoveryAdapter`, `WebSocketMessagingAdapter`, IndexedDB-/LocalStorage-Adapter und Debug-Storage liegen im Core-Paket. | Konkrete Browser-/Storage-Adapter aus Application-Grenze herausziehen. |
 | Services | Teile von `src/services/` sind Application-Orchestrierung, andere Infrastruktur. | Services klassifizieren und verschieben: Use-Case nach `application`, Infrastruktur nach `adapters` oder Server-Pakete. |
 | Crypto-Duplikation | Es gibt `src/protocol/crypto/` und `src/crypto/`. | Ein Spec-naher Protocol-Crypto-Kern; doppelte Hilfen entfernen oder eindeutig zuordnen. |
@@ -95,7 +94,7 @@ Diese Punkte sind Implementierungsdebt, keine Spec-Aussagen.
 
 1. Spec-Leseschicht und Conformance-Artefakte gruen halten.
 2. Layer-Entry-Points dokumentieren und neue Imports daran ausrichten.
-3. Adapter-Interfaces aus `src/adapters/interfaces/` nach `src/ports/` konsolidieren.
+3. ~~Adapter-Interfaces aus `src/adapters/interfaces/` nach `src/ports/` konsolidieren.~~ (Erledigt — alle Ports liegen in `src/ports/`.)
 4. `src/services/` in Application-Use-Cases und Infrastruktur-Adapter aufteilen.
 5. Browser-/Storage-/Network-Adapter aus dem Core-Root-Export entfernen oder explizit als Adapter-Entry-Points fuehren.
 6. Yjs und Automerge auf CRDT-/DocStore-/Replication-Adapter begrenzen; die normative Sync-Reihenfolge bleibt in Application/Protocol abgebildet.
