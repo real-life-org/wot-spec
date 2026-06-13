@@ -230,7 +230,7 @@ Jede Partei erstellt eine Verification-Attestation für die andere — als JWS-s
     "https://www.w3.org/ns/credentials/v2",
     "https://web-of-trust.de/vocab/v1"
   ],
-  "type": ["VerifiableCredential", "WotAttestation"],
+  "type": ["VerifiableCredential", "WotAttestation", "WotVerification"],
   "issuer": "did:key:z6Mk...bob",
   "credentialSubject": {
     "id": "did:key:z6Mk...alice",
@@ -244,6 +244,8 @@ Jede Partei erstellt eine Verification-Attestation für die andere — als JWS-s
   "jti": "urn:uuid:550e8400-e29b-41d4-a716-446655440000"
 }
 ```
+
+Eine Verification-Attestation ist eine `WotAttestation` mit dem zusätzlichen `type`-Eintrag `WotVerification`. Dieser `type`-Eintrag ist der normative Diskriminator einer In-Person-Verifikation. Alle Attestation-Regeln aus [Trust 001](001-attestations.md) gelten unverändert, da das `type`-Array weiterhin `WotAttestation` enthält. Der `credentialSubject.claim`-Text (z.B. `"in-person verifiziert"`) ist ein menschenlesbares, frei lokalisierbares Label und DARF NICHT als Typ-Diskriminator verwendet werden. Clients und Broker MÜSSEN Verification-Attestations über den `WotVerification`-`type`-Eintrag erkennen, nicht über den `claim`-Wert.
 
 Die `jti` (Attestation-ID) einer online nonce-gebundenen Verification-Attestation MUSS die Nonce aus dem QR-Code exakt in dieser Form binden:
 

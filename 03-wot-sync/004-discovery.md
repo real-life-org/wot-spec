@@ -31,6 +31,8 @@ Die Ressourcen werden unabhängig versioniert und aktualisiert.
 
 Empfangene Attestations landen zuerst in der privaten Wallet bzw. im Personal Doc des Holders. `/p/{did}/a` enthaelt nur Attestations, die der Holder bewusst veroeffentlicht hat. Der Profil-Service veroeffentlicht keine empfangenen Attestations automatisch.
 
+Die Zuordnung zwischen `/p/{did}/v` und `/p/{did}/a` ist disjunkt und erfolgt über den VC-`type`: Eine bewusst veröffentlichte Attestation, deren `type`-Array `WotVerification` enthält (siehe [Trust 002](../02-wot-trust/002-verifikation.md#verification-attestation)), gehört ausschließlich nach `/p/{did}/v`; jede andere veröffentlichte `WotAttestation` gehört nach `/p/{did}/a`. Keine veröffentlichte Attestation erscheint in beiden Listen. Die Klassifikation MUSS über den `type`-Eintrag erfolgen, nicht über den `claim`-Text.
+
 ### HTTP-API
 
 **Medien-Typen:**
