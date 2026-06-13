@@ -260,6 +260,9 @@ Die folgenden Vektoren sind in [`phase-1-interop.md`](phase-1-interop.md) dokume
 - **Broker Control-Frame Device-Revoke** - geschlossener `device-revoke`-Frame mit `revocationJws`, innerem JWS-Payload und malformed Top-Level-Formen.
 - **Space Capability** - JWS-Signatur mit `spaceCapabilitySigningKey`, Broker-Verifikation.
 - **Sync Heads Disposition** - Schliesst real-life-org/wot-spec#49 fuer Phase 1: reine JSON-Dispositionsvektoren fuer das Ableiten der naechsten `seq` aus `heads`, das Ablehnen ungueltiger Head-`seq`-Werte, den `Number.MAX_SAFE_INTEGER`-Overflow-Guard, die `sync-response`-`truncated`-Disposition (`request-next-page` vs. `complete`) und den Heads-Vergleich (identisch -> `consistent`, abweichende Werte oder fehlende/extra Device-Keys -> `divergent`). Keine Signaturen, keine generierten Bytes.
+- **Verification VC JWS** (Trust 002) - signiertes Verifiable Credential mit dem `type`-Eintrag `WotVerification` als normativem Diskriminator (zusaetzlich zu `WotAttestation`); der `claim`-Text ist nur ein Label. Re-verifizierte Signatur, JCS-SHA-256 und `signing_input` wie bei Attestation VC JWS.
+- **Profile Service PUT Acceptance** (Sync 004) - reine JSON-Dispositionsvektoren fuer die serverseitige Versions-Monotonie: nur strikt groessere `version` als die gespeicherte wird akzeptiert, sonst `conflict` (409). Resource-agnostisch fuer `/p`, `/p/{did}/v`, `/p/{did}/a`. Keine Signaturen.
+- **Profile Service Rollback** (Sync 004) - reine JSON-Dispositionsvektoren fuer den Client-Rollback-Schutz: gelieferte `version` kleiner als die zuletzt gesehene -> `rollback`, sonst `ok`; unabhaengig pro Ressource (Z.181). Keine Signaturen.
 - **DID-Dokument** - `resolve()` fuer `did:key` plus Bootstrap-`keyAgreement`.
 - **Admin Key Ableitung** - HKDF mit Space-ID im Info-String.
 - **Personal Doc Key** - deterministische Document-ID.

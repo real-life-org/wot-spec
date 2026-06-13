@@ -492,6 +492,40 @@ def main() -> None:
     verify_jws(attestation["jws"], ed_pub)
     print("attestation vc jws ok")
 
+    verification = data["verification_vc_jws"]
+    vheader_b64, vpayload_b64, vsig_b64 = verification["jws"].split(".")
+    assert json.loads(b64u_decode(vheader_b64)) == verification["header"]
+    assert json.loads(b64u_decode(vpayload_b64)) == verification["payload"]
+    assert hashlib.sha256(jcs(verification["payload"])).hexdigest() == verification["payload_jcs_sha256"]
+    assert f"{vheader_b64}.{vpayload_b64}" == verification["signing_input"]
+    assert vsig_b64 == verification["signature_b64"]
+    assert verification["header"]["typ"] == "vc+jwt"
+    assert verification["header"]["kid"] == identity["kid"]
+    assert verification["payload"]["issuer"] == identity["did"]
+    assert verification["payload"]["iss"] == identity["did"]
+    assert verification["payload"]["credentialSubject"]["id"] == verification["payload"]["sub"]
+    # WotVerification ist der normative Diskriminator (Trust 002), nicht der claim-Text.
+    assert "WotVerification" in verification["payload"]["type"]
+    assert "WotAttestation" in verification["payload"]["type"]
+    verify_jws(verification["jws"], ed_pub)
+    print("verification vc jws ok")
+
+    # Sync 004 Z.155-164: PUT akzeptiert nur strikt groessere version (sonst 409).
+    for case in data["profile_service_put_acceptance"]["cases"]:
+        stored = case["stored_version"]
+        accept = stored is None or case["new_version"] > stored
+        expected = "accept" if accept else "conflict"
+        assert expected == case["expected"], case["name"]
+    print("profile service put acceptance ok")
+
+    # Sync 004 Z.166-183: gelieferte version < zuletzt gesehene -> Rollback (pro Ressource).
+    for case in data["profile_service_rollback"]["cases"]:
+        seen = case["last_seen_version"]
+        rollback = seen is not None and case["fetched_version"] < seen
+        expected = "rollback" if rollback else "ok"
+        assert expected == case["expected"], case["name"]
+    print("profile service rollback ok")
+
     ecies = data["ecies"]
     eph_public = b64u_decode(ecies["ephemeral_public_b64"])
     shared = x25519.X25519PrivateKey.from_private_bytes(x_seed).exchange(
