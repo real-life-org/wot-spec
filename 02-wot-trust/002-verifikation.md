@@ -299,4 +299,4 @@ Für Fälle wo kein Treffen möglich ist (z.B. Empfehlung durch einen gemeinsame
 3. Alice ruft Bobs Profil ab (inkl. Encryption Key) und erstellt eine Verification-Attestation
 4. Bob empfängt sie und kann gegenverifizieren (`counterVerify`)
 
-Die Verifikation ist schwächer als bei einem physischen Treffen — sie beweist nur die Empfehlung durch einen gemeinsamen Kontakt, nicht die physische Identität. Implementierungen DÜRFEN zwischen In-Person- und Remote-Verifikation unterscheiden (z.B. durch verschiedene Claim-Texte).
+Die Verifikation ist schwächer als bei einem physischen Treffen — sie beweist nur die Empfehlung durch einen gemeinsamen Kontakt, nicht die physische Identität. Ob eine Verification-Attestation nonce-gebunden (In-Person) oder ungebunden (Remote) ist, entscheidet die nonce-gebundene `jti` gemäß Acceptance Gate (siehe oben), NICHT der `claim`-Text. Der `claim`-Text DARF auch hier nicht als maschineller Diskriminator dienen. Soll eine Remote-Verifikation darüber hinaus maschinell als eigene Klasse unterscheidbar sein, erfordert das einen eigenen strukturierten Marker bzw. `type`-Eintrag analog `WotVerification` — kein freier Claim-Text.
