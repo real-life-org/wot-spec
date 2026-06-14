@@ -109,9 +109,9 @@ Im Normalfall sind beide Parteien mit einem Broker verbunden. Ein einziger QR-Sc
 
 ### Warum die Nonce entscheidend ist
 
-Die Nonce verbindet die digitale Attestation mit der physischen Begegnung. Alice zeigt einen QR-Code mit einer Nonce. Bob scannt ihn und baut die Nonce in seine Attestation-ID ein. Wenn Alice eine Attestation empfängt, deren ID ihre aktive Nonce enthält, weiß sie: diese Attestation kommt von jemandem, der gerade physisch ihren QR-Code gescannt hat.
+Die Nonce bindet die Attestation an eine **frische, live Challenge**. Alice zeigt einen QR-Code mit einer Nonce. Bob scannt ihn und baut die Nonce in seine Attestation-ID ein. Wenn Alice eine Attestation empfängt, deren ID ihre aktive Nonce enthält, weiß sie: diese Attestation entstand als Antwort auf ihre aktuelle, live Challenge — eine frische Live-Interaktion, nicht eine vorgefertigte oder wiedergespielte Attestation. In der intendierten Nutzung (QR-Scan vor Ort) heißt das, dass das Gegenüber gerade ihren QR-Code gescannt hat; der kryptographische Beweis ist die **Frische (Liveness)**, nicht physische Präsenz (eine Nonce könnte prinzipiell relayed werden).
 
-Ohne die Nonce könnte ein Angreifer zu einem beliebigen Zeitpunkt eine Verification-Attestation an Alice senden — ohne physisch anwesend gewesen zu sein.
+Ohne die Nonce könnte ein Angreifer zu einem beliebigen Zeitpunkt eine vorgefertigte Verification-Attestation an Alice senden — ohne jede live Interaktion.
 
 ### Warum kein Challenge-Hash?
 
@@ -212,11 +212,11 @@ Wenn kein Broker erreichbar ist (kein Internet, Festivalgelände, Krisenfall), f
 | | Online (ein QR-Scan) | Offline (zwei QR-Scans) |
 |---|---|---|
 | QR-Scans nötig | 1 | 2 |
-| Nonce-Verifikation | Ja (Nonce-Match beweist physische Anwesenheit) | Nein (menschliche Bestätigung statt Nonce-Match) |
+| Nonce-Verifikation | Ja (Nonce-Match beweist frische Live-Interaktion) | Nein (menschliche Bestätigung statt Nonce-Match) |
 | Zustellung | Sofort über Broker | Verzögert — bei nächster Broker-Verbindung |
 | Voraussetzung | Broker erreichbar für mindestens eine Partei | Keine |
 
-Die Offline-Verifikation ist etwas schwächer — sie hat keinen kryptographischen Beweis über die Nonce, dass der Gegenüber den QR-Code tatsächlich gescannt hat. Die Sicherheit liegt allein in der physischen Begegnung. Für den typischen Anwendungsfall (Festival, Workshop, Nachbarschaft) ist das ausreichend.
+Die Offline-Verifikation ist etwas schwächer — sie hat keine nonce-gebundene Frische-Garantie (keinen kryptographischen Beweis einer Live-Interaktion); die Sicherheit liegt allein in der beidseitigen menschlichen Bestätigung vor Ort. Für den typischen Anwendungsfall (Festival, Workshop, Nachbarschaft) ist das ausreichend.
 
 ## Verification-Attestation
 
