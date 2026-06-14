@@ -13,7 +13,15 @@
       "type": "object",
       "required": ["name"],
       "additionalProperties": true,
-      "not": { "required": ["encryptionPublicKey"] },
+      "not": { "anyOf": [
+        { "required": ["encryptionPublicKey"] },
+        { "required": ["keyAgreement"] },
+        { "required": ["verificationMethod"] },
+        { "required": ["publicKey"] },
+        { "required": ["publicKeyMultibase"] },
+        { "required": ["publicKeyJwk"] },
+        { "required": ["privateKey"] }
+      ] },
       "properties": {
         "name": { "type": "string", "minLength": 1 },
         "bio": { "type": "string" },

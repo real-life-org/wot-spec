@@ -32,7 +32,7 @@
       "test_vectors": [
         {
           "file": "test-vectors/phase-1-interop.json",
-          "sections": ["attestation_vc_jws", "trust002_jti_nonce_binding"]
+          "sections": ["attestation_vc_jws", "verification_vc_jws", "trust002_jti_nonce_binding"]
         }
       ]
     },
@@ -54,6 +54,7 @@
         "schemas/log-entry-payload.schema.json",
         "schemas/member-update.schema.json",
         "schemas/profile-service-response.schema.json",
+        "schemas/profile-service-list-resource.schema.json",
         "schemas/space-invite.schema.json"
       ],
       "test_vectors": [
@@ -69,6 +70,8 @@
             "space_capability_jws",
             "space_membership_messages",
             "sync_heads_disposition",
+            "profile_service_put_acceptance",
+            "profile_service_rollback",
             "admin_key_derivation",
             "personal_doc"
           ]

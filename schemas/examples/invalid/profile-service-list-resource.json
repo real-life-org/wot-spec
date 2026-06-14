@@ -1,0 +1,11 @@
+{
+  "did": "did:key:z6MkpTHR8VNsBxYAAWHut2Geadd9jSwuBV8xRoAnwWsdvktH",
+  "version": 5,
+  "verifications": [
+    "eyJhbGciOiJFZERTQSJ9.eyJ0eXBlIjpbIlZlcmlmaWFibGVDcmVkZW50aWFsIl19.c2ln"
+  ],
+  "attestations": [
+    "eyJhbGciOiJFZERTQSJ9.eyJ0eXBlIjpbIlZlcmlmaWFibGVDcmVkZW50aWFsIl19.c2ln"
+  ],
+  "updatedAt": "2026-04-22T10:00:00Z"
+}

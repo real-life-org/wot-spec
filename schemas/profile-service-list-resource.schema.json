@@ -1,0 +1,26 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://web-of-trust.de/schemas/profile-service-list-resource.schema.json",
+  "title": "WoT Profile Service List Resource (/p/{did}/v and /p/{did}/a)",
+  "description": "Verifications- und Attestations-Listen-Ressourcen sind eigenstaendige JWS-Ressourcen ohne didDocument/profile. Genau eines von verifications oder attestations; Items sind Compact-JWS-Strings (Verifiable Credentials). Eigene monotone version.",
+  "type": "object",
+  "required": ["did", "version", "updatedAt"],
+  "additionalProperties": false,
+  "oneOf": [
+    { "required": ["verifications"], "not": { "required": ["attestations"] } },
+    { "required": ["attestations"], "not": { "required": ["verifications"] } }
+  ],
+  "properties": {
+    "did": { "type": "string", "pattern": "^did:[a-z0-9]+:.+" },
+    "version": { "type": "integer", "minimum": 0 },
+    "verifications": {
+      "type": "array",
+      "items": { "type": "string", "pattern": "^[A-Za-z0-9_-]+\\.[A-Za-z0-9_-]+\\.[A-Za-z0-9_-]+$" }
+    },
+    "attestations": {
+      "type": "array",
+      "items": { "type": "string", "pattern": "^[A-Za-z0-9_-]+\\.[A-Za-z0-9_-]+\\.[A-Za-z0-9_-]+$" }
+    },
+    "updatedAt": { "type": "string", "format": "date-time" }
+  }
+}
