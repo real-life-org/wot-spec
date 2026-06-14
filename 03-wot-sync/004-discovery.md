@@ -24,12 +24,12 @@ Der Profil-Service verwaltet pro DID drei separate, aber zusammengehörige JWS-D
 | Ressource | Pfad | Inhalt |
 |---|---|---|
 | **Profil** | `/p/{did}` | DID-Dokument plus öffentliches Profil (Name, Bio, Avatar, Protokolle) |
-| **Verifikationen** | `/p/{did}/v` | Liste empfangener Live-Verifikationen (Beweis des Web-of-Trust-Graphen) |
+| **Verifikationen** | `/p/{did}/v` | Liste der vom Holder **bewusst veröffentlichten** empfangenen Live-Verifikationen (kuratierter Beweis des Web-of-Trust-Graphen) |
 | **Attestations** | `/p/{did}/a` | Liste bewusst veröffentlichter Attestations (öffentliche Aussagen die der Holder zeigen möchte) |
 
 Die Ressourcen werden unabhängig versioniert und aktualisiert.
 
-Empfangene Attestations landen zuerst in der privaten Wallet bzw. im Personal Doc des Holders. `/p/{did}/a` enthaelt nur Attestations, die der Holder bewusst veroeffentlicht hat. Der Profil-Service veroeffentlicht keine empfangenen Attestations automatisch.
+Empfangene Live-Verifikationen und Attestations landen zuerst in der privaten Wallet bzw. im Personal Doc des Holders. `/p/{did}/v` und `/p/{did}/a` enthalten **ausschliesslich** Live-Verifikationen bzw. Attestations, die der Holder **bewusst veroeffentlicht** hat (Publish-Consent pro Eintrag). Der Profil-Service veroeffentlicht keine empfangenen Live-Verifikationen oder Attestations automatisch — beide Endpunkte sind oeffentlich, daher liegt die Veroeffentlichung jeder einzelnen empfangenen Verifikation/Attestation allein in der Entscheidung des Holders.
 
 Die Zuordnung zwischen `/p/{did}/v` und `/p/{did}/a` ist disjunkt und erfolgt über den VC-`type`: Eine bewusst veröffentlichte Attestation, deren `type`-Array `WotVerification` enthält — also eine **Live-Verifikation** (siehe [Trust 002](../02-wot-trust/002-verifikation.md#verification-attestation)) — gehört ausschließlich nach `/p/{did}/v`; jede andere veröffentlichte `WotAttestation` (inkl. ungebundener, nicht-live Verifikationen) gehört nach `/p/{did}/a`. Keine veröffentlichte Attestation erscheint in beiden Listen. Die Klassifikation MUSS über den `type`-Eintrag erfolgen, nicht über den `claim`-Text.
 
@@ -111,7 +111,7 @@ Das Profil enthält das DID-Dokument und soziale Profil-Daten in einem signierte
 {
   "did": "did:key:z6Mk...",
   "version": 5,
-  "verifications": [ /* Verification-VCs (JWS-Strings) */ ],
+  "verifications": [ /* Live-Verification-VCs (JWS-Strings), die der Holder bewusst veröffentlicht hat */ ],
   "updatedAt": "2026-04-22T10:00:00Z"
 }
 ```
