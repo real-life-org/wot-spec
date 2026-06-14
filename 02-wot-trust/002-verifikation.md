@@ -104,7 +104,7 @@ Im Normalfall sind beide Parteien mit einem Broker verbunden. Ein einziger QR-Sc
    → Signatur verifizieren
    → `inResponseTo` matcht Bobs lokalen Pending-Counter-State
    → Pending-Counter-State ist noch nicht abgelaufen
-   → Gegenseitige In-Person-Verifikation abgeschlossen
+   → Gegenseitige Live-Verifikation abgeschlossen
 ```
 
 ### Warum die Nonce entscheidend ist
@@ -133,7 +133,7 @@ Die aktive Challenge (mindestens `nonce` und `ts`) MUSS nur bis zur Verifikation
 
 ### Acceptance Gate fuer Online-Verifikation (MUSS)
 
-Eine eingehende Verification-Attestation DARF im Online-Ein-QR-Scan-Flow nur dann als In-Person-Verifikation akzeptiert oder automatisch zur Gegen-Verifikation angeboten werden, wenn alle Bedingungen erfuellt sind:
+Eine eingehende Verification-Attestation DARF im Online-Ein-QR-Scan-Flow nur dann als Live-Verifikation akzeptiert oder automatisch zur Gegen-Verifikation angeboten werden, wenn alle Bedingungen erfuellt sind:
 
 1. Die Signatur der Attestation ist gueltig.
 2. Die Attestation richtet sich an die lokale DID.
@@ -141,7 +141,7 @@ Eine eingehende Verification-Attestation DARF im Online-Ein-QR-Scan-Flow nur dan
 4. Die aktive Challenge ist zeitlich gueltig.
 5. Die Nonce wurde noch nicht in der Nonce-History konsumiert.
 
-Fehlt eine aktive Challenge-Nonce, MUSS die Attestation als ungebundene Remote-Verifikation behandelt werden. Sie DARF gespeichert oder dem User als separate Remote-Anfrage angezeigt werden, aber sie DARF NICHT als Beweis fuer eine physische Begegnung gelten. Damit wird verhindert, dass beliebige signierte Verification-Attestations als In-Person-Begegnung in den Trust Graph gelangen.
+Fehlt eine aktive Challenge-Nonce, MUSS die Attestation als ungebundene (nicht-live) Verifikation behandelt werden. Sie DARF gespeichert oder dem User als separate Anfrage angezeigt werden, aber sie DARF NICHT als Live-Verifikation gelten (keine frische Challenge-Response, also kein Beweis einer Live-Interaktion). Damit wird verhindert, dass beliebige signierte Verification-Attestations als Live-Verifikation in den Trust Graph gelangen.
 
 Der Empfaenger MUSS die Nonce-Bindung ausschliesslich ueber einen Full-String-Match der `jti` pruefen. Unbeschraenkte Substring-Suche nach UUIDs ist ungueltig.
 
@@ -149,7 +149,7 @@ Der Empfaenger MUSS die Nonce-Bindung ausschliesslich ueber einen Full-String-Ma
 
 Der Online-Ein-QR-Scan-Flow benoetigt keinen zweiten QR-Scan. Der zweite QR-Scan wuerde nur erneut kopierbare QR-Daten uebertragen; die Sicherheitsbindung entsteht durch die frische Challenge-Nonce, die Signatur, den lokalen Pending-State und die bewusste Bestaetigung durch den User.
 
-Damit zwei beliebige Verification-Attestations nicht automatisch eine gegenseitige In-Person-Verifikation ergeben, MUESSEN Implementierungen Gegen-Verifikationen an lokalen State binden:
+Damit zwei beliebige Verification-Attestations nicht automatisch eine gegenseitige Live-Verifikation ergeben, MUESSEN Implementierungen Gegen-Verifikationen an lokalen State binden:
 
 1. Wenn Bob nach dem Scan von Alices QR-Code eine Verification-Attestation an Alice erstellt, MUSS Bob lokal einen `pendingCounterVerification`-Eintrag speichern.
 2. Dieser Eintrag MUSS mindestens enthalten:
@@ -157,17 +157,17 @@ Damit zwei beliebige Verification-Attestations nicht automatisch eine gegenseiti
    - `originalVerificationId`: die `jti` von Bobs Verification-Attestation
    - `createdAt`: Erstellungszeitpunkt
    - `expiresAt`: Ablaufzeitpunkt des Pending-Counter-Fensters
-3. Das Pending-Counter-Fenster DARF hoechstens 24 Stunden betragen. Nach Ablauf MUSS eine eingehende Gegen-Verification als ungebundene Remote-Verifikation behandelt werden oder einen neuen QR-Flow erfordern.
+3. Das Pending-Counter-Fenster DARF hoechstens 24 Stunden betragen. Nach Ablauf MUSS eine eingehende Gegen-Verification als ungebundene (nicht-live) Verifikation behandelt werden oder einen neuen QR-Flow erfordern.
 4. Wenn Alice Bobs nonce-gebundene Verification-Attestation akzeptiert und Bob bestaetigt, MUSS Alices Gegen-Verification-Attestation ein Top-Level-Feld `inResponseTo` enthalten. Der Wert MUSS exakt der `jti` von Bobs urspruenglicher Verification-Attestation entsprechen.
-5. Wenn Bob Alices Gegen-Verification empfaengt, DARF er sie nur dann als Abschluss einer gegenseitigen In-Person-Verifikation akzeptieren, wenn alle Bedingungen erfuellt sind:
+5. Wenn Bob Alices Gegen-Verification empfaengt, DARF er sie nur dann als Abschluss einer gegenseitigen Live-Verifikation akzeptieren, wenn alle Bedingungen erfuellt sind:
    - Die Signatur der Gegen-Verification ist gueltig.
    - Die Gegen-Verification richtet sich an Bobs lokale DID.
    - `issuer`/`iss` der Gegen-Verification entspricht `counterpartyDid` im Pending-Counter-State.
    - `inResponseTo` entspricht `originalVerificationId`.
    - Der Pending-Counter-State ist noch nicht abgelaufen.
-6. Fehlt `inResponseTo`, fehlt der passende Pending-Counter-State oder ist der Pending-Counter-State abgelaufen, DARF die Gegen-Verification NICHT als In-Person-Mutual-Verifikation zaehlen. Sie DARF als ungebundene Remote-Verifikation gespeichert oder angezeigt werden.
+6. Fehlt `inResponseTo`, fehlt der passende Pending-Counter-State oder ist der Pending-Counter-State abgelaufen, DARF die Gegen-Verification NICHT als gegenseitige Live-Verifikation zaehlen. Sie DARF als ungebundene (nicht-live) Verifikation gespeichert oder angezeigt werden.
 
-Eine Implementierung DARF den Pending-Counter-State kuerzer halten oder den User jederzeit einen neuen QR-Flow starten lassen. Sie DARF ihn jedoch NICHT unbegrenzt als In-Person-Beweis verwenden.
+Eine Implementierung DARF den Pending-Counter-State kuerzer halten oder den User jederzeit einen neuen QR-Flow starten lassen. Sie DARF ihn jedoch NICHT unbegrenzt als Live-Beweis verwenden.
 
 Hinweis zur Validierbarkeit: JSON-Schema kann nur die Feldform von `inResponseTo` validieren. Die Existenz und Integritaet des lokalen `pendingCounterVerification`-Eintrags, `inResponseTo`-Exact-Match, `issuer`/`iss`-Bindung an `counterpartyDid`, lokale DID-Bindung und `expiresAt`-Ablaufpruefung sind zustands- und zeitabhaengig. Sie MUESSEN durch Laufzeitlogik und Conformance-Tests mit kontrolliertem lokalen State und kontrollierter Uhr geprueft werden.
 
@@ -245,7 +245,11 @@ Jede Partei erstellt eine Verification-Attestation für die andere — als JWS-s
 }
 ```
 
-Eine Verification-Attestation ist eine `WotAttestation` mit dem zusätzlichen `type`-Eintrag `WotVerification`. Dieser `type`-Eintrag ist der normative Diskriminator einer In-Person-Verifikation. Alle Attestation-Regeln aus [Trust 001](001-attestations.md) gelten unverändert, da das `type`-Array weiterhin `WotAttestation` enthält. Der `credentialSubject.claim`-Text (z.B. `"in-person verifiziert"`) ist ein menschenlesbares, frei lokalisierbares Label und DARF NICHT als Typ-Diskriminator verwendet werden. Clients und Broker MÜSSEN Verification-Attestations über den `WotVerification`-`type`-Eintrag erkennen, nicht über den `claim`-Wert.
+Eine **Live-Verifikation** ist eine nonce-gebundene Verifikation: ihre `jti` bindet eine frische Challenge-Nonce gemäß Acceptance Gate und beweist damit eine **frische Live-Interaktion zu einem Zeitpunkt** — nicht physische Präsenz. (Physische Anwesenheit ist die intendierte Nutzung der QR-Zeremonie, aber kein kryptographischer Beweis.)
+
+Eine Live-Verifikation wird als `WotAttestation` mit dem zusätzlichen `type`-Eintrag `WotVerification` ausgestellt. Dieser `type`-Eintrag ist der **normative Diskriminator** einer Live-Verifikation. Alle Attestation-Regeln aus [Trust 001](001-attestations.md) gelten unverändert, da das `type`-Array weiterhin `WotAttestation` enthält. Der `credentialSubject.claim`-Text (z.B. `"in-person verifiziert"`) ist ein menschenlesbares, frei lokalisierbares Label und DARF NICHT als Diskriminator verwendet werden. Clients und Broker MÜSSEN Live-Verifikationen über den `WotVerification`-`type`-Eintrag erkennen, nicht über den `claim`-Wert.
+
+Eine **ungebundene (nicht-live) Verifikation** — ohne frische Challenge-Nonce, z.B. eine Empfehlung ohne Live-Austausch (siehe [Verifikation ohne physisches Treffen](#verifikation-ohne-physisches-treffen)) — trägt `WotVerification` **NICHT** und ist eine gewöhnliche `WotAttestation`.
 
 Die `jti` (Attestation-ID) einer online nonce-gebundenen Verification-Attestation MUSS die Nonce aus dem QR-Code exakt in dieser Form binden:
 
@@ -260,10 +264,10 @@ Fuer das Acceptance Gate gilt:
 
 | Eingehende `jti` | Ergebnis |
 |---|---|
-| `urn:uuid:<active-nonce>` mit beliebiger UUID-Gross-/Kleinschreibung | als nonce-gebundene In-Person-Verifikation akzeptierbar, wenn alle anderen Gates erfuellt sind |
+| `urn:uuid:<active-nonce>` mit beliebiger UUID-Gross-/Kleinschreibung | als nonce-gebundene Live-Verifikation akzeptierbar, wenn alle anderen Gates erfuellt sind |
 | `urn:uuid:<consumed-nonce>` | als `nonce-consumed` ablehnen |
 | `urn:uuid:<uuid>`, aber UUID ist weder aktive noch konsumierte Nonce | als ungebundene Remote-Verifikation behandeln |
-| `URN:UUID:<uuid>` oder `Urn:Uuid:<uuid>` mit uppercase oder mixed-case Prefix | als ungebundene Remote-Verifikation behandeln; nicht als In-Person-Beweis akzeptieren und nicht als `nonce-consumed` ablehnen |
+| `URN:UUID:<uuid>` oder `Urn:Uuid:<uuid>` mit uppercase oder mixed-case Prefix | als ungebundene (nicht-live) Verifikation behandeln; nicht als Live-Verifikation akzeptieren und nicht als `nonce-consumed` ablehnen |
 | `jti` mit mehreren UUID-foermigen Tokens | als ungebundene Remote-Verifikation behandeln |
 | `jti` mit zusaetzlichem Prefix/Suffix, falschem URN-Namespace oder ungueltigen Trennzeichen | als ungebundene Remote-Verifikation behandeln |
 
@@ -299,4 +303,4 @@ Für Fälle wo kein Treffen möglich ist (z.B. Empfehlung durch einen gemeinsame
 3. Alice ruft Bobs Profil ab (inkl. Encryption Key) und erstellt eine Verification-Attestation
 4. Bob empfängt sie und kann gegenverifizieren (`counterVerify`)
 
-Die Verifikation ist schwächer als bei einem physischen Treffen — sie beweist nur die Empfehlung durch einen gemeinsamen Kontakt, nicht die physische Identität. Ob eine Verification-Attestation nonce-gebunden (In-Person) oder ungebunden (Remote) ist, entscheidet die nonce-gebundene `jti` gemäß Acceptance Gate (siehe oben), NICHT der `claim`-Text. Der `claim`-Text DARF auch hier nicht als maschineller Diskriminator dienen. Soll eine Remote-Verifikation darüber hinaus maschinell als eigene Klasse unterscheidbar sein, erfordert das einen eigenen strukturierten Marker bzw. `type`-Eintrag analog `WotVerification` — kein freier Claim-Text.
+Diese Verifikation ist schwächer — sie beweist nur die Empfehlung durch einen gemeinsamen Kontakt, weder physische Identität noch eine Live-Interaktion. Sie ist **ungebunden (nicht-live)**: ihre `jti` bindet keine frische Challenge-Nonce. Eine ungebundene Verifikation trägt deshalb **kein** `WotVerification` und ist eine gewöhnliche `WotAttestation` (Discovery: `/p/{did}/a`, nicht `/p/{did}/v` — siehe [Sync 004](../03-wot-sync/004-discovery.md)). Ob nonce-gebunden (live) oder ungebunden, entscheidet die `jti` gemäß Acceptance Gate, NICHT der `claim`-Text. Soll eine ungebundene Verifikation später maschinell als eigene Klasse unterscheidbar sein, erfordert das einen eigenen strukturierten `type`-Eintrag analog `WotVerification` — kein freier Claim-Text.
