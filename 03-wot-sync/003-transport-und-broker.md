@@ -299,7 +299,7 @@ Der Admin sendet dem Broker einen `space-rotate`-Control-Frame. Wie alle Broker-
 }
 ```
 
-Der dekodierte JWS-Payload MUSS exakt `{ "type": "space-rotate", "spaceId": "<uuid>", "newPublicKey": "<base64url>", "newGeneration": <int> }` sein; der JWS-`kid` referenziert die signierende `adminDid`. Der Broker akzeptiert die Nachricht nur, wenn die `adminDid` zur registrierten Admin-Liste dieses Space gehört (sonst `AUTH_INVALID`) und `newGeneration` exakt die aktuelle Generation plus eins ist.
+Der dekodierte JWS-Payload MUSS exakt `{ "type": "space-rotate", "spaceId": "<uuid>", "newSpaceCapabilityVerificationKey": "<base64url>", "newGeneration": <int> }` sein; der JWS-`kid` referenziert die signierende `adminDid`. `newSpaceCapabilityVerificationKey` ist der kanonische Feldname (parallel zu `spaceCapabilityVerificationKey` bei `space-register`, mit `new`-Präfix wie `newGeneration`) — derselbe Wire-Contract, ein Feldname. Der Broker akzeptiert die Nachricht nur, wenn die `adminDid` zur registrierten Admin-Liste dieses Space gehört (sonst `AUTH_INVALID`) und `newGeneration` exakt die aktuelle Generation plus eins ist.
 
 **Cache-Invalidierung bei Rotation (MUSS, sicherheitskritisch).** Nach erfolgreicher `space-rotate`-Verarbeitung MUSS der Broker **sofort alle gecachten Capability-Scopes für diese `spaceId` mit `generation < newGeneration` über ALLE offenen WebSockets ALLER betroffenen DIDs invalidieren** — nicht erst beim nächsten Reconnect und nicht erst bei `validUntil`. Andernfalls könnte ein gerade entfernter Member über seinen noch offenen Socket weiter in den durablen Log schreiben; Member-Entfernung ist der einzige Zweck der Rotation und liefe sonst ins Leere. Ein Schreib-/Leseversuch mit einer Capability alter Generation wird mit `CAPABILITY_GENERATION_STALE` abgelehnt; der Client muss eine erneuerte Capability beschaffen und neu `present-capability`-en.
 
@@ -322,6 +322,8 @@ Der JWS-Payload MUSS `{ "type": "space-register", "spaceId": "<uuid>", "spaceCap
 - Ein späterer `space-register` mit **abweichendem** `spaceCapabilityVerificationKey` oder Admin-Set → **ablehnen** mit `SPACE_ALREADY_REGISTERED`. Änderungen laufen ausschließlich über die signierten Frames `space-rotate`/`admin-add`/`admin-remove`.
 
 `spaceId` ist eine nicht-ratbare zufällige UUID v4; Pre-Squatting setzt Kenntnis der `spaceId` voraus (Insider). Bei vollständigem Verlust des Broker-State DARF ein aktueller Admin den Space identisch re-registrieren (idempotenter Recovery-Pfad).
+
+**Scope-Invalidierung bei Erst-Register (MUSS).** Vor der ersten `space-register`-Verarbeitung gilt eine `docId` als Personal-Doc (kein Registereintrag), sodass Sockets self-issued Personal-Scopes dafür cachen könnten. Nach erfolgreichem initialem `space-register` für eine `docId` MUSS der Broker daher alle zuvor für diese `docId` gecachten **Personal-Doc-Scopes** über ALLE offenen WebSockets verwerfen (analog zur [Cache-Invalidierung bei Rotation](#capability-widerruf-über-rotation)). Folgezugriffe MÜSSEN über den Space-Pfad neu `present-capability`-en. Andernfalls könnte ein Socket mit einem vor dem Register gecachten Personal-Scope den Space-Pfad-Zwang („Existiert eine `space-register`-Eintragung → nur Space-Pfad") auf einer offenen Verbindung umgehen.
 
 ### Admin-Management
 
