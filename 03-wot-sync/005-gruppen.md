@@ -286,7 +286,7 @@ Alte Daten bleiben mit alten Space Content Keys lesbar. Rotation schuetzt nur zu
 
 - `generation` MUSS exakt die vorherige Space-Key-Generation plus eins sein.
 - Die enthaltene `capability.generation` MUSS `generation` entsprechen.
-- Der Broker MUSS nach erfolgreicher `space-rotate` Verarbeitung alte Capabilities ablehnen (`CAPABILITY_GENERATION_STALE`).
+- Der Broker MUSS nach erfolgreicher `space-rotate` Verarbeitung alte Capabilities ablehnen (`CAPABILITY_GENERATION_STALE`) und gecachte Capability-Scopes alter Generation **sofort über alle offenen Sockets invalidieren** (siehe [Sync 003 Capability-Widerruf über Rotation](003-transport-und-broker.md#capability-widerruf-über-rotation)) — sonst könnte ein entfernter Member über einen noch offenen Socket weiterschreiben.
 - Clients MUESSEN neue Log-Eintraege nach Rotation mit der neuen `keyGeneration` schreiben.
 - Clients MUESSEN alte Log-Eintraege weiter mit der jeweils im Log-Eintrag angegebenen historischen `keyGeneration` entschluesseln.
 
@@ -318,7 +318,16 @@ Gleichzeitige Einladungen sind unabhängige CRDT-Operationen. Wenn Einladung und
 
 ### Initiale Space-Registrierung
 
-Wenn ein User einen Space erstellt, registriert er ihn beim Broker:
+Wenn ein User einen Space erstellt, registriert er ihn beim Broker. `space-register` ist ein Broker-Control-Frame und trägt seinen Claim — wie alle Broker-Management-Frames — als **Inner-JWS** (Familienzuordnung + Authentizität siehe [Sync 003](003-transport-und-broker.md#space-registrierung-space-register)):
+
+```json
+{
+  "type": "space-register",
+  "registrationJws": "<JWS Compact Serialization>"
+}
+```
+
+Der dekodierte JWS-Payload MUSS exakt sein:
 
 ```json
 {
@@ -329,7 +338,7 @@ Wenn ein User einen Space erstellt, registriert er ihn beim Broker:
 }
 ```
 
-Signiert mit dem (noch einzigen) Admin Key. Der Broker akzeptiert die Registrierung, speichert Space-ID, Space Capability Verification Key und Admin-DIDs. Später können Admins hinzugefügt, entfernt oder das Capability Key Pair rotiert werden (jeweils signiert von einem eingetragenen Admin).
+Signiert mit dem (noch einzigen) Admin Key; der JWS-`kid` referenziert eine der genannten `adminDids`. Da beim Erst-Register noch keine Admin-Liste existiert, ist die Registrierung **trust-on-first-use** und wird **first-writer-wins** gebunden: ein späterer `space-register` mit identischem Inhalt ist idempotent, mit abweichendem `spaceCapabilityVerificationKey`/Admin-Set wird er mit `SPACE_ALREADY_REGISTERED` abgelehnt (Detail siehe [Sync 003](003-transport-und-broker.md#space-registrierung-space-register)). Der Broker speichert Space-ID, Space Capability Verification Key und Admin-DIDs. Spätere Änderungen laufen ausschließlich über die signierten Frames `admin-add`/`admin-remove`/`space-rotate` (jeweils signiert von einem eingetragenen Admin).
 
 ### Capability-Prüfung
 

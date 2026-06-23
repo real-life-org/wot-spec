@@ -183,6 +183,12 @@ Der Broker speichert pro DID mindestens `deviceId`, `firstSeenAt`, `lastSeenAt`,
 
 Der Broker MUSS Revocations atomisch anwenden. Wenn Registrierung und Revocation für dieselbe `deviceId` konkurrieren, gewinnt die Revocation und die Registrierung wird mit `DEVICE_REVOKED` abgelehnt. Ist eine `deviceId` bereits für eine andere DID registriert, MUSS der Broker mit `DEVICE_ID_CONFLICT` ablehnen.
 
+### Log-Eintrag-Autor-Bindung (MUSS)
+
+Beim Ingest eines `log-entry/1.0` MUSS der Broker prüfen, dass die aus `authorKid` extrahierte DID (Teil vor `#`, siehe [Sync 002](002-sync-protokoll.md#signatur-des-log-eintrags)) exakt die DID ist, die `deviceId` in der Broker-Device-Liste besitzt. Andernfalls Ablehnung mit `AUTHOR_MISMATCH`; der Eintrag wird **weder gespeichert noch relayed**. Diese Bindung verankert die `(docId, deviceId, seq)`-Autorität an der registrierten `(did, deviceId)`-Kombination (`deviceId` global eindeutig, siehe [Device-Liste](#device-liste-im-broker)) und verhindert, dass ein gültig signierender Autor unter einer fremden `deviceId` schreibt. Sie ist der autoritative Anker und ersetzt brokerlokale First-Writer-Wins-Heuristiken auf `(docId, deviceId)`.
+
+**Grenze (Shared-Seed):** Im Shared-Seed-Modell teilen alle Geräte eines Users dieselbe DID; die Bindung filtert dann fremde DIDs, nicht Geräte derselben DID. Geräte-granulare Autorität erfordert per-device Keys (Identity 004 / Phase 2).
+
 ## Store-and-Forward pro Device
 
 Inbox-Nachrichten werden **pro Device** zwischengespeichert, nicht pro DID. Das garantiert, dass jedes Device die für es bestimmten Nachrichten erhält, auch wenn es vorübergehend offline ist.
@@ -260,16 +266,21 @@ Capabilities werden zusammen mit den Space-Schlüsseln verteilt:
 
 ### Capability-Prüfung am Broker
 
-Wenn ein Client ein Dokument syncen will:
+**Präsentation (session-scoped, MUSS).** Eine Capability wird **einmal pro Session** präsentiert, nicht pro Nachricht. Nach dem Handshake sendet der Client für jedes Dokument, das er nutzen will, einen `present-capability`-Control-Frame (siehe [Control-Frame-Vokabular](#broker-control-frames-normativ)). Der Broker verifiziert die Capability und **cached den erlaubten Scope pro `(WebSocket, docId)`**. Folgende `log-entry`- und `sync-request`-Nachrichten werden gegen diesen Cache geprüft — ohne erneute Capability. Das folgt der Authentizität-pro-Message-Typ-Regel ([§Authentizität](#authentizität-pro-message-typ-normativ)): Autorität über den authentifizierten Kanal, keine doppelte Auth.
 
-1. Client sendet seine Capability
-2. Broker prüft:
-   - JWS-Signatur gültig gegen den aktuellen `spaceCapabilityVerificationKey`? (inklusive `alg=EdDSA`, siehe [Identity 002](../01-wot-identity/002-signaturen-und-verifikation.md#algorithmus-validierung-muss))
-   - `audience` = authentifizierte DID?
-   - `spaceId` = angefragter Space?
-   - `generation` = aktuelle Capability-Key-Generation? (alte Capabilities werden damit implizit widerrufen)
-   - `now < validUntil`? (nicht abgelaufen)
-3. OK → Sync erlaubt
+**Verifikation bei `present-capability` (MUSS).** Der Broker bestimmt zuerst den Pfad anhand der `docId`:
+
+- **Space-Dokument** (für `docId` existiert eine `space-register`-Eintragung): Capability-JWS gültig gegen den aktuellen `spaceCapabilityVerificationKey` dieses Space (inklusive `alg=EdDSA`, siehe [Identity 002](../01-wot-identity/002-signaturen-und-verifikation.md#algorithmus-validierung-muss)); `audience` = authentifizierte DID; `spaceId` = `docId` (für Space-Dokumente gilt `docId == spaceId`, siehe [Sync 002](002-sync-protokoll.md#docid-und-spaceid)); `generation` = aktuelle Capability-Key-Generation; `now < validUntil`.
+- **Persönliches Dokument** (für `docId` existiert **keine** `space-register`-Eintragung): self-issued Capability — siehe [Persönliche Dokumente](#persönliche-dokumente).
+
+Der gecachte Scope MUSS die `permissions` (`read`/`write`) **und** die `generation` der Capability mitführen.
+
+**Gate (MUSS).** Der Capability-Gate gilt **ausschließlich für den Log-Sync-Kanal**:
+
+- `log-entry/1.0`-Ingest erfordert einen gecachten **`write`**-Scope für `docId`. Fehlt er → `CAPABILITY_REQUIRED`.
+- `sync-request` erfordert einen gecachten **`read`**-Scope für `docId`. Fehlt er → `CAPABILITY_REQUIRED`.
+
+Der **Inbox-Kanal** (`inbox/1.0`, `space-invite/1.0`, `member-update/1.0`, `key-rotation/1.0`, `ack/1.0`) ist **NICHT** capability-gated — sonst könnte ein frischer Client nie die erste Capability erhalten (Cold-Start). Inbox-Nachrichten sind ECIES-verschlüsselt und tragen ihre Autorität im inneren JWS.
 
 `validUntil` begrenzt Zugriffsrechte ohne explizite Rotation. Aktive Members bekommen rechtzeitig eine erneuerte Capability; inaktive Members verlieren den Broker-Zugriff automatisch.
 
@@ -277,44 +288,61 @@ Wenn ein Client ein Dokument syncen will:
 
 Bei Member-Entfernung rotiert der Admin das **Space Capability Key Pair**. Der Broker akzeptiert ab dem Moment nur Capabilities die gegen den neuen `spaceCapabilityVerificationKey` verifizierbar sind — alle alten Capabilities werden automatisch ungültig.
 
-Der Admin sendet dem Broker eine `space-rotate`-Nachricht:
+Der Admin sendet dem Broker einen `space-rotate`-Control-Frame. Wie alle Broker-Management-Frames trägt er seinen Claim als **Inner-JWS** (analog `device-revoke`), signiert mit dem space-spezifisch abgeleiteten **Admin Key**:
 
 ```json
 {
   "type": "space-rotate",
-  "spaceId": "7f3a2b10-...",
-  "newPublicKey": "<base64url>",
-  "newGeneration": 4
+  "rotationJws": "<JWS Compact Serialization>"
 }
 ```
 
-Signiert mit dem **Admin Key** (space-spezifisch abgeleitet). Der Broker akzeptiert die Nachricht nur wenn der Admin Key zur registrierten Admin-Liste dieses Space gehört.
+Der dekodierte JWS-Payload MUSS exakt `{ "type": "space-rotate", "spaceId": "<uuid>", "newPublicKey": "<base64url>", "newGeneration": <int> }` sein; der JWS-`kid` referenziert die signierende `adminDid`. Der Broker akzeptiert die Nachricht nur, wenn die `adminDid` zur registrierten Admin-Liste dieses Space gehört (sonst `AUTH_INVALID`) und `newGeneration` exakt die aktuelle Generation plus eins ist.
+
+**Cache-Invalidierung bei Rotation (MUSS, sicherheitskritisch).** Nach erfolgreicher `space-rotate`-Verarbeitung MUSS der Broker **sofort alle gecachten Capability-Scopes für diese `spaceId` mit `generation < newGeneration` über ALLE offenen WebSockets ALLER betroffenen DIDs invalidieren** — nicht erst beim nächsten Reconnect und nicht erst bei `validUntil`. Andernfalls könnte ein gerade entfernter Member über seinen noch offenen Socket weiter in den durablen Log schreiben; Member-Entfernung ist der einzige Zweck der Rotation und liefe sonst ins Leere. Ein Schreib-/Leseversuch mit einer Capability alter Generation wird mit `CAPABILITY_GENERATION_STALE` abgelehnt; der Client muss eine erneuerte Capability beschaffen und neu `present-capability`-en.
+
+### Space-Registrierung (`space-register`)
+
+Beim Erstellen eines Space registriert der Ersteller ihn beim Broker (Detail-Shape siehe [Sync 005](005-gruppen.md#initiale-space-registrierung)). Wie alle Broker-Management-Frames trägt `space-register` seinen Claim als **Inner-JWS**, signiert mit dem (noch einzigen) **Admin Key**:
+
+```json
+{
+  "type": "space-register",
+  "registrationJws": "<JWS Compact Serialization>"
+}
+```
+
+Der JWS-Payload MUSS `{ "type": "space-register", "spaceId": "<uuid>", "spaceCapabilityVerificationKey": "<base64url>", "adminDids": ["did:key:..."] }` sein.
+
+**Trust-on-first-use + Konfliktregel (MUSS).** Beim Erst-Register existiert noch keine Admin-Liste, gegen die der Broker prüfen könnte. Der Broker verifiziert daher nur, dass der JWS gegen eine der im Payload genannten `adminDids` signiert ist (self-asserting), und bindet dann `(spaceId → spaceCapabilityVerificationKey, adminDids)` **first-writer-wins**:
+
+- Ein späterer `space-register` für dieselbe `spaceId` mit **identischem** Inhalt → idempotent akzeptieren.
+- Ein späterer `space-register` mit **abweichendem** `spaceCapabilityVerificationKey` oder Admin-Set → **ablehnen** mit `SPACE_ALREADY_REGISTERED`. Änderungen laufen ausschließlich über die signierten Frames `space-rotate`/`admin-add`/`admin-remove`.
+
+`spaceId` ist eine nicht-ratbare zufällige UUID v4; Pre-Squatting setzt Kenntnis der `spaceId` voraus (Insider). Bei vollständigem Verlust des Broker-State DARF ein aktueller Admin den Space identisch re-registrieren (idempotenter Recovery-Pfad).
 
 ### Admin-Management
 
-Admins können weitere Admins hinzufügen oder entfernen:
+Admins können weitere Admins hinzufügen oder entfernen. Beide Frames tragen ihren Claim als **Inner-JWS**, signiert mit einem **bestehenden Admin Key** für diesen Space (sonst `AUTH_INVALID`):
 
 ```json
-{
-  "type": "admin-add",
-  "spaceId": "7f3a2b10-...",
-  "newAdminDid": "did:key:z6Mk...derived-for-space"
-}
+{ "type": "admin-add", "adminChangeJws": "<JWS Compact Serialization>" }
 ```
 
 ```json
-{
-  "type": "admin-remove",
-  "spaceId": "7f3a2b10-...",
-  "removedAdminDid": "did:key:z6Mk...derived-for-space"
-}
+{ "type": "admin-remove", "adminChangeJws": "<JWS Compact Serialization>" }
 ```
 
-Beide Nachrichten müssen mit einem **bestehenden Admin Key** für diesen Space signiert sein.
+Der JWS-Payload MUSS exakt `{ "type": "admin-add", "spaceId": "<uuid>", "newAdminDid": "did:key:..." }` bzw. `{ "type": "admin-remove", "spaceId": "<uuid>", "removedAdminDid": "did:key:..." }` sein; der JWS-`kid` referenziert die signierende `adminDid`.
 
 ### Persönliche Dokumente
 
-Für das persönliche Dokument (Identität, Keys) stellt der User sich seine eigene Capability aus. Das persönliche Dokument hat kein Space Capability Key Pair — stattdessen signiert der User die Capability direkt mit seinem **Identity Key** (DID). Der Broker prüft: `issuer` = `audience` = authentifizierte DID.
+Für das persönliche Dokument (Identität, Keys) stellt der User sich seine eigene Capability aus. Das persönliche Dokument hat kein Space Capability Key Pair — stattdessen signiert der User die Capability direkt mit seinem **Identity Key** (DID).
+
+**Broker-Erkennung (MUSS).** Der Broker unterscheidet den Pfad anhand der `space-register`-Eintragung für die `docId`:
+
+- Existiert **keine** `space-register`-Eintragung für `docId` → Personal-Doc-Pfad: Der Broker resolved die authentifizierte DID zu ihrem Ed25519 Identity Key, verifiziert das Capability-JWS damit und prüft `issuer` = `audience` = authentifizierte DID. Der Broker kann **nicht** kryptographisch beweisen, dass `docId` die deterministische Personal-Doc-ID *dieser* DID ist (sie ist seed-abgeleitet, broker-blind); das ist unkritisch, weil der Personal-Pfad ausschließlich Selbst-Autorisierung erlaubt (`issuer==audience==auth-DID`) und Personal-Doc-Inhalt unter einem nur dem Eigentümer bekannten Schlüssel liegt.
+- Existiert **eine** `space-register`-Eintragung für `docId` → greift **nur** der Space-Pfad; ein self-issued-Versuch auf eine registrierte `docId` wird abgelehnt. Damit kann der Personal-Pfad keine Space-`docId` umgehen.
 
 **Unterschied zum Space-Capability-Modell:** Bei Spaces signiert der geteilte `spaceCapabilitySigningKey`, bei Personal Docs signiert der persönliche Identity Key (DID). Das ist eine bewusste Vereinfachung — ein Personal Doc hat genau einen Eigentümer, kein Gruppen-Key-Management nötig. Die Capability-Felder (`spaceId`, `generation`, `validUntil`) werden analog verwendet, aber `spaceId` wird durch die deterministische Personal-Doc-ID ersetzt (siehe [Sync 006](006-personal-doc.md)).
 
@@ -429,9 +457,12 @@ Die folgende Tabelle ist normativ. Eine Implementation MUSS diese Authentisierun
 | Control-Frame | `challenge-response` | Explizites `signature`-Feld im Frame: unpadded Base64URL einer Ed25519-Signatur über den JCS-kanonisierten Broker-Auth-Transcript (siehe [Wire-Encoding der signature](#wire-encoding-der-signature-muss)) | (kein Envelope) |
 | Control-Frame | `registered` | Authentifizierter WebSocket-Kontext (post-handshake) | (kein Envelope) |
 | Control-Frame | `device-revoke` | Inner JWS gegen den Identity Key der `did` (persistenter Revocation-Claim) | (kein Envelope) |
+| Control-Frame | `present-capability` | Inner Capability-JWS im Frame; Broker verifiziert gegen `spaceCapabilityVerificationKey` (Space) bzw. Identity Key der DID (Personal-Doc) | (kein Envelope) |
+| Control-Frame | `space-register` | Inner JWS gegen einen der genannten `adminDids` (TOFU, first-writer-wins) | (kein Envelope) |
+| Control-Frame | `space-rotate`, `admin-add`, `admin-remove` | Inner JWS gegen einen **registrierten Admin Key** des Space | (kein Envelope) |
 | Control-Frame | `error/1.0` | Authentifizierter WebSocket-Kontext, Broker→Client (Broker spricht in seinem eigenen Namen) | (kein Envelope) |
 
-**Konsequenz für Control-Frames:** nur `challenge-response` und `device-revoke` tragen eigene Signaturen, weil sie kryptographische Claims machen, die vor oder über den Kanal hinaus gelten. Alle anderen Control-Frames sind reine Transport-Steuerung und brauchen keine zusätzliche Signatur.
+**Konsequenz für Control-Frames:** `challenge-response`, `device-revoke`, `present-capability`, `space-register`, `space-rotate`, `admin-add` und `admin-remove` tragen eigene Signaturen, weil sie kryptographische Claims machen, die vor oder über den Kanal hinaus gelten. Alle übrigen Control-Frames (`register`, `challenge`, `registered`, `error/1.0`) sind reine Transport-Steuerung und brauchen keine zusätzliche Signatur. Capability-JWS und Admin-Claim-JWS sind persistente WoT-Objekte, die hier — wie der Revocation-Claim bei `device-revoke` — als opaker String in einem transienten Control-Frame transportiert werden; das verletzt die Control-Frame-Definition nicht (der Frame trägt keine Transport-Envelope-Felder).
 
 ### Signatur (WoT Envelope-JWS)
 
@@ -662,6 +693,10 @@ Control-Frame-`type` MUSS aus folgendem geschlossenem Vokabular kommen:
 | `challenge-response` | Client→Broker | Client beweist DID-Besitz | `did`, `deviceId`, `nonce`, `signature` (siehe [Wire-Encoding der signature](#wire-encoding-der-signature-muss)) |
 | `registered` | Broker→Client | Broker bestätigt erfolgreiche Auth | `did`, `deviceId`, `isNewDevice` |
 | `device-revoke` | Client→Broker | Signierter Revocation-Claim für eine Device-ID dieser DID | `revocationJws`; keine weiteren Top-Level-Felder (siehe [Device-Deaktivierung](#device-deaktivierung)) |
+| `present-capability` | Client→Broker | Session-scoped Capability-Präsentation für eine `docId` | `capabilityJws`; keine weiteren Top-Level-Felder (siehe [Capability-Prüfung](#capability-prüfung-am-broker)) |
+| `space-register` | Client→Broker | Erst-Registrierung eines Space (TOFU, first-writer-wins) | `registrationJws`; keine weiteren Top-Level-Felder |
+| `space-rotate` | Client→Broker | Rotation des Space Capability Verification Key (Admin-signiert) | `rotationJws`; keine weiteren Top-Level-Felder |
+| `admin-add` / `admin-remove` | Client→Broker | Admin-Liste eines Space ändern (Admin-signiert) | `adminChangeJws`; keine weiteren Top-Level-Felder |
 | `error/1.0` | Broker→Client | Fehlerrückmeldung auf eine vorherige Nachricht | `thid` (Referenz auf ursprüngliche Anfrage), `body.code`, `body.message` |
 
 Implementierungen MÜSSEN unbekannte Frame-Types als `MALFORMED_MESSAGE` ablehnen — Control-Frames sind **nicht erweiterbar** durch Drittparteien.
@@ -695,9 +730,12 @@ Normative Error-Codes:
 | Code | Wann |
 |------|------|
 | `DOC_NOT_FOUND` | Dokument existiert beim Broker nicht |
+| `CAPABILITY_REQUIRED` | Für `log-entry`-Ingest (`write`) oder `sync-request` (`read`) wurde keine gültige Capability dieser Session präsentiert (kein gecachter Scope für `docId`) |
 | `CAPABILITY_INVALID` | Capability-Signatur ungültig |
 | `CAPABILITY_EXPIRED` | Capability abgelaufen |
 | `CAPABILITY_GENERATION_STALE` | Capability für alte Space-Keypair-Generation (nach Rotation) |
+| `SPACE_ALREADY_REGISTERED` | `space-register` für eine bereits mit abweichendem Verification Key / Admin-Set registrierte `spaceId` (first-writer-wins) |
+| `AUTHOR_MISMATCH` | Log-Eintrag-`authorKid`-DID ist nicht die für `deviceId` registrierte DID (Device-Registrierungs-Bindung) |
 | `DEVICE_NOT_REGISTERED` | Client-Device ist beim Broker nicht registriert |
 | `DEVICE_REVOKED` | Device-ID ist als revoked markiert |
 | `DEVICE_ID_CONFLICT` | Device-ID bereits für eine andere DID registriert |

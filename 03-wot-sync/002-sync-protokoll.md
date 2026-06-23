@@ -46,6 +46,16 @@ Neue Devices MÜSSEN ihre `deviceId` als kanonische lowercase UUID v4 erzeugen. 
 
 Alle `deviceId`- und `docId`-Werte im Sync-Log MÜSSEN als kanonische lowercase UUID v4 serialisiert werden. Deterministische Document-IDs, z.B. die Personal-Doc-ID aus [Sync 006](006-personal-doc.md#deterministische-document-id), MÜSSEN beim Formatieren die UUID-v4-Version- und Variant-Bits setzen.
 
+## docId und spaceId
+
+`docId` ist der Dokument-Namespace des Logs (UUID v4). Für **Space-Dokumente** gilt in `wot-sync@0.1` **`docId == spaceId`**: ein Space hat genau ein Sync-Dokument, dessen `docId` die `spaceId` ist. Der Broker leitet den Capability-Scope (`spaceId`) deterministisch aus der `docId` ab (siehe [Sync 003 Capability-Prüfung](003-transport-und-broker.md#capability-prüfung-am-broker)).
+
+Für das **Personal-Doc** ist `docId` die deterministische Personal-Doc-ID (siehe [Sync 006](006-personal-doc.md#deterministische-document-id)); es gibt keine `spaceId`, die Capability ist self-issued.
+
+Implementierungen, deren CRDT-Schicht eine eigene native Dokument-ID verwendet (z.B. Automerge), MÜSSEN am Wire dennoch die UUID-v4-`docId` (= `spaceId` bzw. Personal-Doc-ID) führen und ihre native ID intern darauf mappen.
+
+**Grenze:** Mehrere Sync-Dokumente pro Space (z.B. selektives Teilen einzelner Items) sind nicht Teil von `wot-sync@0.1`. Eine künftige Extension, die das einführt, MUSS ein explizites `docId → spaceId`-Mapping definieren, statt `docId == spaceId` anzunehmen.
+
 ## Log
 
 Jeder Peer führt einen Append-only Log pro Dokument. Jeder Eintrag ist ein verschlüsselter Blob — das Protokoll weiß nicht was drin ist.
