@@ -293,17 +293,20 @@ Es gibt keine Personal-Doc-Key-Rotation im normalen Betrieb; der Key ändert sic
 
 ## Capability-Modell
 
-Der User ist sein eigener Admin für das Personal Doc. Broker prüfen self-issued Capabilities (siehe [Sync 003](003-transport-und-broker.md#autorisierung-capabilities)):
+Der User ist sein eigener Admin für das Personal Doc. Die Personal-Doc-Capability nutzt **dasselbe Payload-Schema** wie die Space-Capability (normative Wire-Form siehe [Sync 003 Persönliche Dokumente](003-transport-und-broker.md#persönliche-dokumente)) mit festen Bindungen:
 
 ```
-Personal Doc Capability:
-  issuer   = did:key:z6Mk...alice (der User selbst)
-  audience = did:key:z6Mk...alice (derselbe User)
-  docId    = <deterministische Personal Doc ID>
+Personal Doc Capability (Payload):
+  type        = "capability"
+  spaceId     = <deterministische Personal Doc ID>   (= docId)
+  audience    = did:key:z6Mk...alice                  (der User selbst)
   permissions = ["read", "write"]
+  generation  = 0                                     (Personal-Docs werden nicht rotiert)
+  issuedAt / validUntil = wie bei Space-Capabilities
+  kid (Header) = <did>#<vm>                           (Identity-Key, NICHT wot:space:…)
 ```
 
-Die Capability ist self-issued, vom User selbst signiert und kann jederzeit neu ausgestellt werden.
+Die Capability ist self-issued, mit dem **Identity Key** des Users signiert (kein separates `issuer`-Feld — der Issuer ist implizit die `kid`-DID), und kann jederzeit neu ausgestellt werden. Der Broker prüft `kid`-DID = `audience` = authentifizierte DID und `spaceId` = `docId`.
 
 ## Recovery
 

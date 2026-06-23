@@ -248,7 +248,9 @@ Eine Capability ist ein JWS, signiert mit dem **Space Capability Signing Key**:
 | `issuedAt` | ISO 8601 | Ja | Erstellungszeitpunkt |
 | `validUntil` | ISO 8601 | Ja | Ablaufzeitpunkt — nach diesem Moment ist die Capability ungültig |
 
-Der JWS wird mit dem Space Capability Signing Key signiert. Der `kid` im JWS-Header MUSS den Space-Kontext und die Capability-Key-Generation referenzieren: `wot:space:<spaceId>#cap-<generation>`. Der Broker verifiziert mit dem aktuellen Space Capability Verification Key für genau diesen Space und diese Generation.
+Das Feld `type` ist immer `"capability"`. Der JWS wird mit dem Space Capability Signing Key signiert. Der `kid` im JWS-Header MUSS den Space-Kontext und die Capability-Key-Generation referenzieren: `wot:space:<spaceId>#cap-<generation>`. Der Broker verifiziert mit dem aktuellen Space Capability Verification Key für genau diesen Space und diese Generation.
+
+Für **persönliche Dokumente** wird dasselbe Payload-Schema mit festen Bindungen und einem abweichenden `kid` (Identity-Key statt Space-Key) verwendet — siehe [Persönliche Dokumente](#persönliche-dokumente).
 
 **Empfohlene Gültigkeitsdauer:**
 
@@ -339,9 +341,22 @@ Der JWS-Payload MUSS exakt `{ "type": "admin-add", "spaceId": "<uuid>", "newAdmi
 
 Für das persönliche Dokument (Identität, Keys) stellt der User sich seine eigene Capability aus. Das persönliche Dokument hat kein Space Capability Key Pair — stattdessen signiert der User die Capability direkt mit seinem **Identity Key** (DID).
 
+**Wire-Form (MUSS).** Die Personal-Doc-Capability nutzt **dasselbe Payload-Schema** wie die Space-Capability ([Capability-Format](#capability-format)) mit folgenden festen Bindungen — kein separater Payload-Typ, kein zusätzliches `issuer`-Feld:
+
+| Feld | Wert bei Personal-Doc |
+|------|----------------------|
+| `type` | `"capability"` |
+| `spaceId` | die deterministische **Personal-Doc-ID** (= `docId`, siehe [Sync 006](006-personal-doc.md#deterministische-document-id)) |
+| `audience` | die Owner-DID |
+| `permissions` | `["read", "write"]` |
+| `generation` | `0` — Personal-Docs werden in `wot-sync@0.1` **nicht** rotiert; der Scope-Cache speichert Generation `0` |
+| `issuedAt` / `validUntil` | wie bei Space-Capabilities |
+
+Der `kid` im JWS-Header MUSS die **Verification-Method-ID des Identity Keys** des Owners sein (`<did>#<vm>`, **nicht** `wot:space:…`); signiert wird mit dem Identity Key. Ein separates `issuer`-Feld entfällt — der „Issuer" ist implizit die `kid`-DID, und die self-issued-Bedingung ist `kid`-DID = `audience` = authentifizierte DID.
+
 **Broker-Erkennung (MUSS).** Der Broker unterscheidet den Pfad anhand der `space-register`-Eintragung für die `docId`:
 
-- Existiert **keine** `space-register`-Eintragung für `docId` → Personal-Doc-Pfad: Der Broker resolved die authentifizierte DID zu ihrem Ed25519 Identity Key, verifiziert das Capability-JWS damit und prüft `issuer` = `audience` = authentifizierte DID. Der Broker kann **nicht** kryptographisch beweisen, dass `docId` die deterministische Personal-Doc-ID *dieser* DID ist (sie ist seed-abgeleitet, broker-blind); das ist unkritisch, weil der Personal-Pfad ausschließlich Selbst-Autorisierung erlaubt (`issuer==audience==auth-DID`) und Personal-Doc-Inhalt unter einem nur dem Eigentümer bekannten Schlüssel liegt.
+- Existiert **keine** `space-register`-Eintragung für `docId` → Personal-Doc-Pfad: Der Broker resolved die authentifizierte DID zu ihrem Ed25519 Identity Key, verifiziert das Capability-JWS damit und prüft `kid`-DID = `audience` = authentifizierte DID sowie `spaceId` = `docId` (Wire-Form oben). Der Broker kann **nicht** kryptographisch beweisen, dass `docId` die deterministische Personal-Doc-ID *dieser* DID ist (sie ist seed-abgeleitet, broker-blind); das ist unkritisch, weil der Personal-Pfad ausschließlich Selbst-Autorisierung erlaubt (`kid`-DID = `audience` = auth-DID) und Personal-Doc-Inhalt unter einem nur dem Eigentümer bekannten Schlüssel liegt.
 - Existiert **eine** `space-register`-Eintragung für `docId` → greift **nur** der Space-Pfad; ein self-issued-Versuch auf eine registrierte `docId` wird abgelehnt. Damit kann der Personal-Pfad keine Space-`docId` umgehen.
 
 **Unterschied zum Space-Capability-Modell:** Bei Spaces signiert der geteilte `spaceCapabilitySigningKey`, bei Personal Docs signiert der persönliche Identity Key (DID). Das ist eine bewusste Vereinfachung — ein Personal Doc hat genau einen Eigentümer, kein Gruppen-Key-Management nötig. Die Capability-Felder (`spaceId`, `generation`, `validUntil`) werden analog verwendet, aber `spaceId` wird durch die deterministische Personal-Doc-ID ersetzt (siehe [Sync 006](006-personal-doc.md)).
@@ -544,7 +559,17 @@ Ein Peer publiziert einen neuen Log-Eintrag an andere Peers. Der Log-Eintrag sel
 
 Der JWS-Payload des Eintrags enthält die Felder `seq`, `deviceId`, `docId`, `authorKid`, `keyGeneration`, `data`, `timestamp` — JCS-kanonisiert, Ed25519-signiert. Vollständiges Schema in [Sync 002 Log-Eintrag](002-sync-protokoll.md#log-eintrag).
 
-**Broker-Indexing:** Der Broker extrahiert `docId`, `deviceId`, `seq` aus dem JWS-Payload (Base64URL-dekodieren des mittleren Segments, JCS-kanonisiertes JSON parsen). Diese drei Felder braucht er für Indexing, Sync-Anfragen und Kollisionserkennung. Der Broker MUSS die JWS-Signatur NICHT verifizieren — Signatur-Verifikation ist Aufgabe der Peers, die die Einträge letztendlich konsumieren. Der Broker darf sie aber als zusätzliche Integritätsprüfung durchführen.
+**Broker-Ingest-Verifikation (MUSS).** Für den durablen Log (nicht mehr transiente Queue) MUSS der Broker den Log-Entry-JWS **vollständig verifizieren, bevor** er Autor-Bindung, Content-Hash/Kollisionsprüfung und Store/Relay durchführt:
+
+1. `alg = EdDSA` (Algorithmus-Validierung, siehe [Identity 002](../01-wot-identity/002-signaturen-und-verifikation.md#algorithmus-validierung-muss));
+2. DID aus `authorKid` extrahieren (Teil vor `#`), via `resolve()` den Public Key der passenden `verificationMethod` bestimmen;
+3. JWS-Signatur gegen diesen Public Key gültig;
+4. `kid == authorKid` (Header-`kid` identisch zum Payload-`authorKid`);
+5. Payload-Schema vollständig (`seq`, `deviceId`, `docId`, `authorKid`, `keyGeneration`, `data`, `timestamp`).
+
+Schlägt eine dieser Prüfungen fehl → `AUTH_INVALID`; der Eintrag wird **weder gespeichert noch relayed**. Erst nach erfolgreicher Verifikation extrahiert der Broker die jetzt **authentifizierten** Felder `docId`, `deviceId`, `seq` für Indexing, [Autor-Bindung](#log-eintrag-autor-bindung-muss), Kollisionserkennung und Sync-Anfragen.
+
+Ohne diese Pflicht-Verifikation würde die Autor-Bindung ins Leere laufen: ein Angreifer könnte einen JWS mit fremder `deviceId` und passend gesetztem `authorKid`-Payload, aber **eigener** Signatur einschleusen — der Broker würde den `(docId, deviceId, seq)`-Slot im durablen Log dauerhaft vergiften, obwohl der Angreifer die fremde DID nicht kontrolliert. (In der früheren transienten Queue war Signaturprüfung optional, weil der Log nicht persistierte; das gilt nicht mehr.)
 
 Kein ACK nötig — der Empfang wird implizit durch den nächsten `sync-request` bestätigt (fehlende seq-Werte werden nachgefordert).
 
