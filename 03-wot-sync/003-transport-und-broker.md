@@ -213,6 +213,12 @@ ACKs sind pro Device scoped. Ein Broker MUSS ein ACK nur fuer die Inbox des auth
 
 Der pro-Device-Zustellpfad stellt sicher, dass jedes aktive Device kritische Nachrichten wie Space-Einladungen und Key-Rotationen mindestens einmal erhält.
 
+### Relay-Whitelist (MUSS)
+
+Der Broker relayt und queued **ausschließlich** Nachrichten **definierter** Typen: WoT Transport Envelopes, deren `type` in der [Nachrichtentypen-Tabelle](#nachrichtentypen) steht, sowie die definierten [Control-Frames](#broker-control-frames-normativ). Jede andere Nachricht — unbekannter `type` oder eine nicht-konforme Legacy-Envelope (insbesondere der **deprecated pipe-`content`-Kanal** vor seiner vollständigen Entfernung in einem späteren Slice) — MUSS mit `MALFORMED_MESSAGE` abgelehnt und **weder relayed noch gequeued** werden.
+
+Begründung (sicherheitskritisch): Ohne diese Whitelist könnte ein entfernter Member nach der Rotation alt-verschlüsselten Inhalt in einen Envelope mit beliebigem, nicht-definiertem `type` packen und über den generischen Routing-Pfad **live an verbliebene Member zustellen** — der `log-entry`-Ingest-Gate (inkl. Generations-Gate) greift dort nicht. Die Whitelist schließt diesen un-gegateten Restkanal: legitime Clients senden Content ausschließlich als `log-entry/1.0` (gegated), Membership-/Key-Nachrichten ausschließlich über die definierten Inbox-Typen.
+
 ## Autorisierung (Capabilities)
 
 Der Broker ist E2EE — er kann die Mitgliederliste eines Space nicht lesen (verschlüsselt mit dem Space Content Key). Deshalb braucht er einen externen Beweis, dass ein Client auf ein Dokument zugreifen darf.
@@ -573,6 +579,14 @@ Schlägt eine dieser Prüfungen fehl → `AUTH_INVALID`; der Eintrag wird **wede
 
 Ohne diese Pflicht-Verifikation würde die Autor-Bindung ins Leere laufen: ein Angreifer könnte einen JWS mit fremder `deviceId` und passend gesetztem `authorKid`-Payload, aber **eigener** Signatur einschleusen — der Broker würde den `(docId, deviceId, seq)`-Slot im durablen Log dauerhaft vergiften, obwohl der Angreifer die fremde DID nicht kontrolliert. (In der früheren transienten Queue war Signaturprüfung optional, weil der Log nicht persistierte; das gilt nicht mehr.)
 
+**Broker-Ingest-Generations-Gate (MUSS, sicherheitskritisch).** Für eine registrierte Space-`docId` (es existiert ein `space-register`-Eintrag mit einer `generation`) MUSS der Broker — nach JWS-Verifikation und [Autor-Bindung](#log-eintrag-autor-bindung-muss), vor Store/Relay — einen `log-entry` ablehnen, dessen `keyGeneration` **strikt kleiner** als die aktuelle `space.generation` dieses Space ist → `KEY_GENERATION_STALE`; der Eintrag wird **weder gespeichert noch relayed**. Der Vergleich liest die **durable** `space.generation` (aus `space-register`/`space-rotate`), nicht den Capability-Scope-Cache — er ist damit race-sicher gegenüber einer nebenläufigen Rotation.
+
+Wirkung: Ein entfernter Member besitzt nur den **alten** Content-Key → schreibt `keyGeneration = alt` → nach der Rotation `< space.generation` → abgelehnt, **unabhängig vom Scope-Cache-Zustand**. Das ist die durable Safety-Grenze, die das Schreibfenster nach einer Member-Entfernung schließt (zusammen mit der sofortigen [Cache-Invalidierung bei Rotation](#capability-widerruf-über-rotation)).
+
+`keyGeneration` **gleich oder größer** als `space.generation` MUSS der Broker **akzeptieren** — auch eine ihm noch unbekannte zukünftige Generation: ein legitimer Member, der die `key-rotation` bereits erhielt, kann an einen Broker schreiben, dessen `space-rotate` noch unterwegs ist; den Eintrag zu verwerfen würde ihn dauerhaft verlieren, falls dieser Broker verlassen wird. Ein entfernter Member kann keinen gültigen `≥`-Eintrag erzeugen, da ihm der neue Content-Key fehlt. **Nicht puffern** (broker-blinder State). Für Spaces mit `generation = 0` (nie rotiert, z.B. single-member private Spaces) ist `0 < 0` falsch → akzeptiert.
+
+Ein hinterherhinkender legitimer Member, dessen Alt-Gen-Eintrag mit `KEY_GENERATION_STALE` abgelehnt wurde, re-emittiert nach Erhalt der `key-rotation` unter einer **neuen `seq`** und der neuen `keyGeneration` (siehe [Sync 002 Lokaler Schreibvorgang](002-sync-protokoll.md#lokaler-schreibvorgang)) — **nicht** unter derselben `seq` (das würde bei einem Broker, der den Alt-Gen-Eintrag bereits speicherte, `SEQ_COLLISION_DETECTED` auslösen).
+
 Kein ACK nötig — der Empfang wird implizit durch den nächsten `sync-request` bestätigt (fehlende seq-Werte werden nachgefordert).
 
 **Broker-seitige Kollisionsabwehr (MUSS):**
@@ -767,6 +781,7 @@ Normative Error-Codes:
 | `DEVICE_REVOKED` | Device-ID ist als revoked markiert |
 | `DEVICE_ID_CONFLICT` | Device-ID bereits für eine andere DID registriert |
 | `SEQ_COLLISION_DETECTED` | Log-Eintrag mit `(docId, deviceId, seq)` existiert bereits mit anderem Content-Hash — Client MUSS neue `deviceId` generieren (Restore/Clone-Szenario) |
+| `KEY_GENERATION_STALE` | `log-entry` mit `keyGeneration` strikt kleiner als die aktuelle `space.generation` (Schreibversuch unter rotiertem-out Content-Key, z.B. ein entfernter Member nach Rotation) — weder gespeichert noch relayed; legitimer hinterherhinkender Member re-emittiert unter neuer `seq` + neuer `keyGeneration` |
 | `MALFORMED_MESSAGE` | Nachricht oder Pflichtfeld ist syntaktisch ungültig, inklusive JSON-Parse-Fehler, malformed DID, malformed UUID v4 `deviceId`, malformed Base64URL-Nonce, malformed `signature`-Encoding, fehlender Pflichtfelder oder unbekannter Frame-Type |
 | `AUTH_INVALID` | Challenge-Response-Signatur, Envelope-JWS oder Device-Revocation-Signatur ist well-formed aber kryptographisch ungültig — passt nicht zu DID, Device oder ausstehender Challenge |
 | `NONCE_REPLAY` | Broker-Challenge-Nonce wurde bereits akzeptiert oder ist nicht mehr als ausstehende Challenge gültig |
@@ -777,7 +792,7 @@ Clients SOLLEN bei `CAPABILITY_EXPIRED` eine neue Capability anfordern (via Peer
 
 ### Erweiterbarkeit von Transport-Nachrichtentypen
 
-Neue **WoT Transport Envelope**-Nachrichtentypen DÜRFEN von Extensions definiert werden — der `type`-URI ist offen erweiterbar. Ein Client, der einen ihm unbekannten Transport-`type` empfängt, MUSS die Nachricht ignorieren (nicht verwerfen — der Broker speichert sie weiterhin für andere Clients, die den Typ verstehen).
+Neue **WoT Transport Envelope**-Nachrichtentypen DÜRFEN von Extensions definiert werden — der `type`-URI ist auf der **Definitionsebene** offen erweiterbar. Für **Relaying/Queuing** gilt jedoch die [Relay-Whitelist](#relay-whitelist-muss): Ein Broker relayt/queued einen Transport-`type` **nur**, wenn er in der [Nachrichtentypen-Tabelle](#nachrichtentypen) steht **oder** durch eine explizite Broker-Policy bzw. registrierte Extension freigegeben ist; jeden anderen (unbekannten oder deprecated) `type` MUSS er mit `MALFORMED_MESSAGE` ablehnen und **nicht** speichern/weiterleiten. Ein Client, der einen ihm unbekannten — aber vom Broker durchgelassenen — Transport-`type` empfängt, MUSS die Nachricht ignorieren (nicht verwerfen; Forward-Compat client-seitig). Die frühere Regel „der Broker speichert Unbekanntes blind für andere Clients" entfällt: ein typ-agnostischer Relay wäre ein un-gegateter Kanal, über den ein entfernter Member nach Rotation alt-verschlüsselten Inhalt zustellen könnte.
 
 Für **Broker Control-Frames** gilt das nicht: das Frame-Type-Vokabular ist geschlossen (siehe [Broker Control-Frames](#broker-control-frames-normativ)). Unbekannte Control-Frame-`type`-Werte MÜSSEN mit `MALFORMED_MESSAGE` abgelehnt werden, da Control-Frames Broker-Protokoll-Interna sind und keine Drittpartei-Erweiterung kennen.
 
