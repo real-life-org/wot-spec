@@ -223,6 +223,35 @@ admin_did = did:key-Enkodierung des admin_key_pair.public_key
 
 Der Admin-Public-Key wird beim Broker registriert. Broker-Management-Nachrichten (Rotation, Admin-Wechsel) werden mit dem Admin-Private-Key signiert.
 
+### Persönlicher Space (deterministische Genesis-Schlüssel)
+
+Ein **persönlicher Space** ist ein **regulärer Gruppen-Space** (Mitgliederliste, `space-register`, Capability-Modell, voll teilbar — siehe [Sync 005](005-gruppen.md#persönlicher-space-deterministische-genesis)), dessen **Genesis-Schlüssel deterministisch aus der Identität abgeleitet** werden statt zufällig erzeugt. Damit berechnet **jedes Gerät desselben Users unabhängig dieselben** Werte → `space-register` ist über alle Geräte idempotent (First-Writer-Wins, [Sync 003](003-transport-und-broker.md#space-registrierung-space-register)) → multi-device-tauglich **by construction**, ohne Discovery-Race.
+
+`<ns>` ist ein **app-definierter Namespace** — kanonischer, nicht-leerer lowercase-ASCII-Bezeichner (z.B. `rls-private`). Verschiedene `<ns>` ergeben verschiedene persönliche Spaces derselben Identität.
+
+**Normative Ableitung (MUSS):** IKM = 64-Byte BIP39-Seed (wie [Admin Key](#admin-key-abgeleitet)), `salt` = 32 Null-Bytes.
+
+```
+Personal Space ID:
+  id_raw   = HKDF-SHA256(IKM, salt, info=ASCII("wot/personal-space/")||<ns>||ASCII("/id/v1"), 16 Bytes)
+  id_raw[6] = (id_raw[6] & 0x0f) | 0x40    // UUID version 4 (RFC 9562 §5.4, wie Sync 006)
+  id_raw[8] = (id_raw[8] & 0x3f) | 0x80    // RFC 9562 variant
+  spaceId  = id_raw als kanonische lowercase UUID
+
+Personal Space Content Key (Generation 0):
+  = HKDF-SHA256(IKM, salt, info=ASCII("wot/personal-space/")||<ns>||ASCII("/content/v1"), 32 Bytes)  → AES-256
+
+Personal Space Capability Key Pair (Generation 0):
+  cap_seed = HKDF-SHA256(IKM, salt, info=ASCII("wot/personal-space/")||<ns>||ASCII("/cap/v1"), 32 Bytes)
+  Ed25519-Keypair aus cap_seed (cap_seed als Ed25519-Seed)
+```
+
+Der **Admin Key** wird wie in [Admin Key (abgeleitet)](#admin-key-abgeleitet) berechnet (`info="wot/space-admin/"||spaceId||"/v1"`); da `spaceId` deterministisch ist, ist auch die `adminDid` deterministisch und über alle Geräte identisch.
+
+**Separate HKDF-Kontexte** für ID, Content-Key und Cap-Keypair (Domain-Separation): die öffentliche `spaceId` leakt **kein** Schlüsselmaterial. (Abweichung von der Personal-Doc-ID in [Sync 006](006-personal-doc.md#deterministische-document-id), die aus den ersten 16 Key-Bytes abgeleitet wird — dort bereits festgelegt, hier bewusst sauberer.)
+
+**Lebenszyklus (MUSS verstanden werden):** Die deterministische Ableitung gilt **nur für die Genesis (Generation 0)**. Sobald der Space geteilt und ein Member entfernt wird, rotieren Content Key + Capability Key Pair zu **zufälligen** Generationen (siehe [Schlüsselrotation](#schlüsselrotation)); ab dann ist es ein gewöhnlicher Space, und neue Geräte des Users **entdecken** die aktuellen Schlüssel über den Personal-Doc-Sync (`groupKeys`, [Sync 006](006-personal-doc.md)), statt sie abzuleiten. Determinismus löst also das Genesis-/Bootstrap-Race, nicht den laufenden Key-Austausch eines geteilten Space.
+
 ### Schlüsselrotation
 
 Bei Entfernung eines Mitglieds MÜSSEN Space Content Key und Space Capability Key Pair gemeinsam rotiert werden. Der Ablauf ist in [Sync 005](005-gruppen.md#key-rotation-member-entfernung) spezifiziert.

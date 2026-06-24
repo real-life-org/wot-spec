@@ -43,7 +43,16 @@ Jeder Space DARF mehrere Admins haben. Die abgeleiteten Admin-DIDs werden beim B
 
 ## Space-Erstellung
 
-Beim Erstellen eines Spaces erzeugt der Client einen Space Content Key, ein Space Capability Key Pair und die initiale Mitgliederliste. Der Ersteller leitet seinen Admin Key ab und registriert beim Broker `spaceId`, `spaceCapabilityVerificationKey` und seine abgeleitete `adminDid`.
+Beim Erstellen eines **regulären** Spaces erzeugt der Client einen **zufälligen** Space Content Key, ein **zufälliges** Space Capability Key Pair und die initiale Mitgliederliste. Der Ersteller leitet seinen Admin Key ab und registriert beim Broker `spaceId`, `spaceCapabilityVerificationKey` und seine abgeleitete `adminDid`.
+
+### Persönlicher Space (deterministische Genesis)
+
+Ein **persönlicher Space** (z.B. der private „Overview"-Space einer App, in den Items landen, solange keine geteilte Gruppe gewählt ist) ist **derselbe Space-Typ** wie oben — mit identischer Struktur (Mitgliederliste, `_meta`/Module, Capability-Modell, `space-register`, voll teilbar). **Einziger Unterschied:** Seine **Genesis-Schlüssel** (`spaceId`, Content Key, Capability Key Pair) werden **deterministisch aus der Identität abgeleitet** statt zufällig (normative Ableitung: [Sync 001](001-verschluesselung.md#persönlicher-space-deterministische-genesis-schlüssel)).
+
+- **Multi-Device by construction:** Jedes Gerät desselben Users leitet dieselbe `spaceId` + dieselben Genesis-Schlüssel ab und sendet ein **identisches** `space-register` → der Broker akzeptiert es **idempotent** (First-Writer-Wins, [Sync 003](003-transport-und-broker.md#space-registrierung-space-register)). Kein Discovery-Race, selbstheilend. Alle Geräte öffnen denselben verschlüsselten Space.
+- **Single-member by default, aber ein vollwertiger Space:** Genesis-Mitgliederliste = nur die eigene DID. Da es ein regulärer Space ist, kann er später regulär **geteilt** werden (Einladung) und **upgegradet** (Member entfernen → Rotation). Es gibt **keine** strukturelle Sonderbehandlung am Broker — er sieht einen normalen Space.
+- **Nonce-Sicherheit:** Wie jeder Space läuft der Schreibpfad über den **Broker-Head-Abgleich vor erster Publikation** + Restore/Clone ([Sync 002 App-Start, Schritt 7](002-sync-protokoll.md#app-start-und-reconnect)). Da alle Geräte unter ihrer **eigenen** `deviceId` schreiben, kollidiert die `(deviceId, seq)`-Nonce nicht; der deterministische Content-Key ändert daran nichts.
+- **Nach Teilen + Rotation:** Content Key + Capability Key Pair werden zufällig (siehe [Schlüsselrotation](#key-rotation-member-entfernung)); ab dann gewöhnlicher Space, neue Geräte **entdecken** die Schlüssel via Personal-Doc-Sync statt sie abzuleiten ([Sync 001 Lebenszyklus](001-verschluesselung.md#persönlicher-space-deterministische-genesis-schlüssel)).
 
 ## Einladung
 
