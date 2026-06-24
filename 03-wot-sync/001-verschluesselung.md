@@ -223,26 +223,24 @@ admin_did = did:key-Enkodierung des admin_key_pair.public_key
 
 Der Admin-Public-Key wird beim Broker registriert. Broker-Management-Nachrichten (Rotation, Admin-Wechsel) werden mit dem Admin-Private-Key signiert.
 
-### Persönlicher Space (deterministische Genesis-Schlüssel)
+### Privater Space (deterministische Genesis-Schlüssel)
 
-Ein **persönlicher Space** ist ein **regulärer Gruppen-Space** (Mitgliederliste, `space-register`, Capability-Modell, voll teilbar — siehe [Sync 005](005-gruppen.md#persönlicher-space-deterministische-genesis)), dessen **Genesis-Schlüssel deterministisch aus der Identität abgeleitet** werden statt zufällig erzeugt. Damit berechnet **jedes Gerät desselben Users unabhängig dieselben** Werte → `space-register` ist über alle Geräte idempotent (First-Writer-Wins, [Sync 003](003-transport-und-broker.md#space-registrierung-space-register)) → multi-device-tauglich **by construction**, ohne Discovery-Race.
-
-`<ns>` ist ein **app-definierter Namespace** — kanonischer, nicht-leerer lowercase-ASCII-Bezeichner (z.B. `rls-private`). Verschiedene `<ns>` ergeben verschiedene persönliche Spaces derselben Identität.
+Der **`private-space`** ist ein **regulärer Gruppen-Space** (Mitgliederliste, `space-register`, Capability-Modell — siehe [Sync 005](005-gruppen.md#privater-space-deterministische-genesis)), dessen **Genesis-Schlüssel deterministisch aus der Identität abgeleitet** werden statt zufällig erzeugt. Damit berechnet **jedes Gerät desselben Users unabhängig dieselben** Werte → `space-register` ist über alle Geräte idempotent (First-Writer-Wins, [Sync 003](003-transport-und-broker.md#space-registrierung-space-register)) → multi-device-tauglich **by construction**, ohne Discovery-Race. `private-space` ist der einzige in `wot-sync@0.1` definierte deterministische Space; weitere deterministische Spaces wären eine künftige Extension (eigener, eindeutiger Ableitungs-Kontext).
 
 **Normative Ableitung (MUSS):** IKM = 64-Byte BIP39-Seed (wie [Admin Key](#admin-key-abgeleitet)), `salt` = 32 Null-Bytes.
 
 ```
-Personal Space ID:
-  id_raw   = HKDF-SHA256(IKM, salt, info=ASCII("wot/personal-space/")||<ns>||ASCII("/id/v1"), 16 Bytes)
+private-space ID:
+  id_raw   = HKDF-SHA256(IKM, salt, info=ASCII("wot/private-space/id/v1"), 16 Bytes)
   id_raw[6] = (id_raw[6] & 0x0f) | 0x40    // UUID version 4 (RFC 9562 §5.4, wie Sync 006)
   id_raw[8] = (id_raw[8] & 0x3f) | 0x80    // RFC 9562 variant
   spaceId  = id_raw als kanonische lowercase UUID
 
-Personal Space Content Key (Generation 0):
-  = HKDF-SHA256(IKM, salt, info=ASCII("wot/personal-space/")||<ns>||ASCII("/content/v1"), 32 Bytes)  → AES-256
+private-space Content Key (Generation 0):
+  = HKDF-SHA256(IKM, salt, info=ASCII("wot/private-space/content/v1"), 32 Bytes)  → AES-256
 
-Personal Space Capability Key Pair (Generation 0):
-  cap_seed = HKDF-SHA256(IKM, salt, info=ASCII("wot/personal-space/")||<ns>||ASCII("/cap/v1"), 32 Bytes)
+private-space Capability Key Pair (Generation 0):
+  cap_seed = HKDF-SHA256(IKM, salt, info=ASCII("wot/private-space/cap/v1"), 32 Bytes)
   Ed25519-Keypair aus cap_seed (cap_seed als Ed25519-Seed)
 ```
 
