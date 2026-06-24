@@ -43,7 +43,17 @@ Jeder Space DARF mehrere Admins haben. Die abgeleiteten Admin-DIDs werden beim B
 
 ## Space-Erstellung
 
-Beim Erstellen eines Spaces erzeugt der Client einen Space Content Key, ein Space Capability Key Pair und die initiale Mitgliederliste. Der Ersteller leitet seinen Admin Key ab und registriert beim Broker `spaceId`, `spaceCapabilityVerificationKey` und seine abgeleitete `adminDid`.
+Beim Erstellen eines **regulären** Spaces erzeugt der Client einen **zufälligen** Space Content Key, ein **zufälliges** Space Capability Key Pair und die initiale Mitgliederliste. Der Ersteller leitet seinen Admin Key ab und registriert beim Broker `spaceId`, `spaceCapabilityVerificationKey` und seine abgeleitete `adminDid`.
+
+### Privater Space (deterministische Genesis)
+
+Der **`private-space`** (der private Default-Space einer App, in den Items landen, solange keine geteilte Gruppe gewählt ist) ist **sync-technisch derselbe Space-Typ** wie oben (Mitgliederliste, `_meta`/Module, Capability-Modell, `space-register`). **Einziger Sync-Unterschied:** Seine **Genesis-Schlüssel** (`spaceId`, Content Key, Capability Key Pair) werden **deterministisch aus der Identität abgeleitet** statt zufällig (normative Ableitung: [Sync 001](001-verschluesselung.md#privater-space-deterministische-genesis-schlüssel)).
+
+- **Multi-Device by construction:** Jedes Gerät desselben Users leitet dieselbe `spaceId` + dieselben Genesis-Schlüssel ab und sendet ein **identisches** `space-register` → der Broker akzeptiert es **idempotent** (First-Writer-Wins, [Sync 003](003-transport-und-broker.md#space-registrierung-space-register)). Kein Discovery-Race, selbstheilend. Alle Geräte öffnen denselben verschlüsselten Space.
+- **Warum ein Space (statt Personal-Doc):** Bulk-Privatinhalt soll auf den **Heim-Broker(n)** liegen, nicht ubiquitär. Als Space greift die Heim-Broker-Replikation ([Sync 003 §Broker-Zuordnung](003-transport-und-broker.md#broker-zuordnung-und-multi-broker)) automatisch → skaliert für viele Items; ein „Personal Document" würde auf **alle** Broker repliziert.
+- **Nonce-Sicherheit:** Wie jeder Space läuft der Schreibpfad über den **Broker-Head-Abgleich vor erster Publikation** + Restore/Clone ([Sync 002 App-Start, Schritt 7](002-sync-protokoll.md#app-start-und-reconnect)). Da alle Geräte unter ihrer **eigenen** `deviceId` schreiben, kollidiert die `(deviceId, seq)`-Nonce nicht; der deterministische Content-Key ändert daran nichts.
+- **App-Verhalten (nicht-normativ):** Eine App **DARF** den `private-space` als **versteckten privaten Default-Space** behandeln — nicht in der Space-Liste, **kein Invite** (App-Politik; Genesis-Mitgliederliste = nur die eigene DID), Items in einer aggregierten Eigene-Inhalte-Ansicht. Das **Teilen einzelner Items** mit Kontakten/Gruppen läuft über das Item-Sharing-Modell (real-life-org/wot-spec#109), **nicht** durch Öffnen des ganzen `private-space`. Die konkrete UX ist App-Sache, nicht normativ.
+- **Technischer Lebenszyklus:** Da es ein regulärer Space ist, *könnte* er rotieren (Content Key + Capability Key Pair werden dann zufällig, siehe [Schlüsselrotation](#key-rotation-member-entfernung)); ab dann entdecken neue Geräte die Schlüssel via Personal-Doc-Sync statt sie abzuleiten ([Sync 001 Lebenszyklus](001-verschluesselung.md#privater-space-deterministische-genesis-schlüssel)). Im privaten Default-Pfad (single-member) passiert das nicht.
 
 ## Einladung
 
