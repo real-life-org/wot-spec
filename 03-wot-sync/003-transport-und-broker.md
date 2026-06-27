@@ -603,7 +603,7 @@ Diese Prüfung ist die letzte Verteidigungslinie gegen AES-GCM-Nonce-Reuse und M
 
 **Reaktion des Clients bei `SEQ_COLLISION_DETECTED`:**
 
-Der Client MUSS diese Response als Indikator für ein Restore/Clone-Szenario behandeln und die Restore-Detection-Regel aus [Sync 002](002-sync-protokoll.md#seq-konsistenz-muss) anwenden: neue `deviceId` generieren, alte deaktivieren, neu beginnen.
+Der Client MUSS `SEQ_COLLISION_DETECTED` als **harten Fehler** behandeln, **nicht** als Restore/Clone-Signal: die Ablehnung trifft den Schreibpfad, nachdem der Client bereits einen kollidierenden Eintrag erzeugt hat — die proaktive `broker_seq > local_seq`-Erkennung aus [Sync 002 seq-Konsistenz](002-sync-protokoll.md#seq-konsistenz-muss) war also wirkungslos und es liegt echter `seq`-/Nonce-Reuse vor (z.B. ein Wipe, der die `deviceId` überleben ließ, oder verletzte Cross-Tab-Atomarität). Der Client MUSS den Fehler **surfacen** und DARF **nicht** still eine neue `deviceId` minten — das würde genau den AES-256-GCM-Nonce-Reuse maskieren, den die obige Kollisionsprüfung als letzte Verteidigungslinie erkennt. Der **legitime** Restore/Clone-Pfad (neue `deviceId` generieren, alte per `device-revoke` deaktivieren, ab `seq=0` neu beginnen) wird ausschließlich **proaktiv** über `broker_seq > local_seq` ausgelöst, bevor ein kollidierender Eintrag entsteht.
 
 #### `sync-request/1.0` — Anfrage: "Was hast du seit X?"
 
@@ -623,10 +623,10 @@ Ein Peer fragt einen anderen nach fehlenden Log-Einträgen. Body:
 | Feld | Typ | Pflicht | Beschreibung |
 |------|-----|---------|-------------|
 | `docId` | UUID | Ja | Für welches Dokument |
-| `heads` | Object | Ja | Pro bekanntem `deviceId` die höchste seq, die ich bereits habe |
+| `heads` | Object | Ja | Pro bekanntem `deviceId` die höchste **lückenlose** seq, die ich habe (kontiger Vollständigkeits-Cursor, siehe [Sync 002](002-sync-protokoll.md#vollstaendigkeits-cursor-luecken-und-pagination)) |
 | `limit` | Integer | Nein | Maximale Anzahl Einträge in der Antwort (Default: 100) |
 
-**Heads-Semantik:** Ein leerer oder fehlender Eintrag für eine `deviceId` bedeutet "ich habe nichts von diesem Device" — der Antwortende sendet dann alle verfügbaren Einträge ab `seq=0`. Ein bekannter Eintrag bedeutet "ich habe bis inklusive seq N" — gesendet werden Einträge ab `seq=N+1`.
+**Heads-Semantik:** Ein leerer oder fehlender Eintrag für eine `deviceId` bedeutet "ich habe nichts von diesem Device" — der Antwortende sendet dann alle verfügbaren Einträge ab `seq=0`. Ein bekannter Eintrag bedeutet "ich habe bis inklusive seq N" — gesendet werden Einträge ab `seq=N+1`. Der `heads`-Wert pro `deviceId` ist die höchste **lückenlose** `seq` (kontiger Vollständigkeits-Cursor), nicht die höchste bekannte; oberhalb einer Lücke empfangene Einträge rücken ihn nicht vor (siehe [Sync 002 Vollständigkeits-Cursor](002-sync-protokoll.md#vollstaendigkeits-cursor-luecken-und-pagination)).
 
 #### `sync-response/1.0` — Antwort mit fehlenden Einträgen
 
@@ -653,7 +653,7 @@ Antwort auf `sync-request`. Body:
 | `docId` | UUID | Ja | Für welches Dokument |
 | `entries` | Array of JWS-Strings | Ja | Die fehlenden Log-Einträge als JWS Compact Strings, sortiert nach `(deviceId, seq)`. Format gemäß [Sync 002 Log-Eintrag](002-sync-protokoll.md#log-eintrag). |
 | `heads` | Object | Ja | Die aktuell höchsten bekannten seq pro deviceId beim Antwortenden |
-| `truncated` | Boolean | Ja | `true` wenn durch `limit` abgeschnitten — der Fragende MUSS einen weiteren `sync-request` mit aktualisierten Heads senden |
+| `truncated` | Boolean | Ja | `true` wenn durch `limit` abgeschnitten — der Fragende MUSS einen weiteren `sync-request` mit aktualisierten Heads senden (Terminierung und Lücken-Behandlung siehe [Sync 002](002-sync-protokoll.md#vollstaendigkeits-cursor-luecken-und-pagination)) |
 
 **Threading:** Der `sync-response` MUSS denselben `thid` wie der zugehörige `sync-request` tragen.
 
@@ -780,7 +780,7 @@ Normative Error-Codes:
 | `DEVICE_NOT_REGISTERED` | Client-Device ist beim Broker nicht registriert |
 | `DEVICE_REVOKED` | Device-ID ist als revoked markiert |
 | `DEVICE_ID_CONFLICT` | Device-ID bereits für eine andere DID registriert |
-| `SEQ_COLLISION_DETECTED` | Log-Eintrag mit `(docId, deviceId, seq)` existiert bereits mit anderem Content-Hash — Client MUSS neue `deviceId` generieren (Restore/Clone-Szenario) |
+| `SEQ_COLLISION_DETECTED` | Log-Eintrag mit `(docId, deviceId, seq)` existiert bereits mit anderem Content-Hash — **harter Fehler** (`seq`-/Nonce-Reuse auf dem Schreibpfad); Client MUSS surfacen, **nicht** still eine neue `deviceId` minten. Der legitime Restore/Clone läuft proaktiv über `broker_seq > local_seq` (siehe [Sync 002](002-sync-protokoll.md#seq-konsistenz-muss)) |
 | `KEY_GENERATION_STALE` | `log-entry` mit `keyGeneration` strikt kleiner als die aktuelle `space.generation` (Schreibversuch unter rotiertem-out Content-Key, z.B. ein entfernter Member nach Rotation) — weder gespeichert noch relayed; legitimer hinterherhinkender Member re-emittiert unter neuer `seq` + neuer `keyGeneration` |
 | `MALFORMED_MESSAGE` | Nachricht oder Pflichtfeld ist syntaktisch ungültig, inklusive JSON-Parse-Fehler, malformed DID, malformed UUID v4 `deviceId`, malformed Base64URL-Nonce, malformed `signature`-Encoding, fehlender Pflichtfelder oder unbekannter Frame-Type |
 | `AUTH_INVALID` | Challenge-Response-Signatur, Envelope-JWS oder Device-Revocation-Signatur ist well-formed aber kryptographisch ungültig — passt nicht zu DID, Device oder ausstehender Challenge |
