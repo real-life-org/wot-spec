@@ -652,12 +652,14 @@ Antwort auf `sync-request`. Body:
 |------|-----|---------|-------------|
 | `docId` | UUID | Ja | Für welches Dokument |
 | `entries` | Array of JWS-Strings | Ja | Die fehlenden Log-Einträge als JWS Compact Strings, sortiert nach `(deviceId, seq)`. Format gemäß [Sync 002 Log-Eintrag](002-sync-protokoll.md#log-eintrag). |
-| `heads` | Object | Ja | Die aktuell höchsten bekannten seq pro deviceId beim Antwortenden |
+| `heads` | Object | Ja | Die aktuell höchsten **bekannten** seq pro deviceId beim Antwortenden (Maximum, für Heads-Diskrepanz-Diagnostik) — **nicht** der kontige Vollständigkeits-Cursor, anders als bei `sync-request.heads` |
 | `truncated` | Boolean | Ja | `true` wenn durch `limit` abgeschnitten — der Fragende MUSS einen weiteren `sync-request` mit aktualisierten Heads senden (Terminierung und Lücken-Behandlung siehe [Sync 002](002-sync-protokoll.md#vollstaendigkeits-cursor-luecken-und-pagination)) |
 
 **Threading:** Der `sync-response` MUSS denselben `thid` wie der zugehörige `sync-request` tragen.
 
 **Heads-Diskrepanz-Detection:** Der Fragende kann die erhaltenen `heads` mit denen anderer Broker/Peers vergleichen, um Censorship oder Split-Brain zu erkennen (siehe [Sync 002](002-sync-protokoll.md#censorship--und-split-brain-detection)).
+
+**`sync-response.heads` sind NICHT der nächste Request-Cursor (MUSS).** Sie sind das Maximum des Antwortenden (Diagnostik), nicht der kontige Vollständigkeits-Cursor des Fragenden. Der nächste `sync-request.heads` MUSS aus dem **lokalen kontigen Cursor** nach Verarbeitung der verifizierten Einträge berechnet werden (siehe [Sync 002 Vollständigkeits-Cursor](002-sync-protokoll.md#vollstaendigkeits-cursor-luecken-und-pagination)) — niemals durch Übernahme von `sync-response.heads`, sonst werden lokale Lücken übersprungen.
 
 #### `ack/1.0` — Empfangsbestätigung (NORMATIV)
 
