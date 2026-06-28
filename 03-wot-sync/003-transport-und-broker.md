@@ -326,6 +326,7 @@ Der JWS-Payload MUSS `{ "type": "space-register", "spaceId": "<uuid>", "spaceCap
 
 - Ein späterer `space-register` für dieselbe `spaceId` mit **identischem** Inhalt → idempotent akzeptieren.
 - Ein späterer `space-register` mit **abweichendem** `spaceCapabilityVerificationKey` oder Admin-Set → **ablehnen** mit `SPACE_ALREADY_REGISTERED`. Änderungen laufen ausschließlich über die signierten Frames `space-rotate`/`admin-add`/`admin-remove`.
+- Ein `space-register` für eine `docId`, die bereits ein **Personal-Doc-Owner-Binding** (TOFU) trägt → **ablehnen** mit `PERSONAL_DOC_OWNER_MISMATCH`, es sei denn der Inner-JWS ist **vom gebundenen Owner signiert** (legitimer, owner-signierter Personal→Space-Upgrade; löscht das Owner-Binding atomar mit der Space-Eintragung). Die bloße Nennung der Owner-DID in `adminDids` genügt **nicht** — siehe [Persönliche Dokumente](#persönliche-dokumente).
 
 `spaceId` ist eine nicht-ratbare zufällige UUID v4; Pre-Squatting setzt Kenntnis der `spaceId` voraus (Insider). Bei vollständigem Verlust des Broker-State DARF ein aktueller Admin den Space identisch re-registrieren (idempotenter Recovery-Pfad).
 
@@ -364,8 +365,18 @@ Der `kid` im JWS-Header MUSS die **Verification-Method-ID des Identity Keys** de
 
 **Broker-Erkennung (MUSS).** Der Broker unterscheidet den Pfad anhand der `space-register`-Eintragung für die `docId`:
 
-- Existiert **keine** `space-register`-Eintragung für `docId` → Personal-Doc-Pfad: Der Broker resolved die authentifizierte DID zu ihrem Ed25519 Identity Key, verifiziert das Capability-JWS damit und prüft `kid`-DID = `audience` = authentifizierte DID sowie `spaceId` = `docId` (Wire-Form oben). Der Broker kann **nicht** kryptographisch beweisen, dass `docId` die deterministische Personal-Doc-ID *dieser* DID ist (sie ist seed-abgeleitet, broker-blind); das ist unkritisch, weil der Personal-Pfad ausschließlich Selbst-Autorisierung erlaubt (`kid`-DID = `audience` = auth-DID) und Personal-Doc-Inhalt unter einem nur dem Eigentümer bekannten Schlüssel liegt.
+- Existiert **keine** `space-register`-Eintragung für `docId` → Personal-Doc-Pfad: Der Broker resolved die authentifizierte DID zu ihrem Ed25519 Identity Key, verifiziert das Capability-JWS damit und prüft `kid`-DID = `audience` = authentifizierte DID sowie `spaceId` = `docId` (Wire-Form oben). Der Broker kann **nicht** kryptographisch beweisen, dass `docId` die deterministische Personal-Doc-ID *dieser* DID ist (sie ist seed-abgeleitet, broker-blind). Für die **Inhalts-Vertraulichkeit** ist das unkritisch (Personal-Doc-Inhalt liegt unter einem nur dem Eigentümer bekannten Schlüssel). Die Selbst-Autorisierung (`kid`-DID = `audience` = auth-DID) beweist jedoch nur **Selbst-Autorisierung, nicht Besitz** der `docId`: ein Fremder, der die `docId` lernt, könnte sich eine self-issued Capability mit eigener DID ausstellen und so in den durablen Log schreiben (Integrität) oder Sync-Metadaten lesen. Dagegen greift das **Owner-Binding (TOFU)** unten.
 - Existiert **eine** `space-register`-Eintragung für `docId` → greift **nur** der Space-Pfad; ein self-issued-Versuch auf eine registrierte `docId` wird abgelehnt. Damit kann der Personal-Pfad keine Space-`docId` umgehen.
+
+**Owner-Binding (TOFU, MUSS).** Beim **ersten erfolgreichen `present-capability`** für eine Personal-`docId` (keine `space-register`-Eintragung) bindet der Broker `(docId → authentifizierte DID)` **durabel**, first-writer-wins. Danach gilt für diese owner-gebundene `docId`:
+
+- Ein **`present-capability`** von einer **anderen** authentifizierten DID MUSS mit **`PERSONAL_DOC_OWNER_MISMATCH`** abgelehnt werden und **DARF keinen Capability-Scope cachen** — der Reject greift schon auf dem **Control-Pfad**, nicht erst bei Write/Read.
+- Jede `log-entry`- oder `sync-request`-Nachricht von einer **anderen** DID wird ebenfalls mit **`PERSONAL_DOC_OWNER_MISMATCH`** abgelehnt — geprüft **vor** dem Capability-Scope-Cache: Schreiben wird weder gespeichert noch relayed, Lesen liefert **keine** `sync-response` (kein Metadaten-Leak).
+- Geräte **derselben** DID (geteilter Seed) re-präsentieren und re-claimen **idempotent** (Multi-Device).
+
+> **Vertrauensgrenze (akzeptiert).** Die `docId` ist seed-abgeleitet und broker-blind, also ein Bearer-Secret. Ein Fremder, der die `docId` **vor** dem ersten `present-capability` des Eigentümers lernt, kann das Binding pre-squatten (TOFU-pre-squat) — außerhalb des Schutzziels.
+
+**Anti-Escalation gegen `space-register` (MUSS).** Ein `space-register` auf eine `docId`, die bereits ein Owner-Binding (TOFU) trägt, wird mit **`PERSONAL_DOC_OWNER_MISMATCH`** abgelehnt, **es sei denn der `space-register`-Inner-JWS ist vom gebundenen Owner signiert** (`kid`-DID = Owner-DID). Beim legitimen, owner-signierten Upgrade löscht der Broker das Owner-Binding **atomar** mit der Space-Eintragung (eine `docId` ist nie gleichzeitig space-registriert und owner-gebunden). Die bloße Nennung der Owner-DID in `adminDids` genügt **nicht**: `adminDids` ist self-asserted und der Inner-JWS beweist nur, dass der Signer *irgendein* Admin ist — ein Fremder könnte sonst den Owner als Decoy-Co-Admin listen, selbst signieren und über den Space-Pfad (der das Owner-Gate via `isSpaceRegistered` abschaltet) den Owner aussperren/poisonen.
 
 **Unterschied zum Space-Capability-Modell:** Bei Spaces signiert der geteilte `spaceCapabilitySigningKey`, bei Personal Docs signiert der persönliche Identity Key (DID). Das ist eine bewusste Vereinfachung — ein Personal Doc hat genau einen Eigentümer, kein Gruppen-Key-Management nötig. Die Capability-Felder (`spaceId`, `generation`, `validUntil`) werden analog verwendet, aber `spaceId` wird durch die deterministische Personal-Doc-ID ersetzt (siehe [Sync 006](006-personal-doc.md)).
 
@@ -779,6 +790,7 @@ Normative Error-Codes:
 | `CAPABILITY_GENERATION_STALE` | Capability für alte Space-Keypair-Generation (nach Rotation) |
 | `SPACE_ALREADY_REGISTERED` | `space-register` für eine bereits mit abweichendem Verification Key / Admin-Set registrierte `spaceId` (first-writer-wins) |
 | `AUTHOR_MISMATCH` | Log-Eintrag-`authorKid`-DID ist nicht die für `deviceId` registrierte DID (Device-Registrierungs-Bindung) |
+| `PERSONAL_DOC_OWNER_MISMATCH` | Personal-Doc-Owner-Binding (TOFU) liegt für eine **andere** DID vor — betrifft fremde `present-capability`, `log-entry`, `sync-request` und `space-register` auf eine owner-gebundene `docId`; **keine** Speicherung, **kein** Relay, **keine** `sync-response`, **kein** Scope-Cache. Der owner-signierte Personal→Space-Upgrade ist die Ausnahme (siehe [Persönliche Dokumente](#persönliche-dokumente)) |
 | `DEVICE_NOT_REGISTERED` | Client-Device ist beim Broker nicht registriert |
 | `DEVICE_REVOKED` | Device-ID ist als revoked markiert |
 | `DEVICE_ID_CONFLICT` | Device-ID bereits für eine andere DID registriert |
