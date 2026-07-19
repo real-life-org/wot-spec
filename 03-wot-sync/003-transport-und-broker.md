@@ -307,6 +307,13 @@ Der Admin sendet dem Broker einen `space-rotate`-Control-Frame. Wie alle Broker-
 
 Der dekodierte JWS-Payload MUSS exakt `{ "type": "space-rotate", "spaceId": "<uuid>", "newSpaceCapabilityVerificationKey": "<base64url>", "newGeneration": <int> }` sein; der JWS-`kid` referenziert die signierende `adminDid`. `newSpaceCapabilityVerificationKey` ist der kanonische Feldname (parallel zu `spaceCapabilityVerificationKey` bei `space-register`, mit `new`-Präfix wie `newGeneration`) — derselbe Wire-Contract, ein Feldname. Der Broker akzeptiert die Nachricht nur, wenn die `adminDid` zur registrierten Admin-Liste dieses Space gehört (sonst `AUTH_INVALID`) und `newGeneration` exakt die aktuelle Generation plus eins ist.
 
+**Materialgebundene Idempotenz und `GENERATION_TAKEN` (MUSS).** Konkurrierende Rotationen und verlorene Erfolgsbestätigungen sind für den Client nur unterscheidbar, wenn die Broker-Antwort an das Key-Material bindet:
+
+- Trifft eine `space-rotate` für eine **bereits installierte** `newGeneration` ein und ist `newSpaceCapabilityVerificationKey` **byte-identisch** mit dem für diese Generation installierten Key, MUSS der Broker mit **Erfolg** antworten (idempotente Wiederholung — die ursprüngliche Bestätigung ging verloren; der Absender hat gewonnen).
+- Ist für `newGeneration` (oder eine höhere Generation) ein **abweichender** Key installiert, MUSS der Broker mit dem dedizierten Fehlercode **`GENERATION_TAKEN`** ablehnen. `AUTH_INVALID` ist für diesen Fall verboten — es bleibt echten Autorisierungs-/Signaturfehlern vorbehalten.
+
+Damit gilt clientseitig: identischer Retry → Erfolg ⇒ das eigene Material ist installiert (committen und verteilen); `GENERATION_TAKEN` ⇒ ein anderer Admin hat gewonnen (eigenes Material verwerfen, auf die eintreffende `key-rotation` konvergieren, niemals das eigene Material committen).
+
 **Cache-Invalidierung bei Rotation (MUSS, sicherheitskritisch).** Nach erfolgreicher `space-rotate`-Verarbeitung MUSS der Broker **sofort alle gecachten Capability-Scopes für diese `spaceId` mit `generation < newGeneration` über ALLE offenen WebSockets ALLER betroffenen DIDs invalidieren** — nicht erst beim nächsten Reconnect und nicht erst bei `validUntil`. Andernfalls könnte ein gerade entfernter Member über seinen noch offenen Socket weiter in den durablen Log schreiben; Member-Entfernung ist der einzige Zweck der Rotation und liefe sonst ins Leere. Ein Schreib-/Leseversuch mit einer Capability alter Generation wird mit `CAPABILITY_GENERATION_STALE` abgelehnt; der Client muss eine erneuerte Capability beschaffen und neu `present-capability`-en.
 
 ### Space-Registrierung (`space-register`)

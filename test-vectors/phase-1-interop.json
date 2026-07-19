@@ -32,6 +32,23 @@
       }
     }
   },
+  "space_rotate_response_cases": {
+    "description": "Materialgebundene space-rotate-Antworten (Sync 003): idempotente byte-identische Wiederholung vs. GENERATION_TAKEN bei fremdem Material.",
+    "cases": [
+      {
+        "name": "idempotent-identical-retry-succeeds-after-lost-confirmation",
+        "installed": { "generation": 1, "verificationKey": "dGVzdC1rZXktQQ" },
+        "incoming": { "newGeneration": 1, "newSpaceCapabilityVerificationKey": "dGVzdC1rZXktQQ" },
+        "expected": "success"
+      },
+      {
+        "name": "different-material-for-installed-generation-is-generation-taken",
+        "installed": { "generation": 1, "verificationKey": "dGVzdC1rZXktQQ" },
+        "incoming": { "newGeneration": 1, "newSpaceCapabilityVerificationKey": "dGVzdC1rZXktQg" },
+        "expected": "GENERATION_TAKEN"
+      }
+    ]
+  },
   "broker_registration_control_frames": {
     "notes": "Closes wot-spec#54. Vectors for the Broker Control-Frame family defined in 03-wot-sync/003-transport-und-broker.md (register, challenge, challenge-response, registered). Identity material is shared with the top-level `identity` vector; the deviceId and nonce are deterministic fixtures for byte-identical reproduction across implementations.",
     "identity_ref": "identity",

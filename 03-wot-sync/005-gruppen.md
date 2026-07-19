@@ -331,7 +331,7 @@ Die detaillierte Verarbeitung von `blocked-by-key` Log-Eintraegen, durabel gepuf
 
 ## Concurrent-Verhalten
 
-Gleichzeitige Einladungen sind unabhängige CRDT-Operationen. Wenn Einladung und Entfernung konkurrieren, gewinnt die höhere Key-Generation: Members mit veralteten Keys müssen eine neue Capability und die aktuellen Space-Schlüssel erhalten. Bei gleichzeitigen Rotationen akzeptiert der Broker nur die erste gültige `space-rotate`-Nachricht für die neue Generation; spätere Nachrichten mit veralteter Generation werden abgelehnt.
+Gleichzeitige Einladungen sind unabhängige CRDT-Operationen. Wenn Einladung und Entfernung konkurrieren, gewinnt die höhere Key-Generation: Members mit veralteten Keys müssen eine neue Capability und die aktuellen Space-Schlüssel erhalten. Bei gleichzeitigen Rotationen akzeptiert der Broker nur die erste gültige `space-rotate`-Nachricht für die neue Generation; spätere Nachrichten mit **abweichendem** Material werden mit `GENERATION_TAKEN` abgelehnt, byte-identische Wiederholungen desselben Materials werden idempotent bestätigt (siehe [Sync 003 materialgebundene Idempotenz](003-transport-und-broker.md#capability-widerruf-über-rotation)). Ein Client, der nach einem Reject nicht beweisen kann, dass sein Material installiert wurde, DARF es nicht committen: Erfolg der identischen Wiederholung ist der Beweis fuer die eigene Rotation; `GENERATION_TAKEN` beweist den fremden Gewinner.
 
 ## Neue Nachrichtentypen
 
