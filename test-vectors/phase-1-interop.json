@@ -46,6 +46,18 @@
         "installed": { "generation": 1, "verificationKey": "dGVzdC1rZXktQQ" },
         "incoming": { "newGeneration": 1, "newSpaceCapabilityVerificationKey": "dGVzdC1rZXktQg" },
         "expected": "GENERATION_TAKEN"
+      },
+      {
+        "name": "historical-identical-retry-is-generation-taken",
+        "installed": { "generation": 2, "verificationKey": "dGVzdC1rZXktQg", "history": [ { "generation": 1, "verificationKey": "dGVzdC1rZXktQQ" } ] },
+        "incoming": { "newGeneration": 1, "newSpaceCapabilityVerificationKey": "dGVzdC1rZXktQQ" },
+        "expected": "GENERATION_TAKEN"
+      },
+      {
+        "name": "future-generation-beyond-next-is-generation-gap",
+        "installed": { "generation": 1, "verificationKey": "dGVzdC1rZXktQQ" },
+        "incoming": { "newGeneration": 3, "newSpaceCapabilityVerificationKey": "dGVzdC1rZXktQw" },
+        "expected": "GENERATION_GAP"
       }
     ]
   },
