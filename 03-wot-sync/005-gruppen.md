@@ -264,6 +264,15 @@ Damit offline Devices deterministisch aufholen koennen, MUSS eine Member-Entfern
 
 Zeitbasierte Snapshot- oder Vault-Retries duerfen diesen Ablauf beschleunigen, sind aber nicht normativ. Normative Konvergenz entsteht durch Inbox-Zustellung, Key-/Generation-Gap-Regeln und Log-Catch-Up gemaess [Sync 002 Key-Rotation und Generation-Gaps](002-sync-protokoll.md#key-rotation-und-generation-gaps).
 
+### Self-Leave (Selbst-Austritt, MUSS)
+
+Ein aktiver Member DARF sich selbst entfernen. Der Ablauf haengt von der Broker-Autoritaet des Austretenden ab — nur registrierte Admin-DIDs koennen `space-rotate` ausloesen, und der Austretende DARF das Key-Material der Folgegeneration in keinem Fall kennen oder erzeugen:
+
+- **Austretender ist registrierter Admin (weitere Members verbleiben):** Er MUSS die [operationelle Reihenfolge](#operationelle-reihenfolge-muss) selbst ausfuehren (Staging → `space-rotate` → Commit + Verteilung), mit sich selbst als entferntem Member.
+- **Austretender ist KEIN Admin:** Er MUSS sein `removed`-Membership-Event als regulaeren Sync-002-Log-Commit schreiben (bis dahin ist er kanonisch Member und schreibberechtigt) und ein selbst signiertes `member-update(action="removed")` an die eigenen Geraete und die verbleibenden Members senden. Das Event deklariert `sinceGeneration = lokale Generation + 1`. Er DARF KEINE `space-rotate` senden, KEINE `key-rotation` verteilen und KEIN neues Key-Material erzeugen. Danach DARF er lokal aufraeumen; die Bestaetigungsregeln aus Schritt 5 gelten fuer seine eigenen Geraete.
+- **Rotationspflicht der verbleibenden Admins:** Beobachtet ein aktiver Admin ein kanonisches Self-Removal (oder ein autorisiertes selbst signiertes `member-update(action="removed")`) ohne durchgesetzte Broker-Rotation fuer dessen Generation, MUSS er die Key-Rotation nach der operationellen Reihenfolge ausfuehren (Zielgeneration >= der deklarierten). Bis dahin ist der Austritt kanonisch wirksam, aber die Forward Secrecy gegenueber dem Ausgetretenen noch nicht durchgesetzt.
+- **Single-Member-Space:** Es verbleibt niemand, der geschuetzt werden muesste — der Austretende raeumt rein lokal auf; Rotation und Verteilung entfallen.
+
 ### Removal-Enforcement-Semantik (MUSS)
 
 Eine Member-Entfernung gilt erst als **durchgesetzt**, wenn **alle autoritativen Home-Broker** des Space die `space-rotate` **bestätigt** haben. Das **Home-Broker-Set** ist die in der [Space-Metadata](003-transport-und-broker.md#broker-zuordnung-und-multi-broker) geführte Heim-Broker-Liste und wird **zum Removal-Start fixiert** — späteres Hinzufügen/Entfernen von Brokern verschiebt die Enforcement-Schwelle nicht.
