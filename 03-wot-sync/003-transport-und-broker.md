@@ -353,6 +353,8 @@ Admins können weitere Admins hinzufügen oder entfernen. Beide Frames tragen ih
 
 Der JWS-Payload MUSS exakt `{ "type": "admin-add", "spaceId": "<uuid>", "newAdminDid": "did:key:..." }` bzw. `{ "type": "admin-remove", "spaceId": "<uuid>", "removedAdminDid": "did:key:..." }` sein; der JWS-`kid` referenziert die signierende `adminDid`.
 
+**Idempotenter Self-`admin-remove` (MUSS).** Referenziert der `kid` eine DID, die NICHT (mehr) in der Admin-Liste steht, gilt vor dem `AUTH_INVALID`-Reject eine Ausnahme: Ist der Signer identisch mit `removedAdminDid` und diese DID bereits nicht (mehr) in der Admin-Liste, MUSS der Broker mit **Erfolg** antworten (idempotente Wiederholung eines bereits durchgesetzten Self-Remove — die Erfolgsbestätigung ging verloren). Das ist sicher: Der Claim „entferne mich selbst" der bereits entfernten Partei ist ein No-op und verleiht keinerlei Autorität. Für alle anderen Signer-Konstellationen bleibt `AUTH_INVALID` unverändert.
+
 ### Persönliche Dokumente
 
 Für das persönliche Dokument (Identität, Keys) stellt der User sich seine eigene Capability aus. Das persönliche Dokument hat kein Space Capability Key Pair — stattdessen signiert der User die Capability direkt mit seinem **Identity Key** (DID).
