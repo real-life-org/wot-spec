@@ -305,7 +305,14 @@ Der Admin sendet dem Broker einen `space-rotate`-Control-Frame. Wie alle Broker-
 }
 ```
 
-Der dekodierte JWS-Payload MUSS exakt `{ "type": "space-rotate", "spaceId": "<uuid>", "newSpaceCapabilityVerificationKey": "<base64url>", "newGeneration": <int> }` sein; der JWS-`kid` referenziert die signierende `adminDid`. `newSpaceCapabilityVerificationKey` ist der kanonische Feldname (parallel zu `spaceCapabilityVerificationKey` bei `space-register`, mit `new`-Präfix wie `newGeneration`) — derselbe Wire-Contract, ein Feldname. Der Broker akzeptiert die Nachricht nur, wenn die `adminDid` zur registrierten Admin-Liste dieses Space gehört (sonst `AUTH_INVALID`) und `newGeneration` exakt die aktuelle Generation plus eins ist.
+Der dekodierte JWS-Payload MUSS exakt `{ "type": "space-rotate", "spaceId": "<uuid>", "newSpaceCapabilityVerificationKey": "<base64url>", "newGeneration": <int> }` sein; der JWS-`kid` referenziert die signierende `adminDid`. `newSpaceCapabilityVerificationKey` ist der kanonische Feldname (parallel zu `spaceCapabilityVerificationKey` bei `space-register`, mit `new`-Präfix wie `newGeneration`) — derselbe Wire-Contract, ein Feldname. Der Broker akzeptiert die Nachricht nur, wenn die `adminDid` zur registrierten Admin-Liste dieses Space gehört (sonst `AUTH_INVALID`). Eine NEUE Rotation installiert er ausschließlich für `newGeneration` exakt gleich der aktuellen Generation plus eins; `newGeneration` größer als die aktuelle Generation plus eins wird mit `GENERATION_GAP` abgelehnt; das `error/1.0`-Frame MUSS die aktuell installierte Broker-Generation als **`body.currentGeneration`** (Integer) tragen — der kanonische Wire-Pfad, kein anderer Ort ist konform (siehe [Error-Response](#error-response-error10)) — erst dadurch ist die Reparatur wire-seitig entscheidbar. Client-Verhalten (MUSS): Ist die eigene lokale Generation kleiner-gleich `currentGeneration`, holt der Client per Catch-Up auf und staged frisch auf `currentGeneration + 1`. Ist die eigene lokale Generation bereits GRÖSSER als `currentGeneration` (Split-Brain bzw. Broker-State-Verlust), ist der Gap NICHT automatisch reparierbar: der Client DARF nicht blind restagen und MUSS den Zustand als Fehler surfacen (das Staging bleibt durabel erhalten). Für `newGeneration` kleiner-gleich der aktuellen Generation gilt die materialgebundene Idempotenz-Regel unten (idempotenter Erfolg bzw. `GENERATION_TAKEN`).
+
+**Materialgebundene Idempotenz und `GENERATION_TAKEN` (MUSS).** Konkurrierende Rotationen und verlorene Erfolgsbestätigungen sind für den Client nur unterscheidbar, wenn die Broker-Antwort an das Key-Material bindet:
+
+- Ist `newGeneration` exakt die **aktuell installierte** Generation UND `newSpaceCapabilityVerificationKey` **byte-identisch** mit dem aktuell installierten Key, MUSS der Broker mit **Erfolg** antworten (idempotente Wiederholung — die ursprüngliche Bestätigung ging verloren; der Absender hat gewonnen). Idempotenter Erfolg gilt AUSSCHLIESSLICH für diesen aktuellen Zustand — nie für historische Generationen.
+- In jedem anderen Fall mit `newGeneration <= aktuelle Generation` (abweichender Key für die aktuelle Generation ODER jede historische Generation, auch mit seinerzeit identischem Key) MUSS der Broker mit dem dedizierten Fehlercode **`GENERATION_TAKEN`** ablehnen: Der Space ist weiterrotiert, das Material des Absenders ist nicht (mehr) das installierte — er MUSS konvergieren statt committen. `AUTH_INVALID` ist für diesen Fall verboten — es bleibt echten Autorisierungs-/Signaturfehlern vorbehalten.
+
+Damit gilt clientseitig: identischer Retry → Erfolg ⇒ das eigene Material ist installiert (committen und verteilen); `GENERATION_TAKEN` ⇒ ein anderer Admin hat gewonnen (eigenes Material verwerfen, auf die eintreffende `key-rotation` konvergieren, niemals das eigene Material committen).
 
 **Cache-Invalidierung bei Rotation (MUSS, sicherheitskritisch).** Nach erfolgreicher `space-rotate`-Verarbeitung MUSS der Broker **sofort alle gecachten Capability-Scopes für diese `spaceId` mit `generation < newGeneration` über ALLE offenen WebSockets ALLER betroffenen DIDs invalidieren** — nicht erst beim nächsten Reconnect und nicht erst bei `validUntil`. Andernfalls könnte ein gerade entfernter Member über seinen noch offenen Socket weiter in den durablen Log schreiben; Member-Entfernung ist der einzige Zweck der Rotation und liefe sonst ins Leere. Ein Schreib-/Leseversuch mit einer Capability alter Generation wird mit `CAPABILITY_GENERATION_STALE` abgelehnt; der Client muss eine erneuerte Capability beschaffen und neu `present-capability`-en.
 
@@ -345,6 +352,8 @@ Admins können weitere Admins hinzufügen oder entfernen. Beide Frames tragen ih
 ```
 
 Der JWS-Payload MUSS exakt `{ "type": "admin-add", "spaceId": "<uuid>", "newAdminDid": "did:key:..." }` bzw. `{ "type": "admin-remove", "spaceId": "<uuid>", "removedAdminDid": "did:key:..." }` sein; der JWS-`kid` referenziert die signierende `adminDid`.
+
+**Idempotenter Self-`admin-remove` (MUSS).** Referenziert der `kid` eine DID, die NICHT (mehr) in der Admin-Liste steht, gilt vor dem `AUTH_INVALID`-Reject eine Ausnahme: Ist der Signer identisch mit `removedAdminDid` und diese DID bereits nicht (mehr) in der Admin-Liste, MUSS der Broker mit **Erfolg** antworten (idempotente Wiederholung eines bereits durchgesetzten Self-Remove — die Erfolgsbestätigung ging verloren). Das ist sicher: Der Claim „entferne mich selbst" der bereits entfernten Partei ist ein No-op und verleiht keinerlei Autorität. Für alle anderen Signer-Konstellationen bleibt `AUTH_INVALID` unverändert.
 
 ### Persönliche Dokumente
 
@@ -779,6 +788,24 @@ Wenn eine Sync-Anfrage nicht erfüllt werden kann oder ein Frame zurückgewiesen
 
 Implementierungen DÜRFEN zusätzliche Felder in `body` setzen (z.B. `details` für strukturierte Diagnose-Daten). Empfänger MÜSSEN unbekannte Felder ignorieren (forward-compatible Erweiterung).
 
+**Normative strukturierte Details (MUSS, kanonischer Pfad `body.<feld>`):** Wo diese Spezifikation ein strukturiertes Error-Detail verlangt, liegt es als direktes Feld in `body` — nicht in `body.details`, nicht auf Frame-Top-Level. Aktuell definiert:
+
+| Code | Pflichtfeld | Typ | Bedeutung |
+|------|-------------|-----|-----------|
+| `GENERATION_GAP` | `body.currentGeneration` | Integer | Die aktuell installierte Broker-Generation des Space (Basis für das Restaging auf `currentGeneration + 1`) |
+
+```json
+{
+  "type": "error/1.0",
+  "thid": "<spaceId>",
+  "body": {
+    "code": "GENERATION_GAP",
+    "message": "space-rotate newGeneration is beyond the current generation plus one.",
+    "currentGeneration": 0
+  }
+}
+```
+
 Normative Error-Codes:
 
 | Code | Wann |
@@ -795,6 +822,8 @@ Normative Error-Codes:
 | `DEVICE_REVOKED` | Device-ID ist als revoked markiert |
 | `DEVICE_ID_CONFLICT` | Device-ID bereits für eine andere DID registriert |
 | `SEQ_COLLISION_DETECTED` | Log-Eintrag mit `(docId, deviceId, seq)` existiert bereits mit anderem Content-Hash — **harter Fehler** (`seq`-/Nonce-Reuse auf dem Schreibpfad); Client MUSS surfacen, **nicht** still eine neue `deviceId` minten. Der legitime Restore/Clone läuft proaktiv über `broker_seq > local_seq` (siehe [Sync 002](002-sync-protokoll.md#seq-konsistenz-muss)) |
+| `GENERATION_GAP` | `space-rotate` mit `newGeneration > aktuelle Generation + 1`; das Error-Frame traegt die installierte Broker-Generation als `currentGeneration`-Detail. Lokale Generation <= `currentGeneration`: Catch-Up + frisches Staging auf `currentGeneration + 1`. Lokale Generation > `currentGeneration`: Split-Brain — nicht automatisch reparierbar, surfacen, Staging behalten |
+| `GENERATION_TAKEN` | `space-rotate` mit `newGeneration <= aktuelle Generation`, deren Material NICHT byte-identisch der aktuell installierte `(generation, verificationKey)`-Zustand ist — der Absender hat die Rotation nicht (mehr) gewonnen und MUSS auf das installierte Material konvergieren; die byte-identische Wiederholung des aktuellen Zustands wird stattdessen idempotent bestätigt (siehe [Capability-Widerruf über Rotation](#capability-widerruf-über-rotation)) |
 | `KEY_GENERATION_STALE` | `log-entry` mit `keyGeneration` strikt kleiner als die aktuelle `space.generation` (Schreibversuch unter rotiertem-out Content-Key, z.B. ein entfernter Member nach Rotation) — weder gespeichert noch relayed; legitimer hinterherhinkender Member re-emittiert unter neuer `seq` + neuer `keyGeneration` |
 | `MALFORMED_MESSAGE` | Nachricht oder Pflichtfeld ist syntaktisch ungültig, inklusive JSON-Parse-Fehler, malformed DID, malformed UUID v4 `deviceId`, malformed Base64URL-Nonce, malformed `signature`-Encoding, fehlender Pflichtfelder oder unbekannter Frame-Type |
 | `AUTH_INVALID` | Challenge-Response-Signatur, Envelope-JWS oder Device-Revocation-Signatur ist well-formed aber kryptographisch ungültig — passt nicht zu DID, Device oder ausstehender Challenge |

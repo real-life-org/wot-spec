@@ -32,6 +32,48 @@
       }
     }
   },
+  "space_rotate_response_cases": {
+    "description": "Materialgebundene space-rotate-Antworten (Sync 003): idempotente byte-identische Wiederholung vs. GENERATION_TAKEN bei fremdem Material.",
+    "cases": [
+      {
+        "name": "idempotent-identical-retry-succeeds-after-lost-confirmation",
+        "installed": { "generation": 1, "verificationKey": "dGVzdC1rZXktQQ" },
+        "incoming": { "newGeneration": 1, "newSpaceCapabilityVerificationKey": "dGVzdC1rZXktQQ" },
+        "expected": "success"
+      },
+      {
+        "name": "different-material-for-installed-generation-is-generation-taken",
+        "installed": { "generation": 1, "verificationKey": "dGVzdC1rZXktQQ" },
+        "incoming": { "newGeneration": 1, "newSpaceCapabilityVerificationKey": "dGVzdC1rZXktQg" },
+        "expected": "GENERATION_TAKEN"
+      },
+      {
+        "name": "historical-identical-retry-is-generation-taken",
+        "installed": { "generation": 2, "verificationKey": "dGVzdC1rZXktQg", "history": [ { "generation": 1, "verificationKey": "dGVzdC1rZXktQQ" } ] },
+        "incoming": { "newGeneration": 1, "newSpaceCapabilityVerificationKey": "dGVzdC1rZXktQQ" },
+        "expected": "GENERATION_TAKEN"
+      },
+      {
+        "name": "future-generation-beyond-next-is-generation-gap",
+        "installed": { "generation": 1, "verificationKey": "dGVzdC1rZXktQQ" },
+        "incoming": { "newGeneration": 3, "newSpaceCapabilityVerificationKey": "dGVzdC1rZXktQw" },
+        "expected": "GENERATION_GAP",
+        "expectedErrorFrame": {
+          "type": "error/1.0",
+          "thid": "<spaceId>",
+          "body": { "code": "GENERATION_GAP", "currentGeneration": 1 }
+        }
+      },
+      {
+        "name": "generation-gap-recovery-restages-at-broker-current-plus-one",
+        "installed": { "generation": 0, "verificationKey": "dGVzdC1rZXktQQ" },
+        "sequence": [
+          { "incoming": { "newGeneration": 2, "newSpaceCapabilityVerificationKey": "dGVzdC1rZXktQg" }, "expected": "GENERATION_GAP", "expectedErrorFrame": { "type": "error/1.0", "thid": "<spaceId>", "body": { "code": "GENERATION_GAP", "currentGeneration": 0 } } },
+          { "incoming": { "newGeneration": 1, "newSpaceCapabilityVerificationKey": "dGVzdC1rZXktQw" }, "expected": "success" }
+        ]
+      }
+    ]
+  },
   "broker_registration_control_frames": {
     "notes": "Closes wot-spec#54. Vectors for the Broker Control-Frame family defined in 03-wot-sync/003-transport-und-broker.md (register, challenge, challenge-response, registered). Identity material is shared with the top-level `identity` vector; the deviceId and nonce are deterministic fixtures for byte-identical reproduction across implementations.",
     "identity_ref": "identity",
@@ -384,7 +426,7 @@
         "expectedDisposition": "store-pending-and-sync"
       },
       {
-        "name": "member-signed-removal-is-unverified-pending",
+        "name": "self-signed-removal-is-actionable-pending",
         "localKeyGeneration": 3,
         "knownAdminDids": ["did:key:z6MkvLMiE11z8wXjNScxqjcMJHNfNyc8XqDT4aGzry4pFTTd"],
         "knownMemberDids": ["did:key:z6MkpTHR8VNsBxYAAWHut2Geadd9jSwuBV8xRoAnwWsdvktH"],
@@ -393,6 +435,21 @@
           "spaceId": "7f3a2b10-4c5d-4e6f-8a7b-9c0d1e2f3a4b",
           "action": "removed",
           "memberDid": "did:key:z6MkpTHR8VNsBxYAAWHut2Geadd9jSwuBV8xRoAnwWsdvktH",
+          "effectiveKeyGeneration": 4,
+          "signerDid": "did:key:z6MkpTHR8VNsBxYAAWHut2Geadd9jSwuBV8xRoAnwWsdvktH"
+        },
+        "expectedDisposition": "store-pending-and-sync"
+      },
+      {
+        "name": "member-signed-foreign-removal-is-unverified-pending",
+        "localKeyGeneration": 3,
+        "knownAdminDids": ["did:key:z6MkvLMiE11z8wXjNScxqjcMJHNfNyc8XqDT4aGzry4pFTTd"],
+        "knownMemberDids": ["did:key:z6MkpTHR8VNsBxYAAWHut2Geadd9jSwuBV8xRoAnwWsdvktH"],
+        "seenUpdates": [],
+        "incomingUpdate": {
+          "spaceId": "7f3a2b10-4c5d-4e6f-8a7b-9c0d1e2f3a4b",
+          "action": "removed",
+          "memberDid": "did:key:z6MkfM9GtNJyBX92hL8CZXVQyHypcuUdFCcf4Kox9xDcJRSe",
           "effectiveKeyGeneration": 4,
           "signerDid": "did:key:z6MkpTHR8VNsBxYAAWHut2Geadd9jSwuBV8xRoAnwWsdvktH"
         },
