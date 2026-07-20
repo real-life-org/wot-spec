@@ -305,7 +305,7 @@ Der Admin sendet dem Broker einen `space-rotate`-Control-Frame. Wie alle Broker-
 }
 ```
 
-Der dekodierte JWS-Payload MUSS exakt `{ "type": "space-rotate", "spaceId": "<uuid>", "newSpaceCapabilityVerificationKey": "<base64url>", "newGeneration": <int> }` sein; der JWS-`kid` referenziert die signierende `adminDid`. `newSpaceCapabilityVerificationKey` ist der kanonische Feldname (parallel zu `spaceCapabilityVerificationKey` bei `space-register`, mit `new`-Präfix wie `newGeneration`) — derselbe Wire-Contract, ein Feldname. Der Broker akzeptiert die Nachricht nur, wenn die `adminDid` zur registrierten Admin-Liste dieses Space gehört (sonst `AUTH_INVALID`). Eine NEUE Rotation installiert er ausschließlich für `newGeneration` exakt gleich der aktuellen Generation plus eins; `newGeneration` größer als die aktuelle Generation plus eins wird mit `GENERATION_GAP` abgelehnt; das Error-Frame MUSS die aktuell installierte Broker-Generation als strukturiertes Detail `currentGeneration` tragen — erst dadurch ist die Reparatur wire-seitig entscheidbar. Client-Verhalten (MUSS): Ist die eigene lokale Generation kleiner-gleich `currentGeneration`, holt der Client per Catch-Up auf und staged frisch auf `currentGeneration + 1`. Ist die eigene lokale Generation bereits GRÖSSER als `currentGeneration` (Split-Brain bzw. Broker-State-Verlust), ist der Gap NICHT automatisch reparierbar: der Client DARF nicht blind restagen und MUSS den Zustand als Fehler surfacen (das Staging bleibt durabel erhalten). Für `newGeneration` kleiner-gleich der aktuellen Generation gilt die materialgebundene Idempotenz-Regel unten (idempotenter Erfolg bzw. `GENERATION_TAKEN`).
+Der dekodierte JWS-Payload MUSS exakt `{ "type": "space-rotate", "spaceId": "<uuid>", "newSpaceCapabilityVerificationKey": "<base64url>", "newGeneration": <int> }` sein; der JWS-`kid` referenziert die signierende `adminDid`. `newSpaceCapabilityVerificationKey` ist der kanonische Feldname (parallel zu `spaceCapabilityVerificationKey` bei `space-register`, mit `new`-Präfix wie `newGeneration`) — derselbe Wire-Contract, ein Feldname. Der Broker akzeptiert die Nachricht nur, wenn die `adminDid` zur registrierten Admin-Liste dieses Space gehört (sonst `AUTH_INVALID`). Eine NEUE Rotation installiert er ausschließlich für `newGeneration` exakt gleich der aktuellen Generation plus eins; `newGeneration` größer als die aktuelle Generation plus eins wird mit `GENERATION_GAP` abgelehnt; das `error/1.0`-Frame MUSS die aktuell installierte Broker-Generation als **`body.currentGeneration`** (Integer) tragen — der kanonische Wire-Pfad, kein anderer Ort ist konform (siehe [Error-Response](#error-response-error10)) — erst dadurch ist die Reparatur wire-seitig entscheidbar. Client-Verhalten (MUSS): Ist die eigene lokale Generation kleiner-gleich `currentGeneration`, holt der Client per Catch-Up auf und staged frisch auf `currentGeneration + 1`. Ist die eigene lokale Generation bereits GRÖSSER als `currentGeneration` (Split-Brain bzw. Broker-State-Verlust), ist der Gap NICHT automatisch reparierbar: der Client DARF nicht blind restagen und MUSS den Zustand als Fehler surfacen (das Staging bleibt durabel erhalten). Für `newGeneration` kleiner-gleich der aktuellen Generation gilt die materialgebundene Idempotenz-Regel unten (idempotenter Erfolg bzw. `GENERATION_TAKEN`).
 
 **Materialgebundene Idempotenz und `GENERATION_TAKEN` (MUSS).** Konkurrierende Rotationen und verlorene Erfolgsbestätigungen sind für den Client nur unterscheidbar, wenn die Broker-Antwort an das Key-Material bindet:
 
@@ -787,6 +787,24 @@ Wenn eine Sync-Anfrage nicht erfüllt werden kann oder ein Frame zurückgewiesen
 - `message` — frei wählbarer menschenlesbarer Hinweis, NICHT normativ.
 
 Implementierungen DÜRFEN zusätzliche Felder in `body` setzen (z.B. `details` für strukturierte Diagnose-Daten). Empfänger MÜSSEN unbekannte Felder ignorieren (forward-compatible Erweiterung).
+
+**Normative strukturierte Details (MUSS, kanonischer Pfad `body.<feld>`):** Wo diese Spezifikation ein strukturiertes Error-Detail verlangt, liegt es als direktes Feld in `body` — nicht in `body.details`, nicht auf Frame-Top-Level. Aktuell definiert:
+
+| Code | Pflichtfeld | Typ | Bedeutung |
+|------|-------------|-----|-----------|
+| `GENERATION_GAP` | `body.currentGeneration` | Integer | Die aktuell installierte Broker-Generation des Space (Basis für das Restaging auf `currentGeneration + 1`) |
+
+```json
+{
+  "type": "error/1.0",
+  "thid": "<spaceId>",
+  "body": {
+    "code": "GENERATION_GAP",
+    "message": "space-rotate newGeneration is beyond the current generation plus one.",
+    "currentGeneration": 0
+  }
+}
+```
 
 Normative Error-Codes:
 
