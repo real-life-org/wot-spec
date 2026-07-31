@@ -225,7 +225,7 @@ Der Broker ist E2EE — er kann die Mitgliederliste eines Space nicht lesen (ver
 
 ### Space-Schlüssel am Broker
 
-Der Broker kennt pro Space den `spaceCapabilityVerificationKey` für Capability-Prüfung und die `adminDid(s)` für Broker-Management-Nachrichten. Members signieren Capabilities mit dem geteilten `spaceCapabilitySigningKey`; Admins signieren Rotation und Admin-Wechsel mit ihrem abgeleiteten Admin Key (siehe [Sync 005](005-gruppen.md#admin-key-ableitung)).
+Der Broker kennt pro Space den `spaceCapabilityVerificationKey` für Capability-Prüfung und die `adminDid(s)` für Broker-Management-Nachrichten. Members signieren Capabilities mit dem geteilten `spaceCapabilitySigningKey`; Admins signieren Rotation und Admin-Wechsel mit ihrem abgeleiteten Admin Key — beim [`private-space`](005-gruppen.md#privater-space-deterministische-genesis) stattdessen mit ihrem **Identity-Key**, dessen DID dort als `adminDid` registriert ist (siehe [Sync 005](005-gruppen.md#admin-key-ableitung)).
 
 ### Capability-Format
 
@@ -296,7 +296,7 @@ Der **Inbox-Kanal** (`inbox/1.0`, `space-invite/1.0`, `member-update/1.0`, `key-
 
 Bei Member-Entfernung rotiert der Admin das **Space Capability Key Pair**. Der Broker akzeptiert ab dem Moment nur Capabilities die gegen den neuen `spaceCapabilityVerificationKey` verifizierbar sind — alle alten Capabilities werden automatisch ungültig.
 
-Der Admin sendet dem Broker einen `space-rotate`-Control-Frame. Wie alle Broker-Management-Frames trägt er seinen Claim als **Inner-JWS** (analog `device-revoke`), signiert mit dem space-spezifisch abgeleiteten **Admin Key**:
+Der Admin sendet dem Broker einen `space-rotate`-Control-Frame. Wie alle Broker-Management-Frames trägt er seinen Claim als **Inner-JWS** (analog `device-revoke`), signiert mit dem space-spezifisch abgeleiteten **Admin Key** (beim [`private-space`](005-gruppen.md#privater-space-deterministische-genesis) mit dem **Identity-Key** des registrierten Admins):
 
 ```json
 {

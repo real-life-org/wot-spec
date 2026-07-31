@@ -27,7 +27,7 @@ Die Mitgliederliste ist Teil der Sync-Daten und wird wie alle anderen Änderunge
 
 Admin Keys werden pro Space aus dem 64-Byte BIP39-Seed abgeleitet; die normative Ableitung steht in [Sync 001](001-verschluesselung.md#admin-key-abgeleitet). Der Broker kennt nur die abgeleitete `adminDid`, nicht die Haupt-DID des Admins.
 
-**Ausnahme (MUSS):** Der [`private-space`](#privater-space-deterministische-genesis) verwendet **keine** abgeleiteten Admin-Keys — dort ist die registrierte `adminDid` die **Identity-DID**, und **alle** Broker-Management-Frames (`space-register`, `space-rotate`, `admin-add`, `admin-remove`) werden mit dem **Identity-Key** signiert. Wo dieses Dokument im Folgenden „Admin Key" sagt, gilt für den `private-space` entsprechend der Identity-Key. Normativ: [Sync 001](001-verschluesselung.md#privater-space-deterministische-genesis-schlüssel).
+**Ausnahme:** Der [`private-space`](#privater-space-deterministische-genesis) MUSS **ohne** abgeleitete Admin-Keys betrieben werden: Seine beim Broker registrierte `adminDid` MUSS die **Identity-DID** sein, und **alle** Broker-Management-Frames (`space-register`, `space-rotate`, `admin-add`, `admin-remove`) MÜSSEN mit dem **Identity-Key** signiert werden. Wo dieses Dokument im Folgenden „Admin Key" sagt, MUSS für den `private-space` entsprechend der Identity-Key gelesen werden. Normativ: [Sync 001](001-verschluesselung.md#privater-space-deterministische-genesis-schlüssel).
 
 ## Rollen
 
@@ -41,7 +41,7 @@ Admin Keys werden pro Space aus dem 64-Byte BIP39-Seed abgeleitet; die normative
 
 Jeder Member darf einladen; nur Admins dürfen rotieren und damit Members entfernen.
 
-Jeder Space DARF mehrere Admins haben. Die abgeleiteten Admin-DIDs werden beim Broker registriert; jeder registrierte Admin DARF Rotationen auslösen. Feinere Permissions sind nicht Teil von Phase 1.
+Jeder Space DARF mehrere Admins haben. Bei Spaces mit abgeleiteten Admin-Keys werden die **abgeleiteten** Admin-DIDs beim Broker registriert; beim [`private-space`](#privater-space-deterministische-genesis) stattdessen die **Identity-DIDs** (siehe [Ausnahme](#admin-key-ableitung)). Jeder registrierte Admin DARF Rotationen auslösen. Feinere Permissions sind nicht Teil von Phase 1.
 
 ## Space-Erstellung
 
@@ -374,7 +374,18 @@ Der dekodierte JWS-Payload MUSS exakt sein:
 }
 ```
 
-Signiert mit dem (noch einzigen) Admin Key; der JWS-`kid` referenziert eine der genannten `adminDids`. Da beim Erst-Register noch keine Admin-Liste existiert, ist die Registrierung **trust-on-first-use** und wird **first-writer-wins** gebunden: ein späterer `space-register` mit identischem Inhalt ist idempotent, mit abweichendem `spaceCapabilityVerificationKey`/Admin-Set wird er mit `SPACE_ALREADY_REGISTERED` abgelehnt (Detail siehe [Sync 003](003-transport-und-broker.md#space-registrierung-space-register)). Der Broker speichert Space-ID, Space Capability Verification Key und Admin-DIDs. Spätere Änderungen laufen ausschließlich über die signierten Frames `admin-add`/`admin-remove`/`space-rotate` (jeweils signiert von einem eingetragenen Admin).
+Das Beispiel zeigt einen **regulären** Space mit abgeleiteter Admin-DID. Für den [`private-space`](#privater-space-deterministische-genesis) ist die Payload-Form identisch, aber `adminDids` MUSS die **Identity-DID** enthalten:
+
+```json
+{
+  "type": "space-register",
+  "spaceId": "<deterministisch abgeleitete uuid>",
+  "spaceCapabilityVerificationKey": "<base64url>",
+  "adminDids": ["did:key:z6Mk...creator-identity"]
+}
+```
+
+Signiert mit dem (noch einzigen) Admin Key — beim `private-space` mit dem Identity-Key; der JWS-`kid` referenziert eine der genannten `adminDids`. Da beim Erst-Register noch keine Admin-Liste existiert, ist die Registrierung **trust-on-first-use** und wird **first-writer-wins** gebunden: ein späterer `space-register` mit identischem Inhalt ist idempotent, mit abweichendem `spaceCapabilityVerificationKey`/Admin-Set wird er mit `SPACE_ALREADY_REGISTERED` abgelehnt (Detail siehe [Sync 003](003-transport-und-broker.md#space-registrierung-space-register)). Der Broker speichert Space-ID, Space Capability Verification Key und Admin-DIDs. Spätere Änderungen laufen ausschließlich über die signierten Frames `admin-add`/`admin-remove`/`space-rotate` (jeweils signiert von einem eingetragenen Admin).
 
 ### Capability-Prüfung
 
@@ -422,7 +433,7 @@ Der Broker sieht nur:
 
 Der [`private-space`](#privater-space-deterministische-genesis) registriert normativ die **Haupt-Identity-DID** seines Admins statt einer abgeleiteten Admin-DID ([Sync 001](001-verschluesselung.md#privater-space-deterministische-genesis-schlüssel)). Die obigen Nicht-Aussagen gelten für ihn daher **nicht**: Der Broker erfährt, dass **diese** Haupt-Identität Admin **dieses** Space ist, und kann den `private-space` über diese DID mit allen anderen Frames derselben Identität verknüpfen.
 
-Das ist eine **bewusst akzeptierte Linkability-Ausnahme**: Der `private-space` ist per Genesis ohnehin an genau eine Identität gebunden und wird im Default-Pfad nicht geteilt; im Gegenzug entfällt ein zweites Schlüsselmodell für den einzigen Space, dessen Admin nie wechselt. Implementierungen DÜRFEN für den `private-space` keine Admin-Unverknüpfbarkeit gegenüber dem Broker zusichern.
+Das ist eine **bewusst akzeptierte Linkability-Ausnahme**: Der `private-space` ist per Genesis ohnehin an genau eine Identität gebunden und wird im Default-Pfad nicht geteilt; im Gegenzug entfällt ein zweites Schlüsselmodell für den einzigen Space, dessen Genesis deterministisch aus genau dieser Identität stammt und der im Default-Pfad Single-Member bleibt. Implementierungen DÜRFEN für den `private-space` keine Admin-Unverknüpfbarkeit gegenüber dem Broker zusichern.
 
 ### Was bewusst NICHT eingeschränkt ist
 
