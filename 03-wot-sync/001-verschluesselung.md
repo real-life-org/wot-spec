@@ -244,7 +244,16 @@ private-space Capability Key Pair (Generation 0):
   Ed25519-Keypair aus cap_seed (cap_seed als Ed25519-Seed)
 ```
 
-Der **Admin Key** wird wie in [Admin Key (abgeleitet)](#admin-key-abgeleitet) berechnet (`info="wot/space-admin/"||spaceId||"/v1"`); da `spaceId` deterministisch ist, ist auch die `adminDid` deterministisch und über alle Geräte identisch.
+**Admin des `private-space` (MUSS):** Abweichend von der [allgemeinen Admin-Key-Ableitung](005-gruppen.md#admin-key-ableitung) verwendet der `private-space` **keine** abgeleiteten Space-Admin-Keys:
+
+- Die beim Broker registrierte `adminDid` des `private-space` MUSS die **Identity-DID** des jeweiligen Admins sein (das `did:key` seines Ed25519-Identity-Keys), nicht eine abgeleitete Admin-DID.
+- **Alle** Broker-Management-Frames des `private-space` — `space-register`, `space-rotate`, `admin-add`, `admin-remove` — MÜSSEN mit dem **Identity-Key** signiert werden, dessen DID als `adminDid` registriert ist; der `kid` des Inner-JWS MUSS genau diese DID referenzieren.
+- Auch **später beförderte** Admins des `private-space` MÜSSEN mit ihrer Identity-DID registriert werden und mit ihrem Identity-Key signieren. **Gemischte Admin-Listen** (abgeleitete und Identity-DIDs im selben Space) sind für den `private-space` NICHT erlaubt: der Broker kann eine mit einem abgeleiteten Key erzeugte Signatur nicht gegen eine registrierte Identity-DID prüfen (und umgekehrt).
+- Das Prüfverfahren des Brokers bleibt **unverändert**: Der `kid` MUSS auf eine für diesen Space registrierte `adminDid` verweisen und die Signatur MUSS mit dem zu dieser DID gehörenden öffentlichen Schlüssel verifizierbar sein ([Sync 003](003-transport-und-broker.md#admin-management)). Es ändert sich ausschließlich, WELCHE DID registriert wird — nicht, wie geprüft wird.
+
+Da alle Geräte desselben Users dieselbe Identity-DID besitzen, ist die `adminDid` deterministisch und geräteübergreifend identisch — ohne separate Schlüsselableitung; das ist die Voraussetzung dafür, dass das `space-register` jedes Geräts byte-identisch und damit idempotent ist.
+
+**Privacy-Konsequenz (MUSS offengelegt werden):** Für den `private-space` gilt die allgemeine Broker-Privacy-Zusage NICHT — siehe [Privacy gegenüber dem Broker](005-gruppen.md#privacy-gegenüber-dem-broker).
 
 **Separate HKDF-Kontexte** für ID, Content-Key und Cap-Keypair (Domain-Separation): die öffentliche `spaceId` leakt **kein** Schlüsselmaterial. (Abweichung von der Personal-Doc-ID in [Sync 006](006-personal-doc.md#deterministische-document-id), die aus den ersten 16 Key-Bytes abgeleitet wird — dort bereits festgelegt, hier bewusst sauberer.)
 
