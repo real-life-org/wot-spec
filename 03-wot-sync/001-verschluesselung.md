@@ -244,7 +244,7 @@ private-space Capability Key Pair (Generation 0):
   Ed25519-Keypair aus cap_seed (cap_seed als Ed25519-Seed)
 ```
 
-Der **Admin Key** wird wie in [Admin Key (abgeleitet)](#admin-key-abgeleitet) berechnet (`info="wot/space-admin/"||spaceId||"/v1"`); da `spaceId` deterministisch ist, ist auch die `adminDid` deterministisch und über alle Geräte identisch.
+**Admin des `private-space`:** Abweichend von der [allgemeinen Admin-Key-Ableitung](005-gruppen.md#admin-key-ableitung) ist der Admin des `private-space` die **Identity-DID des Erstellers** (das `did:key` seines Ed25519-Identity-Keys), registriert als `adminDid` beim Broker; `space-register` wird mit dem Identity-Key signiert. Da alle Geräte desselben Users dieselbe Identity-DID besitzen, ist die `adminDid` deterministisch und geräteübergreifend identisch — ohne separate Schlüsselableitung.
 
 **Separate HKDF-Kontexte** für ID, Content-Key und Cap-Keypair (Domain-Separation): die öffentliche `spaceId` leakt **kein** Schlüsselmaterial. (Abweichung von der Personal-Doc-ID in [Sync 006](006-personal-doc.md#deterministische-document-id), die aus den ersten 16 Key-Bytes abgeleitet wird — dort bereits festgelegt, hier bewusst sauberer.)
 
