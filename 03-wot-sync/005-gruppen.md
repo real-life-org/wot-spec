@@ -387,6 +387,22 @@ Wenn ein Admin offline entfernt, werden Remove-Operation und Rotation lokal vorb
 
 Ein Admin DARF aus dem Space austreten oder nur die Admin-Rolle abgeben. Das geschieht durch eine `admin-remove`-Nachricht, signiert mit einem bestehenden Admin Key. Falls der ausscheidende Admin der einzige war, SOLLTE vorher ein neuer Admin ernannt werden.
 
+### Admin-Capability-Reclaim (Rotation)
+
+Ein registrierter Admin behält seine **Rotationsautorität** unabhängig vom Space Capability Signing Key: Der Admin Key ist aus dem 64-Byte-Seed **ableitbar** (siehe [Admin Key Ableitung](#admin-key-ableitung)), und der Broker autorisiert `space-rotate` allein anhand der registrierten `adminDid` (siehe [Sicherheitsmodell](#sicherheitsmodell)). Der Space Capability Signing Key hingegen ist zufällig und pro Generation geteilt.
+
+Verliert ein registrierter Admin den **aktuellen** Space Capability Signing Key — etwa nach Seed-Recovery auf einem Gerät, auf das das Signing-Material nicht synchronisiert wurde —, während er den/die Content Key(s) besitzt (via Personal-Doc-Sync wiederherstellbar), so DARF er seine volle Schreib-/Capability-Fähigkeit durch eine **Reclaim-Rotation** wiederherstellen:
+
+1. Er leitet seinen Admin Key aus dem Seed ab und erzeugt ein **neues** Space Capability Key Pair sowie einen neuen Content Key (wie bei jeder Rotation).
+2. Er registriert den neuen `spaceCapabilityVerificationKey` per `space-rotate` bei allen autoritativen Home-Brokern — signiert mit dem Admin Key allein.
+3. Er verteilt neuen Content Key, neuen Space Capability Signing Key und eine neue Capability per `key-rotation` an **alle** verbleibenden Members. Die Mitgliederliste bleibt **unverändert** — dies ist KEINE Member-Entfernung.
+
+Die [Key-Rotation-Invarianten](#key-rotation-invarianten-muss) und die [Removal-Enforcement-Semantik](#removal-enforcement-semantik-muss) gelten unverändert (durables Staging → `space-rotate` an alle Home-Broker → nach Bestätigung Commit + Verteilung; `generation = vorherige + 1`). Nach der Reclaim-Rotation besitzt der Admin das neue Signing-Material selbst und ist voll operativ.
+
+**Voraussetzung (MUSS):** Nur ein am Broker **registrierter** Admin kann eine Reclaim-Rotation durchsetzen — der Broker gated `space-rotate` an der `adminDid`. Ein NICHT-Admin, der sein Capability-Signing-Material verloren hat, DARF sich so **nicht** selbst rehabilitieren; er benötigt eine neue Capability durch einen aktiven Member (siehe [Einladung](#einladung)).
+
+**Leichterer Pfad zuerst (SOLLTE):** Hält ein anderes eigenes Gerät oder ein Member das aktuelle Signing-Material noch, SOLLTE es per Signing-Material-Backfill wiederhergestellt werden, bevor rotiert wird — Backfill ist nicht-disruptiv (keine neue Generation, keine Verteilung an alle). Die Reclaim-Rotation ist die **Garantie**, wenn kein Backfill verfügbar ist (typischer Fall: ein Space, dessen Capability Signing Key nie im Personal-Doc persistiert wurde).
+
 ### Space ohne Admin
 
 Falls alle Admins weg sind (z.B. alle haben ausgetreten oder verloren ihre Keys), ist der Space in seiner aktuellen Zusammensetzung eingefroren:
