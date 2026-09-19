@@ -22,7 +22,7 @@ Dieses Dokument spezifiziert wie Daten im Web of Trust signiert und verifiziert 
 
 ## Anforderungen
 
-- DID-gebundene Signaturen MUESSEN ueber `kid`, `resolve(did)` und das DID-Dokument verifizierbar sein; nicht-DID-gebundene Signaturen MUESSEN ihren kontextspezifischen Key-Resolver normativ angeben.
+- DID-gebundene Signaturen MÜSSEN ueber `kid`, `resolve(did)` und das DID-Dokument verifizierbar sein; nicht-DID-gebundene Signaturen MÜSSEN ihren kontextspezifischen Key-Resolver normativ angeben.
 - Das Signaturformat MUSS deterministische Verifikation unterstützen (gleiche Eingabe → gleiches Ergebnis)
 - Die Kanonisierungsmethode MUSS eindeutig sein
 

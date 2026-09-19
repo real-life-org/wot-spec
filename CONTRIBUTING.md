@@ -12,11 +12,40 @@ Dieses Repository ist die neutrale Spezifikationsquelle fuer das Web-of-Trust-Pr
 
 ## Normative Sprache
 
-Normative Dokumente verwenden deutsche RFC-2119-Begriffe:
+Die Konvention gilt fuer alle Repositories der Familie und steht einmal in
+[real-life-org/meta → CONVENTIONS.md](https://github.com/real-life-org/meta/blob/main/CONVENTIONS.md).
+Sie wird hier nicht wiederholt, damit sie nicht auseinanderlaeuft. Das Kurzmass
+fuer dieses Repository:
 
-- `MUSS` / `MUESSEN` fuer verpflichtende Anforderungen
-- `SOLLTE` / `SOLLTEN` fuer empfohlene Anforderungen
-- `DARF` / `DUERFEN` fuer erlaubte Optionen
+Dieses Repository fuehrt **beide Dokumentklassen**:
+
+- **Deutsch** — `01-wot-identity/`, `02-wot-trust/`, `03-wot-sync/`,
+  `research/`. Deutsche RFC-2119-Begriffe.
+- **Englisch** — `rltp/`. IETF-Editor's-Drafts mit BCP-14-Boilerplate, weil
+  sie bei IIW, DIF und IETF zitierbar sein muessen. Dazu die beiden Dokumente,
+  die sich an externe Implementierer richten:
+  `conformance/rust-hmc-checklist.md` und `research/autonomous-pipeline.md`.
+
+Ein Dokument gehoert zu genau einer Klasse. Die Wortsaetze werden nicht
+gemischt.
+
+Die deutschen Begriffe:
+
+- `MUSS` / `MÜSSEN` fuer verpflichtende Anforderungen
+- `DARF NICHT` / `DÜRFEN NICHT` fuer Verbote
+- `SOLLTE` / `SOLLTEN` fuer Empfehlungen
+- `DARF` / `DÜRFEN` fuer echte Optionen
+
+`SOLL` ist **kein** Schluesselwort: Eine Empfehlung heisst `SOLLTE`, eine
+Pflicht `MUSS`. Umlaute werden geschrieben, also `MÜSSEN` und nicht `MUESSEN`.
+
+Geprueft wird das maschinell, nicht durch Lesen:
+
+```
+python3 scripts/check-normative-words.py
+```
+
+Laeuft in der CI mit.
 
 Research-Dokumente duerfen freier formulieren, muessen aber als Research erkennbar bleiben.
 

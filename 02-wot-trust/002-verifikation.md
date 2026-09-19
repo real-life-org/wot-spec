@@ -149,7 +149,7 @@ Der Empfaenger MUSS die Nonce-Bindung ausschliesslich ueber einen Full-String-Ma
 
 Der Online-Ein-QR-Scan-Flow benoetigt keinen zweiten QR-Scan. Der zweite QR-Scan wuerde nur erneut kopierbare QR-Daten uebertragen; die Sicherheitsbindung entsteht durch die frische Challenge-Nonce, die Signatur, den lokalen Pending-State und die bewusste Bestaetigung durch den User.
 
-Damit zwei beliebige Verification-Attestations nicht automatisch eine gegenseitige Live-Verifikation ergeben, MUESSEN Implementierungen Gegen-Verifikationen an lokalen State binden:
+Damit zwei beliebige Verification-Attestations nicht automatisch eine gegenseitige Live-Verifikation ergeben, MÜSSEN Implementierungen Gegen-Verifikationen an lokalen State binden:
 
 1. Wenn Bob nach dem Scan von Alices QR-Code eine Verification-Attestation an Alice erstellt, MUSS Bob lokal einen `pendingCounterVerification`-Eintrag speichern.
 2. Dieser Eintrag MUSS mindestens enthalten:
@@ -169,7 +169,7 @@ Damit zwei beliebige Verification-Attestations nicht automatisch eine gegenseiti
 
 Eine Implementierung DARF den Pending-Counter-State kuerzer halten oder den User jederzeit einen neuen QR-Flow starten lassen. Sie DARF ihn jedoch NICHT unbegrenzt als Live-Beweis verwenden.
 
-Hinweis zur Validierbarkeit: JSON-Schema kann nur die Feldform von `inResponseTo` validieren. Die Existenz und Integritaet des lokalen `pendingCounterVerification`-Eintrags, `inResponseTo`-Exact-Match, `issuer`/`iss`-Bindung an `counterpartyDid`, lokale DID-Bindung und `expiresAt`-Ablaufpruefung sind zustands- und zeitabhaengig. Sie MUESSEN durch Laufzeitlogik und Conformance-Tests mit kontrolliertem lokalen State und kontrollierter Uhr geprueft werden.
+Hinweis zur Validierbarkeit: JSON-Schema kann nur die Feldform von `inResponseTo` validieren. Die Existenz und Integritaet des lokalen `pendingCounterVerification`-Eintrags, `inResponseTo`-Exact-Match, `issuer`/`iss`-Bindung an `counterpartyDid`, lokale DID-Bindung und `expiresAt`-Ablaufpruefung sind zustands- und zeitabhaengig. Sie MÜSSEN durch Laufzeitlogik und Conformance-Tests mit kontrolliertem lokalen State und kontrollierter Uhr geprueft werden.
 
 ### Nonce-History (MUSS)
 
@@ -258,7 +258,7 @@ verification-jti = %s"urn:uuid:" uuid
 uuid = 8HEXDIG "-" 4HEXDIG "-" 4HEXDIG "-" 4HEXDIG "-" 12HEXDIG
 ```
 
-Der Literal-Prefix `urn:uuid:` in `verification-jti` ist case-sensitiv und MUSS exakt lowercase geschrieben sein. Das ABNF verwendet deshalb den case-sensitiven Literal-Marker `%s`; Implementierungen DUERFEN nicht die standardmaessige case-insensitive ABNF-Literal-Semantik auf den Prefix anwenden. Der `uuid`-Teil MUSS genau die QR-Challenge-Nonce sein. Implementierungen MUESSEN die `jti` gegen den gesamten String matchen, die UUID-Gruppe extrahieren und fuer Vergleich sowie Nonce-History auf Kleinbuchstaben normalisieren. UUID-Buchstaben `A-F` in der `jti` sind deshalb gueltig, solange der normalisierte Wert exakt der lokal aktiven Challenge-Nonce entspricht.
+Der Literal-Prefix `urn:uuid:` in `verification-jti` ist case-sensitiv und MUSS exakt lowercase geschrieben sein. Das ABNF verwendet deshalb den case-sensitiven Literal-Marker `%s`; Implementierungen DÜRFEN nicht die standardmaessige case-insensitive ABNF-Literal-Semantik auf den Prefix anwenden. Der `uuid`-Teil MUSS genau die QR-Challenge-Nonce sein. Implementierungen MÜSSEN die `jti` gegen den gesamten String matchen, die UUID-Gruppe extrahieren und fuer Vergleich sowie Nonce-History auf Kleinbuchstaben normalisieren. UUID-Buchstaben `A-F` in der `jti` sind deshalb gueltig, solange der normalisierte Wert exakt der lokal aktiven Challenge-Nonce entspricht.
 
 Fuer das Acceptance Gate gilt:
 

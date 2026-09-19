@@ -152,7 +152,7 @@ Jede Ressource hat ihre eigene `version` (monoton, unabhängig von der Profil-Ve
 | `avatar` | String | Nein | Avatar-Bild (Data-URL oder HTTPS-URL) |
 | `protocols` | Array | Nein | Unterstützte Protokoll-URIs. Ermöglicht Clients zu erkennen, welche Extensions der Peer unterstützt. |
 
-Kanonische Quelle fuer Keys und Broker-URLs ist ausschliesslich das `didDocument` (`keyAgreement` und `service`). Das `profile`-Objekt enthaelt soziale Metadaten und Protokoll-Hinweise, aber keine redundanten kryptographischen Schluessel. Clients MUESSEN Encryption-Key-Discovery ueber `didDocument.keyAgreement` durchfuehren.
+Kanonische Quelle fuer Keys und Broker-URLs ist ausschliesslich das `didDocument` (`keyAgreement` und `service`). Das `profile`-Objekt enthaelt soziale Metadaten und Protokoll-Hinweise, aber keine redundanten kryptographischen Schluessel. Clients MÜSSEN Encryption-Key-Discovery ueber `didDocument.keyAgreement` durchfuehren.
 
 ### Signatur-Prüfung beim PUT
 
@@ -182,7 +182,7 @@ Das `version`-Feld im signierten Payload dient als **monotoner Versions-Zähler*
 
 Das gilt unabhängig von allen drei Ressourcen — `/p/{did}`, `/p/{did}/v`, `/p/{did}/a` haben jeweils ihr eigenes `version`-Feld und werden unabhängig überprüft.
 
-**HTTP-Caching** (ETag, If-None-Match) ist OPTIONAL und orthogonal zum Rollback-Schutz. Clients SOLLTEN den zuletzt geholten JWS-String mit dem frisch geholten vergleichen, bevor sie ihn erneut verarbeiten.
+**HTTP-Caching** (ETag, If-None-Match) ist optional und orthogonal zum Rollback-Schutz. Clients SOLLTEN den zuletzt geholten JWS-String mit dem frisch geholten vergleichen, bevor sie ihn erneut verarbeiten.
 
 ### Rate Limiting
 
@@ -208,7 +208,7 @@ Ein neues Gerät findet Personal Doc und Space-Dokumente über bekannte Broker o
 
 ## Profil-Service-Recovery-Fallback
 
-Implementierungen DUERFEN den Profil-Service als Recovery-Fallback verwenden, wenn Vault, Personal Doc oder lokaler CRDT-State nicht erreichbar oder nicht lesbar sind. Dieser Fallback ist auf oeffentliche, signierte Profil-Service-Ressourcen begrenzt.
+Implementierungen DÜRFEN den Profil-Service als Recovery-Fallback verwenden, wenn Vault, Personal Doc oder lokaler CRDT-State nicht erreichbar oder nicht lesbar sind. Dieser Fallback ist auf oeffentliche, signierte Profil-Service-Ressourcen begrenzt.
 
 Ein Profil-Service-Recovery-Fallback DARF rekonstruieren:
 
@@ -219,4 +219,4 @@ Ein Profil-Service-Recovery-Fallback DARF rekonstruieren:
 
 Ein Profil-Service-Recovery-Fallback DARF NICHT als Recovery-Quelle fuer private Wallet-Zustaende, unveroeffentlichte empfangene Attestations, private Kontakte, Space Content Keys, Space-Mitgliedschaftsgeheimnisse, Personal-Doc-only State oder Vault Secrets verwendet werden.
 
-Clients MUESSEN bei diesem Fallback dieselben Pruefungen anwenden wie bei normalem Profil-Service-Abruf: JWS-Signatur, DID/Pfad-Konsistenz und Versionsmonotonie. Recovered Profile Data bleibt oeffentliches Profil-/Discovery-Datum und ist kein kanonischer Ersatz fuer Personal Doc oder Vault.
+Clients MÜSSEN bei diesem Fallback dieselben Pruefungen anwenden wie bei normalem Profil-Service-Abruf: JWS-Signatur, DID/Pfad-Konsistenz und Versionsmonotonie. Recovered Profile Data bleibt oeffentliches Profil-/Discovery-Datum und ist kein kanonischer Ersatz fuer Personal Doc oder Vault.

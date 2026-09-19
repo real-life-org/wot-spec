@@ -94,9 +94,9 @@ Ein DeviceKeyBinding autorisiert einen Device Key, fuer eine Identity DID bestim
 
 `validFrom` und `validUntil` begrenzen nur die Signaturberechtigung des Device Keys. Sie sind kein Gueltigkeitsfenster fuer Attestations, die waehrend des Delegationszeitraums ausgestellt wurden. `iat` im Binding ist der Ausstellungszeitpunkt des Bindings; `iat` in der Attestation ist der Ausstellungszeitpunkt der Attestation.
 
-`validFrom` und `validUntil` im DeviceKeyBinding MUESSEN RFC3339-`date-time`-Strings mit expliziter Zeitzone (`Z` oder `+/-HH:MM`) und Ganzsekunden-Praezision sein. Fractional seconds DUERFEN in DeviceKeyBinding-Gueltigkeitsgrenzen nicht vorkommen. Das `iat` einer delegierten Attestation MUSS ein nicht-negativer ganzzahliger JWT NumericDate in Sekunden sein; fractional NumericDate-Werte DUERFEN fuer diesen Device-Delegation-Vergleich nicht verwendet werden.
+`validFrom` und `validUntil` im DeviceKeyBinding MÜSSEN RFC3339-`date-time`-Strings mit expliziter Zeitzone (`Z` oder `+/-HH:MM`) und Ganzsekunden-Praezision sein. Fractional seconds DÜRFEN in DeviceKeyBinding-Gueltigkeitsgrenzen nicht vorkommen. Das `iat` einer delegierten Attestation MUSS ein nicht-negativer ganzzahliger JWT NumericDate in Sekunden sein; fractional NumericDate-Werte DÜRFEN fuer diesen Device-Delegation-Vergleich nicht verwendet werden.
 
-Verifier MUESSEN Zeitvergleiche als Instant-Vergleich durchfuehren: `validFrom` und `validUntil` werden inklusive Zeitzonen-Offset auf UTC normalisiert, `iat` wird als Unix-Sekunde auf denselben UTC-Zeitstrahl abgebildet. Die Delegation ist fuer die Attestation genau dann zeitlich gueltig, wenn `validFrom <= iat <= validUntil` gilt. Beide Grenzen sind inklusive; Gleichheit an `validFrom` oder `validUntil` MUSS akzeptiert werden.
+Verifier MÜSSEN Zeitvergleiche als Instant-Vergleich durchfuehren: `validFrom` und `validUntil` werden inklusive Zeitzonen-Offset auf UTC normalisiert, `iat` wird als Unix-Sekunde auf denselben UTC-Zeitstrahl abgebildet. Die Delegation ist fuer die Attestation genau dann zeitlich gueltig, wenn `validFrom <= iat <= validUntil` gilt. Beide Grenzen sind inklusive; Gleichheit an `validFrom` oder `validUntil` MUSS akzeptiert werden.
 
 ### Capabilities
 
@@ -108,7 +108,7 @@ Verifier MUESSEN Zeitvergleiche als Instant-Vergleich durchfuehren: `validFrom` 
 | `broker-auth` | Device darf Broker-Challenge-Response signieren |
 | `device-admin` | Device darf weitere Device Keys delegieren oder widerrufen |
 
-Implementierungen MUESSEN die jeweils benoetigte Capability explizit pruefen. Unbekannte Capabilities duerfen nicht als bekannte Capabilities interpretiert werden.
+Implementierungen MÜSSEN die jeweils benoetigte Capability explizit pruefen. Unbekannte Capabilities duerfen nicht als bekannte Capabilities interpretiert werden.
 
 ### JWS-Header
 
@@ -156,7 +156,7 @@ Ein Verifier einer delegierten Attestation MUSS:
 10. Benoetigte Capability pruefen: `sign-attestation` oder `sign-verification`.
 11. Die normalen Trust-001-Regeln fuer Attestation-Payload, `nbf`, optionales `exp` und optionales `credentialStatus` anwenden.
 
-Delegierte Attestations MUESSEN einen `iat`-Claim enthalten. Ohne `iat` kann der Verifier nicht pruefen, ob das Device zum Signaturzeitpunkt autorisiert war.
+Delegierte Attestations MÜSSEN einen `iat`-Claim enthalten. Ohne `iat` kann der Verifier nicht pruefen, ob das Device zum Signaturzeitpunkt autorisiert war.
 
 ### Pseudocode
 

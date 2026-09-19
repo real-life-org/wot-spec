@@ -221,7 +221,7 @@ Resultat:
 
 **Spec-Lücke (vor Fix):** Keine Detection von fehlenden Nachrichten. Keine End-to-End-Bestätigung dass alle Mitglieder den State sehen.
 
-**Fix:** Sync 002 empfiehlt Multi-Source-Sync — Clients SOLLEN regelmäßig gegen mehrere Broker oder direkte P2P-Peers syncen und die zurückgegebenen Heads vergleichen. Divergenz wird dem User als Status-Indikator sichtbar gemacht, mit Handlungsoptionen (alternativer Broker, P2P-Sync, ignorieren).
+**Fix:** Sync 002 empfiehlt Multi-Source-Sync — Clients SOLLTEN regelmäßig gegen mehrere Broker oder direkte P2P-Peers syncen und die zurückgegebenen Heads vergleichen. Divergenz wird dem User als Status-Indikator sichtbar gemacht, mit Handlungsoptionen (alternativer Broker, P2P-Sync, ignorieren).
 
 **Strukturelle Grenze:** Communities mit einem einzigen Broker und ohne P2P-Kapazität haben keinen unabhängigen Vergleichspunkt — auch ein formales Digest-Protokoll könnte das nicht lösen. Das ist ein Architektur- und Betriebsthema, nicht ein Protokoll-Defizit.
 

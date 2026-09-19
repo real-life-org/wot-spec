@@ -31,5 +31,10 @@ jobs:
       - name: Validate spec
         run: npm run validate
 
+      # Normative Woerter gegen meta/CONVENTIONS.md. Eine Konvention, die
+      # nichts prueft, driftet lautlos.
+      - name: Normative Woerter
+        run: python3 scripts/check-normative-words.py
+
       - name: Check whitespace
         run: git diff --check

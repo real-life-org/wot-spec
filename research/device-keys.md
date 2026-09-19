@@ -99,7 +99,7 @@ Ein Device Key ist also keine eigene soziale Identitaet. Er signiert im Namen de
 
 ### Capability-Scopes fuer Device Keys
 
-Delegationen MUESSEN zweckgebunden sein. Phase 2 sollte mindestens diese Capabilities unterscheiden:
+Delegationen MÜSSEN zweckgebunden sein. Phase 2 sollte mindestens diese Capabilities unterscheiden:
 
 | Capability | Bedeutung |
 |---|---|
