@@ -74,7 +74,7 @@ Eine Implementierung ist `wot-trust@0.1`-konform, wenn sie zusaetzlich `wot-iden
 - Verification-Attestations als VC-JWS erzeugen und verifizieren.
 - Nonces gegen aktive Challenges und Nonce-History pruefen.
 - Online-In-Person-Verifikationen nur bei aktiver, noch nicht verbrauchter Challenge-Nonce akzeptieren.
-- Implementierungen MUESSEN Gegen-Verifikationen nur dann als gegenseitige In-Person-Verifikation akzeptieren, wenn `inResponseTo` auf einen noch nicht abgelaufenen lokalen Pending-Counter-State verweist.
+- Implementierungen MÜSSEN Gegen-Verifikationen nur dann als gegenseitige In-Person-Verifikation akzeptieren, wenn `inResponseTo` auf einen noch nicht abgelaufenen lokalen Pending-Counter-State verweist.
 
 ## `wot-sync@0.1`
 
@@ -85,9 +85,9 @@ Eine Implementierung ist `wot-sync@0.1`-konform, wenn sie zusaetzlich `wot-ident
 - AES-256-GCM mit 96-Bit Nonces verwenden.
 - ECIES mit X25519, HKDF-SHA256 und AES-256-GCM fuer Inbox-Nachrichten implementieren.
 - Gruppen- und Personal-Doc-Payloads vor dem Sync verschluesseln.
-- Implementierungen MUESSEN leere Klartexte und tag-only Ciphertexts fuer ECIES- und Log-Payloads ablehnen.
+- Implementierungen MÜSSEN leere Klartexte und tag-only Ciphertexts fuer ECIES- und Log-Payloads ablehnen.
 - Die Nonce-Konstruktion des jeweiligen Dokuments einhalten.
-- Die deterministische Nonce `SHA-256(deviceId || "|" || seq)[0:12]` ausschliesslich fuer Log-Payloads gemaess Sync 002 verwenden. Snapshots, Messaging- und Personal-OneShot-Payloads unter demselben Space Content Key MUESSEN eine zufaellige 12-Byte-Nonce verwenden. Verschluesselungs-APIs MUESSEN beide Pfade getrennt halten (z. B. `encryptLogEntry` vs. `encryptOneShot`).
+- Die deterministische Nonce `SHA-256(deviceId || "|" || seq)[0:12]` ausschliesslich fuer Log-Payloads gemaess Sync 002 verwenden. Snapshots, Messaging- und Personal-OneShot-Payloads unter demselben Space Content Key MÜSSEN eine zufaellige 12-Byte-Nonce verwenden. Verschluesselungs-APIs MÜSSEN beide Pfade getrennt halten (z. B. `encryptLogEntry` vs. `encryptOneShot`).
 
 ### Log-Sync
 
@@ -97,7 +97,7 @@ Eine Implementierung ist `wot-sync@0.1`-konform, wenn sie zusaetzlich `wot-ident
 - Kollisionen fuer `(docId, deviceId, seq)` erkennen und sicher behandeln.
 - App-Start- und Reconnect-Flows gemaess Sync 002 ausfuehren: lokalen Zustand laden, Broker authentisieren, Personal Doc zuerst syncen, danach fuer Space-Dokumente ueber Heads/`sync-request` einen Catch-Up durchfuehren.
 - Lokale Schreibvorgaenge zuerst persistent als Log-Eintrag speichern und erst danach an Broker/Peers publizieren.
-- Implementierungen MUESSEN gueltige Log-Eintraege mit vorhandener, aber lokal unbekannter `keyGeneration` als `blocked-by-key` behandeln und nach Key-Catch-Up erneut verarbeiten; malformed Log-Eintraege ohne Pflichtfeld `keyGeneration` MUESSEN abgelehnt werden.
+- Implementierungen MÜSSEN gueltige Log-Eintraege mit vorhandener, aber lokal unbekannter `keyGeneration` als `blocked-by-key` behandeln und nach Key-Catch-Up erneut verarbeiten; malformed Log-Eintraege ohne Pflichtfeld `keyGeneration` MÜSSEN abgelehnt werden.
 - Snapshots und Full-State-Nachrichten nur als Optimierung mergen und niemals als Ersatz fuer Log-Catch-Up oder als Rollback bekannter gueltiger Eintraege verwenden.
 
 ### Transport und Broker
@@ -105,7 +105,7 @@ Eine Implementierung ist `wot-sync@0.1`-konform, wenn sie zusaetzlich `wot-ident
 - WoT Plaintext Envelopes erzeugen und parsen, deren JSON-Shape DIDComm-v2-Plaintext-kompatibel ist und `typ: "application/didcomm-plain+json"` setzt.
 - Envelope-Testvektoren mit mindestens einer etablierten DIDComm-v2-Library validieren. Diese Validierung prueft nur die Envelope-Kompatibilitaet, nicht DIDComm-JWE/Authcrypt oder DIDComm-Mediator-Protokolle.
 - WoT Envelopes nur als ephemeres Transport-Framing behandeln; persistente WoT-Objekte bleiben JWS-/Payload-Objekte im Body.
-- Implementierungen MUESSEN Broker-Challenge-Response mit DID-Signaturen ueber den strukturierten Broker-Auth-Transcript umsetzen.
+- Implementierungen MÜSSEN Broker-Challenge-Response mit DID-Signaturen ueber den strukturierten Broker-Auth-Transcript umsetzen.
 - Capabilities als JWS verifizieren.
 - Inbox-Nachrichten pro Device zustellen und ACKs verarbeiten.
 - Selbstadressierte Inbox-Nachrichten an andere Devices derselben DID zustellen, ohne das sendende Device als erfolgreich zugestellten Empfaenger zu behandeln.
@@ -150,7 +150,7 @@ Eine Implementierung ist `wot-rls@0.1`-konform, wenn sie `wot-trust@0.1` erfuell
 
 Eine Implementierung ist `wot-hmc@0.1`-konform, wenn sie `wot-trust@0.1` und `wot-sync@0.1` erfuellt und HMC-spezifische Trust-Listen, Trust-Scores und Gossip-Nachrichten gemaess `05-hmc-extensions/` erzeugt oder sicher ignoriert.
 
-Fuer vollstaendige HMC-Konformitaet MUESSEN SD-JWT VC Trust-Lists validiert werden:
+Fuer vollstaendige HMC-Konformitaet MÜSSEN SD-JWT VC Trust-Lists validiert werden:
 
 - JWT-Signatur gegen `iss` pruefen.
 - `vct`, `exp`, `iat` und `_sd_alg` pruefen.
@@ -161,7 +161,7 @@ Fuer vollstaendige HMC-Konformitaet MUESSEN SD-JWT VC Trust-Lists validiert werd
 
 Die Testvektoren in `test-vectors/` sind Teil der Konformitaet. Eine Implementierung darf ein Profil erst beanspruchen, wenn alle fuer dieses Profil vorhandenen Testvektoren bestanden werden.
 
-Noch fehlende Testvektoren blockieren keine Draft-Konformitaet, MUESSEN aber vor einem stabilen `v1.0.0-identity`, `v1.0.0-trust` oder `v1.0.0-sync` Release ergaenzt werden.
+Noch fehlende Testvektoren blockieren keine Draft-Konformitaet, MÜSSEN aber vor einem stabilen `v1.0.0-identity`, `v1.0.0-trust` oder `v1.0.0-sync` Release ergaenzt werden.
 
 ## Conformance Kit
 

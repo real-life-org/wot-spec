@@ -23,9 +23,9 @@ Before editing normative content, read:
 
 Use the existing German RFC-2119 terms consistently:
 
-- `MUSS` / `MUESSEN` for required behavior.
+- `MUSS` / `MÜSSEN` for required behavior.
 - `SOLLTE` / `SOLLTEN` for recommended behavior.
-- `DARF` / `DUERFEN` for permitted behavior.
+- `DARF` / `DÜRFEN` for permitted behavior.
 
 Avoid vague normative language such as "usually", "probably", or "as needed" unless it is explicitly non-normative guidance.
 

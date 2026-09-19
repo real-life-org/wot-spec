@@ -70,7 +70,7 @@ Die JWT-Felder sind **JWT Registered Claims** (RFC 7519) — redundant zu den VC
 | `jti` | `id` (optional) | Eindeutige ID der Attestation |
 | `exp` | `validUntil` (optional) | JWT NumericDate Integer (nur wenn zeitlich begrenzt) |
 
-`validFrom` und das optionale `validUntil` MUESSEN in `wot-trust@0.1` RFC3339-`date-time`-Strings mit expliziter Zeitzone und Ganzsekunden-Präzision sein. Fractional Seconds sind ungültig. Gültig sind z.B. `2026-04-21T10:00:00Z` und `2026-04-21T12:00:00+02:00`; ungültig ist z.B. `2026-04-21T10:00:00.123Z`. Klein geschriebene RFC3339-Separatoren `t`/`z` sind ebenfalls gültig, werden aber nicht als kanonische Schreibweise für Beispiele verwendet.
+`validFrom` und das optionale `validUntil` MÜSSEN in `wot-trust@0.1` RFC3339-`date-time`-Strings mit expliziter Zeitzone und Ganzsekunden-Präzision sein. Fractional Seconds sind ungültig. Gültig sind z.B. `2026-04-21T10:00:00Z` und `2026-04-21T12:00:00+02:00`; ungültig ist z.B. `2026-04-21T10:00:00.123Z`. Klein geschriebene RFC3339-Separatoren `t`/`z` sind ebenfalls gültig, werden aber nicht als kanonische Schreibweise für Beispiele verwendet.
 
 `nbf` und das optionale `exp` bleiben JWT NumericDate-Werte als Integer-Unix-Timestamps in Sekunden. `nbf` MUSS exakt denselben Zeitpunkt wie `validFrom` darstellen, nachdem die Zeitzone normalisiert wurde. Wenn `validUntil` vorhanden ist, MUSS `exp` exakt denselben Zeitpunkt wie `validUntil` darstellen, nachdem die Zeitzone normalisiert wurde.
 Diese Gleichwertigkeit kann von Schema- oder Vektor-Validatoren nicht bewiesen werden, weil sie eine feldübergreifende semantische Prüfung mit Zeitzonen-Normalisierung und exaktem Timestamp-Vergleich ist; Verifier-Logik MUSS daher `nbf` mit `validFrom` und, falls vorhanden, `exp` mit `validUntil` nach der Normalisierung vergleichen.
@@ -146,7 +146,7 @@ Der Holder hat ein lokales `public`-Flag pro Attestation. Nicht veröffentlichte
 
 `wot-trust@0.1` definiert kein `attestation-ack` und keine semantische Annahmebestaetigung. Attestations sind Geschenke: Nach der Zustellung gehoeren sie dem Holder, und der Holder entscheidet privat, ob er sie speichert, ignoriert, anzeigt oder veroeffentlicht. Der Issuer erhaelt aus dem Trust-Protokoll keine Rueckmeldung darueber, ob der Holder die Attestation angenommen, gelesen, behalten oder intern vertraut hat.
 
-Transport-ACKs aus dem Sync-Layer bestaetigen nur die Verarbeitung oder durable Pufferung einer Inbox-Nachricht fuer ein bestimmtes Device. Sie DUERFEN nicht als Akzeptanz- oder Vertrauenssignal fuer eine Attestation interpretiert werden. Die einzige bewusste oeffentliche Rueckmeldung ist die spaetere Veroeffentlichung durch den Holder im Profil-Service (`/p/{did}/a`), falls der Holder das will.
+Transport-ACKs aus dem Sync-Layer bestaetigen nur die Verarbeitung oder durable Pufferung einer Inbox-Nachricht fuer ein bestimmtes Device. Sie DÜRFEN nicht als Akzeptanz- oder Vertrauenssignal fuer eine Attestation interpretiert werden. Die einzige bewusste oeffentliche Rueckmeldung ist die spaetere Veroeffentlichung durch den Holder im Profil-Service (`/p/{did}/a`), falls der Holder das will.
 
 ## Unveränderlichkeit
 

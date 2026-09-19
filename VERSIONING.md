@@ -13,7 +13,7 @@ Git-Tags und GitHub Releases markieren eingefrorene Snapshots der gesamten Spec:
 - `v0.3.0-sync` - erster Snapshot mit minimalem Broker/Personal-Doc-Sync
 - `v1.0.0-identity-trust` - stabiler Identity-/Trust-Snapshot nach Interop zwischen mindestens zwei Implementierungen
 
-Vor `v1.0.0` sind Breaking Changes erlaubt. Sie MUESSEN im `CHANGELOG.md` dokumentiert werden.
+Vor `v1.0.0` sind Breaking Changes erlaubt. Sie MÜSSEN im `CHANGELOG.md` dokumentiert werden.
 
 Ab `v1.0.0` gilt SemVer:
 

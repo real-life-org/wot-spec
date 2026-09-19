@@ -109,7 +109,7 @@ Der `seq`-Wert ist sicherheitskritisch, weil er in die AES-256-GCM-Nonce-Konstru
 - Beim App-Start oder Reconnect MUSS der Client für jede aktive `(deviceId, docId)`-Kombination `broker_seq` und lokalen persistierten `local_seq` vergleichen.
 - Falls `broker_seq > local_seq`, MUSS der Client Restore/Clone annehmen, eine neue zufällige `deviceId` generieren, die alte `deviceId` per signierter `device-revoke`-Nachricht deaktivieren (siehe [Sync 003](003-transport-und-broker.md#device-deaktivierung)) und neue Einträge unter der neuen `deviceId` ab `seq=0` schreiben.
 - Extensions MÜSSEN über den `deviceId`-Wechsel informiert werden, wenn sie device-spezifische Felder führen (siehe [Sync 006](006-personal-doc.md)).
-- Bei parallelen Schreibvorgängen MUSS `seq`-Allocation atomar über `(deviceId, docId)` erfolgen. Browser-Implementierungen SOLLEN Cross-Tab-Koordination verwenden.
+- Bei parallelen Schreibvorgängen MUSS `seq`-Allocation atomar über `(deviceId, docId)` erfolgen. Browser-Implementierungen SOLLTEN Cross-Tab-Koordination verwenden.
 - Nach einem Restore/Clone MUSS der Client die neue `deviceId` am Broker registrieren (Challenge-Response, siehe [Sync 003 Erstregistrierung](003-transport-und-broker.md#erstregistrierung)), **bevor** er unter ihr Einträge signiert, und Schreibvorgänge bis zur `registered`-Bestätigung pausieren — sonst lehnt der Broker mit `DEVICE_NOT_REGISTERED` ab. Da eine Verbindung genau einer registrierten `(did, deviceId)`-Session entspricht, läuft die Registrierung der neuen `deviceId` über eine **frische Verbindung**; zusätzliche Broker-Semantik ist nicht nötig.
 
 **Restore/Clone-Trigger vs. Schreibpfad-Kollision (MUSS).** Der Restore/Clone-Pfad oben wird **proaktiv** durch den Head-Vergleich `broker_seq > local_seq` ausgelöst (bei App-Start/Reconnect, bevor ein kollidierender Eintrag entsteht). Eine **reaktive** `SEQ_COLLISION_DETECTED`-Ablehnung auf dem **Schreibpfad** — der Broker hält bereits einen Eintrag mit demselben `(docId, deviceId, seq)` und abweichendem Content-Hash (siehe [Sync 003 Broker-seitige Kollisionsabwehr](003-transport-und-broker.md)) — ist **kein** Restore/Clone-Signal, sondern ein **harter Fehler**: erreicht der Client diesen Punkt, war die proaktive Erkennung wirkungslos und es liegt echter `seq`-/Nonce-Reuse vor (z.B. ein Wipe, der die `deviceId` überleben ließ, oder verletzte Cross-Tab-Atomarität). Der Client MUSS den Fehler **surfacen** und DARF **nicht** still eine neue `deviceId` minten — ein stilles Auto-Recover würde genau den AES-256-GCM-Nonce-Reuse maskieren, den die Broker-Kollisionsprüfung als letzte Verteidigungslinie erkennt. Ebenso DARF eine `DEVICE_REVOKED`-Ablehnung auf dem Schreibpfad **nicht** still in eine neue `deviceId` münden: ein Straggler-Write unter einer alten/rotierten `deviceId` wird verworfen, ein Revoke der aktuellen `deviceId` wird für Re-Auth/Re-Join surfaced.
@@ -140,7 +140,7 @@ Ein einzelner Log-Eintrag KANN als `entry` im `body` einer DIDComm-Plaintext-Nac
 
 Der Log-Eintrag ist bereits mit dem Space Content Key verschlüsselt und JWS-signiert. Die DIDComm-Nachricht transportiert ihn nur; zusätzliche ECIES-Verschlüsselung ist nicht nötig.
 
-Der DIDComm-Envelope ist **kein Autoritätsanker** für den Log-Eintrag. Empfänger MÜSSEN die Autorenschaft über `authorKid` im Log-Entry-JWS prüfen und DÜRFEN sich dafür nicht auf `from` im Envelope verlassen. Bei Bulk-Sync SOLLEN mehrere Log-Einträge als JWS-Strings in einer `sync-response` transportiert werden, statt jeden Eintrag einzeln zu wrappen.
+Der DIDComm-Envelope ist **kein Autoritätsanker** für den Log-Eintrag. Empfänger MÜSSEN die Autorenschaft über `authorKid` im Log-Entry-JWS prüfen und DÜRFEN sich dafür nicht auf `from` im Envelope verlassen. Bei Bulk-Sync SOLLTEN mehrere Log-Einträge als JWS-Strings in einer `sync-response` transportiert werden, statt jeden Eintrag einzeln zu wrappen.
 
 ### Verschlüsselter Payload (`data`)
 
@@ -170,7 +170,7 @@ Wenn eine Implementierung einen Snapshot oder Full-State-Payload uebertraegt, ge
 - Das verschluesselte Format MUSS `Nonce | Ciphertext | Auth Tag` oder eine aequivalente eindeutig parsebare Form transportieren.
 - Die Autorenschaft oder Transportberechtigung MUSS separat authentifiziert sein (z.B. Envelope-JWS, authentifizierte Broker-Verbindung plus Capability, oder inneres JWS).
 - Ein Empfaenger DARF einen Snapshot nur mergen, wenn er zur erwarteten `docId` und `keyGeneration` passt.
-- Peers MUESSEN weiterhin Log-Eintraege mit `authorKid`, `seq`, `deviceId` und `keyGeneration` verifizieren koennen.
+- Peers MÜSSEN weiterhin Log-Eintraege mit `authorKid`, `seq`, `deviceId` und `keyGeneration` verifizieren koennen.
 
 Snapshots sind damit eine optionale Performance-Schicht, nicht das normative Sync-Wire-Format. `wot-sync@0.1` standardisiert keinen Snapshot- oder Full-State-Message-Type und kein Snapshot-Body-Schema. Ein Snapshot ist nicht autoritativ gegenüber bereits bekannten gültigen CRDT-Operationen: Clients MÜSSEN einen Snapshot über den jeweiligen CRDT mergen und DÜRFEN ihn nicht verwenden, um lokal bekannte gültige Log-Einträge zurückzurollen oder zu ersetzen. Wenn der CRDT-Import oder Merge eines Snapshots fehlschlägt, MUSS der Client den Snapshot ignorieren und mit Log-/State-Sync fortfahren.
 
@@ -180,7 +180,7 @@ Das Log-Protokoll unterstützt Live-Sync und Catch-Up. Peers tauschen Heads pro 
 
 ## Normative Sync-Flows
 
-Die folgenden Flows definieren die Reihenfolge der Operationen fuer `wot-sync@0.1`. Implementierungen duerfen einzelne Schritte parallelisieren, MUESSEN aber dieselben Abhaengigkeiten einhalten und MUESSEN jeden Flow idempotent implementieren. Mehrfach empfangene Nachrichten, mehrfach publizierte Log-Eintraege und wiederholte `sync-request`-Runden duerfen keinen anderen Endzustand erzeugen als eine einmalige Verarbeitung.
+Die folgenden Flows definieren die Reihenfolge der Operationen fuer `wot-sync@0.1`. Implementierungen duerfen einzelne Schritte parallelisieren, MÜSSEN aber dieselben Abhaengigkeiten einhalten und MÜSSEN jeden Flow idempotent implementieren. Mehrfach empfangene Nachrichten, mehrfach publizierte Log-Eintraege und wiederholte `sync-request`-Runden duerfen keinen anderen Endzustand erzeugen als eine einmalige Verarbeitung.
 
 ### Gemeinsame Regeln
 
@@ -198,12 +198,12 @@ Bei App-Start und bei jedem Broker-Reconnect MUSS ein Client fuer das Personal D
 1. Lokalen persistenten Zustand laden: Device-ID, bekannte Heads pro `(docId, deviceId)`, lokale Log-Eintraege, durabel gepufferte Inbox-Nachrichten, Personal Doc, Space-Metadaten und Group Keys.
 2. Beim Broker authentisieren, inklusive `did` und `deviceId` (siehe [Sync 003 Authentisierung](003-transport-und-broker.md#authentisierung)).
 3. Fuer das Personal Doc `broker_seq` und `local_seq` fuer die eigene `(deviceId, docId)`-Kombination vergleichen, bevor neue Personal-Doc-Eintraege an den Broker publiziert werden. Bei `broker_seq > local_seq` gilt die Restore-/Clone-Regel aus [seq-Konsistenz](#seq-konsistenz-muss).
-4. Die eigene Device-Inbox drainen. Inbox-Nachrichten duerfen in beliebiger Reihenfolge empfangen werden, MUESSEN aber gemaess [Inbox-Verarbeitung](#inbox-verarbeitung-und-ack) verarbeitet, angewendet oder durabel gepuffert werden.
+4. Die eigene Device-Inbox drainen. Inbox-Nachrichten duerfen in beliebiger Reihenfolge empfangen werden, MÜSSEN aber gemaess [Inbox-Verarbeitung](#inbox-verarbeitung-und-ack) verarbeitet, angewendet oder durabel gepuffert werden.
 5. Das Personal Doc per `sync-request` synchronisieren, bevor Space-Dokumente verarbeitet werden, die neue Space-Mitgliedschaften oder Group Keys benoetigen koennen.
 6. Nach abgeschlossenem Personal-Doc-Catch-Up die aktiven Space-Dokumente aus aktualisiertem Personal Doc, lokal persistenten Space-Metadaten und durabel gepufferten Abhaengigkeiten bestimmen.
 7. Fuer jedes bekannte Space-Dokument `broker_seq` und `local_seq` fuer die eigene `(deviceId, docId)`-Kombination vergleichen, bevor neue Space-Eintraege publiziert werden, und danach einen `sync-request` mit den lokal bekannten Heads senden (kontiger Vollstaendigkeits-Cursor, siehe [Vollstaendigkeits-Cursor, Luecken und Pagination](#vollstaendigkeits-cursor-luecken-und-pagination)).
 8. Empfangene `sync-response`-Eintraege verifizieren, lokal persistieren, nach `keyGeneration` entschluesseln und in den CRDT mergen. Eintraege mit fehlenden Keys werden als `blocked-by-key` gespeichert und spaeter erneut verarbeitet.
-9. Erst nach Personal-Doc-Catch-Up, Inbox-Verarbeitung und Space-Catch-Up SOLL die UI den Sync-Zustand als aktuell anzeigen. Eine Implementierung DARF vorher lokale Daten anzeigen, MUSS diese aber als potentiell veraltet behandeln.
+9. Erst nach Personal-Doc-Catch-Up, Inbox-Verarbeitung und Space-Catch-Up SOLLTE die UI den Sync-Zustand als aktuell anzeigen. Eine Implementierung DARF vorher lokale Daten anzeigen, MUSS diese aber als potentiell veraltet behandeln.
 
 Wenn mehrere Broker oder P2P-Quellen verfuegbar sind, SOLLTE der Client diese Runden gegen mehrere Quellen ausfuehren und Heads vergleichen (siehe [Censorship- und Split-Brain-Detection](#censorship--und-split-brain-detection)).
 
@@ -224,7 +224,7 @@ Bei jedem lokalen Schreibvorgang in ein Personal Doc oder Space-Dokument MUSS de
 2. Den CRDT-Update-Payload mit dem aktuell gueltigen Key und der aktuell gueltigen `keyGeneration` verschluesseln.
 3. Einen Log-Entry-JWS mit `seq`, `deviceId`, `docId`, `authorKid`, `keyGeneration`, `data` und `timestamp` erzeugen und signieren.
 4. Den Log-Eintrag lokal persistieren, bevor er an Broker oder Peers uebermittelt wird.
-5. Den Log-Eintrag an alle relevanten Broker/Peers publizieren. Fehler bei der Uebermittlung MUESSEN als retrybarer Outbox-Zustand behandelt werden; eine erneute Publikation desselben Log-Eintrags MUSS idempotent sein.
+5. Den Log-Eintrag an alle relevanten Broker/Peers publizieren. Fehler bei der Uebermittlung MÜSSEN als retrybarer Outbox-Zustand behandelt werden; eine erneute Publikation desselben Log-Eintrags MUSS idempotent sein.
 6. Keine Inbox-ACK-Semantik fuer Log-Eintraege verwenden. Fehlende Log-Eintraege werden ueber Heads und `sync-request` erkannt.
 
 **Fehler-Propagation (MUSS).** Ein **nicht-transienter** Fehler beim lokalen Persistieren des Log-Eintrags (Schritt 4) DARF den sichtbaren CRDT-/UI-Zustand NICHT vorruecken lassen — er MUSS bis zum ausloesenden Schreibvorgang propagieren. „CRDT-Zustand vorgerueckt, aber nie geloggt" ist ein verbotener Zustand, weil der Log die Quelle der Wahrheit fuer rekonstruierbaren dauerhaften Zustand ist (siehe [Gemeinsame Regeln](#gemeinsame-regeln)). **Transiente** Uebermittlungsfehler (offline, Broker nicht erreichbar) sind hiervon ausgenommen: sie bleiben retrybarer Outbox-Zustand (Schritt 5), nachdem der Eintrag lokal persistiert wurde.
@@ -256,7 +256,7 @@ Bei Annahme einer `space-invite` MUSS der Client:
 
 ### Key-Rotation und Generation-Gaps
 
-Key-Rotation ist eine Abhaengigkeit fuer alle spaeteren Space-Log-Eintraege. Clients MUESSEN folgende Regeln anwenden:
+Key-Rotation ist eine Abhaengigkeit fuer alle spaeteren Space-Log-Eintraege. Clients MÜSSEN folgende Regeln anwenden:
 
 - Empfaengt ein Client eine `key-rotation` mit `generation = localGeneration + 1`, MUSS er den neuen Content Key und die neue Capability durabel speichern, blockierte Log-Eintraege dieser Generation erneut verarbeiten und einen `sync-request` fuer das Space-Dokument ausloesen.
 - Empfaengt ein Client eine `key-rotation` mit `generation <= localGeneration`, MUSS er sie als doppelt oder veraltet behandeln. Er DARF sie ACKen, nachdem Replay- und Signaturpruefung abgeschlossen sind.
@@ -282,7 +282,7 @@ Das Sync-Protokoll konvergiert, solange Peers dieselben Log-Einträge sehen. Bro
 
 ### Detection durch Multi-Source-Sync
 
-Clients SOLLEN regelmäßig gegen mehrere verfügbare Quellen syncen: mehrere Broker desselben Space (siehe [Sync 003 Multi-Broker](003-transport-und-broker.md#broker-zuordnung-und-multi-broker)) oder direkte P2P-Peers.
+Clients SOLLTEN regelmäßig gegen mehrere verfügbare Quellen syncen: mehrere Broker desselben Space (siehe [Sync 003 Multi-Broker](003-transport-und-broker.md#broker-zuordnung-und-multi-broker)) oder direkte P2P-Peers.
 
 Das existierende `sync-request` gibt Heads pro `deviceId` zurück — der Vergleich ist ein einfacher Abgleich der Heads-Vektoren zweier Quellen:
 
@@ -291,7 +291,7 @@ Das existierende `sync-request` gibt Heads pro `deviceId` zurück — der Vergle
 
 ### Umgang mit Divergenz
 
-Clients SOLLEN persistente Divergenz für den User sichtbar machen und mindestens alternative Broker- oder P2P-Sync-Versuche anbieten. Divergenz DARF nicht still ignoriert werden.
+Clients SOLLTEN persistente Divergenz für den User sichtbar machen und mindestens alternative Broker- oder P2P-Sync-Versuche anbieten. Divergenz DARF nicht still ignoriert werden.
 
 ### Grenzen
 

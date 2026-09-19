@@ -571,7 +571,7 @@ Log-Einträge werden NICHT mit ECIES verschlüsselt — sie sind bereits mit dem
 
 Alle Type-URIs verwenden den Präfix `https://web-of-trust.de/protocols/`.
 
-Die Body-Formate fuer `space-invite/1.0`, `key-rotation/1.0` und `member-update/1.0` sind in [Sync 005](005-gruppen.md) spezifiziert und werden durch die Schemas `space-invite`, `key-rotation` und `member-update` beschrieben. Alle drei Nachrichtentypen sind Inbox-Nachrichten und MUESSEN nach [Sync 001 ECIES](001-verschluesselung.md#peer-to-peer-verschlüsselung-ecies) fuer den jeweiligen Empfaenger verschluesselt werden.
+Die Body-Formate fuer `space-invite/1.0`, `key-rotation/1.0` und `member-update/1.0` sind in [Sync 005](005-gruppen.md) spezifiziert und werden durch die Schemas `space-invite`, `key-rotation` und `member-update` beschrieben. Alle drei Nachrichtentypen sind Inbox-Nachrichten und MÜSSEN nach [Sync 001 ECIES](001-verschluesselung.md#peer-to-peer-verschlüsselung-ecies) fuer den jeweiligen Empfaenger verschluesselt werden.
 
 ### Wire-Formate der Sync-Nachrichten
 
@@ -691,7 +691,7 @@ Ein Inbox-ACK ist ein WoT Transport Envelope mit:
 
 - `type`: `https://web-of-trust.de/protocols/ack/1.0`
 - `thid`: MUSS gesetzt sein und MUSS die `id` der ursprünglichen Inbox-Nachricht tragen (lowercase UUID v4 nach generischem [Plaintext-thid-Pattern](#felder)).
-- `to`: OPTIONAL. Inbox-ACKs werden ausschließlich über den authentifizierten WebSocket-Kontext an den Broker zugestellt; die effektive Routing-Information steht in `body.messageId`. Implementierungen DÜRFEN `to` weglassen.
+- `to`: optional. Inbox-ACKs werden ausschließlich über den authentifizierten WebSocket-Kontext an den Broker zugestellt; die effektive Routing-Information steht in `body.messageId`. Implementierungen DÜRFEN `to` weglassen.
 - `body`:
 
 ```json
@@ -831,7 +831,7 @@ Normative Error-Codes:
 | `RATE_LIMITED` | Rate-Limit überschritten |
 | `INTERNAL_ERROR` | Server-Fehler |
 
-Clients SOLLEN bei `CAPABILITY_EXPIRED` eine neue Capability anfordern (via Peer-Kontakt, da der Broker die Signatur nicht erzeugen kann).
+Clients SOLLTEN bei `CAPABILITY_EXPIRED` eine neue Capability anfordern (via Peer-Kontakt, da der Broker die Signatur nicht erzeugen kann).
 
 ### Erweiterbarkeit von Transport-Nachrichtentypen
 
@@ -922,7 +922,7 @@ Nur erlaubt zwischen Devices desselben Users (gleiche DID im Handshake).
 
 ### Entfernte Members im P2P-Modus
 
-Im Offline-P2P-Modus gibt es keinen autoritativen Broker-Check für aktuelle Membership. Clients SOLLEN Peers als verdächtig markieren, wenn diese nur Log-Einträge mit alter `keyGeneration` liefern, und solche Daten nicht mergen, bis Membership über eine vertraute Quelle bestätigt wurde.
+Im Offline-P2P-Modus gibt es keinen autoritativen Broker-Check für aktuelle Membership. Clients SOLLTEN Peers als verdächtig markieren, wenn diese nur Log-Einträge mit alter `keyGeneration` liefern, und solche Daten nicht mergen, bis Membership über eine vertraute Quelle bestätigt wurde.
 
 ### Transport-Framing
 
@@ -938,7 +938,7 @@ Der normative Payload ist jeweils derselbe: eine DIDComm-kompatible Message mit 
 
 ### Inbox im P2P-Modus
 
-P2P-Verbindungen sind typischerweise kurz. Eine "Inbox" im Sinne von Store-and-Forward existiert nicht — Nachrichten werden direkt zugestellt oder gehen verloren. Für garantierte Zustellung SOLLEN Clients den Broker-Pfad nutzen, nicht P2P.
+P2P-Verbindungen sind typischerweise kurz. Eine "Inbox" im Sinne von Store-and-Forward existiert nicht — Nachrichten werden direkt zugestellt oder gehen verloren. Für garantierte Zustellung SOLLTEN Clients den Broker-Pfad nutzen, nicht P2P.
 
 ## Architektur-Grundlage
 

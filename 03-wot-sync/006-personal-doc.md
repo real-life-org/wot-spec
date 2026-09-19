@@ -247,7 +247,7 @@ Bei Device-Restore oder Storage-Clone können zwei physische Geräte dieselbe `d
 4. **Extensions benachrichtigen** über den `deviceId`-Wechsel (siehe [Extension-Hinweis](#extension-hinweis-device-spezifische-felder))
 5. **Neu beginnen** unter der neuen `deviceId` ab `seq=0`
 
-`SEQ_COLLISION_DETECTED` am Broker ist nur die letzte Verteidigungslinie; der Client SOLL Restore/Clone lokal erkennen, bevor eine Kollision entsteht.
+`SEQ_COLLISION_DETECTED` am Broker ist nur die letzte Verteidigungslinie; der Client SOLLTE Restore/Clone lokal erkennen, bevor eine Kollision entsteht.
 
 ### Extension-Hinweis: Device-spezifische Felder
 
@@ -271,7 +271,7 @@ Das Personal Doc nutzt dieselbe Log-, Signatur-, Nonce- und DIDComm-Infrastruktu
 
 Personal-Doc-Nachrichten werden an die eigene DID adressiert. Der Broker routet sie an die anderen verbundenen Geräte derselben DID. Die sendende `(did, deviceId)`-Verbindung darf ihre eigene Nachricht nicht als zugestellt ACKen; ACKs sind pro Device scoped (siehe [Sync 003 Store-and-Forward pro Device](003-transport-und-broker.md#store-and-forward-pro-device)).
 
-Beim Start oder Reconnect MUSS ein Client das Personal Doc vor Space-Dokumenten synchronisieren, weil Space-Mitgliedschaften und `groupKeys` im Personal Doc liegen. Space-Log-Eintraege mit unbekannter `keyGeneration` MUESSEN blockiert bleiben, bis Personal-Doc-Catch-Up oder eine `key-rotation` Inbox-Nachricht den passenden Key liefert (siehe [Sync 002 App-Start und Reconnect](002-sync-protokoll.md#app-start-und-reconnect)).
+Beim Start oder Reconnect MUSS ein Client das Personal Doc vor Space-Dokumenten synchronisieren, weil Space-Mitgliedschaften und `groupKeys` im Personal Doc liegen. Space-Log-Eintraege mit unbekannter `keyGeneration` MÜSSEN blockiert bleiben, bis Personal-Doc-Catch-Up oder eine `key-rotation` Inbox-Nachricht den passenden Key liefert (siehe [Sync 002 App-Start und Reconnect](002-sync-protokoll.md#app-start-und-reconnect)).
 
 ### Replikation auf mehreren Brokern
 

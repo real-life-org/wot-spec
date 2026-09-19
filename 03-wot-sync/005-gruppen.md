@@ -115,7 +115,7 @@ Inbox-Nachrichtentyp `space-invite`, verschlüsselt mit ECIES:
 - `spaceContentKeys` MUSS alle Generationen enthalten, die der Eingeladene zum Entschluesseln der aktuell verfuegbaren Space-History benoetigt. Implementierungen duerfen alte Generationen weglassen, wenn sie dem Eingeladenen nur Zugriff ab einem spaeteren Snapshot geben; dann MUSS dieser Snapshot mit `currentKeyGeneration` entschluesselbar sein.
 - Der `spaceCapabilitySigningKey` DARF nur zur Ausstellung weiterer Broker-Capabilities verwendet werden, nicht zur Autoren-Authentifizierung.
 
-Die Phase-1-Interop-Vektoren für `space-invite` prüfen das Inbox-Message-Shape. Die enthaltene `capability` wird dort nur als kompakter JWS-String validiert. Payload-Korrelation der Capability (`audience`, `spaceId`, `generation`, Signatur) ist durch den separaten `space_capability_jws` Vektor und die Capability-Regeln in [Sync 003](003-transport-und-broker.md#capability-format) abgedeckt. Spätere Conformance-Vektoren SOLLEN echte Capability-JWS-End-to-End-Beispiele für `space-invite` enthalten.
+Die Phase-1-Interop-Vektoren für `space-invite` prüfen das Inbox-Message-Shape. Die enthaltene `capability` wird dort nur als kompakter JWS-String validiert. Payload-Korrelation der Capability (`audience`, `spaceId`, `generation`, Signatur) ist durch den separaten `space_capability_jws` Vektor und die Capability-Regeln in [Sync 003](003-transport-und-broker.md#capability-format) abgedeckt. Spätere Conformance-Vektoren SOLLTEN echte Capability-JWS-End-to-End-Beispiele für `space-invite` enthalten.
 
 ### Annahme und Ablehnung
 
@@ -175,7 +175,7 @@ Inbox-Nachrichtentyp `member-update`, verschluesselt mit ECIES und mit innerem J
 | `effectiveKeyGeneration` | Integer | Ja | Key-Generation, ab der diese Aenderung wirksam ist |
 | `reason` | String | Nein | Optionale menschenlesbare Begruendung |
 
-Empfaenger MUESSEN `member-update` gegen den naechsten Space-Sync verifizieren. Die kanonische Mitgliederliste bleibt das signierte und synchronisierte Space-Dokument. `member-update` allein DARF keine dauerhafte Membership-State-Aenderung erzwingen.
+Empfaenger MÜSSEN `member-update` gegen den naechsten Space-Sync verifizieren. Die kanonische Mitgliederliste bleibt das signierte und synchronisierte Space-Dokument. `member-update` allein DARF keine dauerhafte Membership-State-Aenderung erzwingen.
 
 ### Member-Update Verarbeitung (MUSS)
 
@@ -183,27 +183,27 @@ Empfaenger MUESSEN `member-update` gegen den naechsten Space-Sync verifizieren. 
 
 #### Authority-Split (MUSS)
 
-Implementierungen MUESSEN `member-update` entlang dieser Verantwortlichkeitsgrenzen verarbeiten:
+Implementierungen MÜSSEN `member-update` entlang dieser Verantwortlichkeitsgrenzen verarbeiten:
 
 - **Protocol:** prueft die normalisierte Nachrichtenform und kryptographischen Artefakte und klassifiziert deterministisch `(member-update, signerDid, localPolicySnapshot, existingPendingState)`. Die Protocol-Schicht kennt keinen Storage, Broker, CRDT, Adapter, UI oder Netzwerkzustand.
 - **Application:** stellt den lokalen Policy-Snapshot bereit, speichert Pending-Zustaende durabel, entscheidet lokale UX-/Write-Lock-Wirkung aus der Protocol-Klassifikation, loest Space-Catch-Up aus, loest Pending-Zustaende gegen die kanonische Mitgliederliste auf und sendet ACKs erst nach Anwendung oder durablem Puffern.
-- **Adapter:** transportiert, entschluesselt, liefert, persistiert technisch und uebertraegt per-Device ACKs. Adapter DUERFEN keine Mitgliedschaftsautoritaet, Signer-Policy-Autoritaet oder kanonische Membership-Entscheidung besitzen.
+- **Adapter:** transportiert, entschluesselt, liefert, persistiert technisch und uebertraegt per-Device ACKs. Adapter DÜRFEN keine Mitgliedschaftsautoritaet, Signer-Policy-Autoritaet oder kanonische Membership-Entscheidung besitzen.
 
-Der lokale Policy-Snapshot enthaelt mindestens lokal bekannte Admin-DIDs, lokal bekannte Member-DIDs, die lokale Space-Key-Generation und bereits gespeicherte Pending-Tuples. Envelope-Komfortformen sind implementierungslokal; sie MUESSEN vor Protocol-/Application-Verarbeitung in die normativen Payload-Felder und Signer-Information normalisiert werden.
+Der lokale Policy-Snapshot enthaelt mindestens lokal bekannte Admin-DIDs, lokal bekannte Member-DIDs, die lokale Space-Key-Generation und bereits gespeicherte Pending-Tuples. Envelope-Komfortformen sind implementierungslokal; sie MÜSSEN vor Protocol-/Application-Verarbeitung in die normativen Payload-Felder und Signer-Information normalisiert werden.
 
-Ein Client MUSS `member-update` anhand von `(spaceId, action, memberDid, effectiveKeyGeneration)` als Pending-Record zusammenfuehren. Exakte Duplikate mit gleichem Signer und gleicher Signer-Autorisierung MUESSEN ohne zusaetzliche UI-, Sync- oder State-Transitions ignoriert werden, nachdem die erste Nachricht durabel verarbeitet wurde. Eine spaeter empfangene Nachricht mit demselben Tuple, aber hoeherer lokaler Autorisierung, MUSS das Pending-Record upgraden (z.B. von `unverified-pending` zu actionable pending). Eine spaeter empfangene Nachricht mit niedrigerer oder unbekannter Autorisierung DARF ein bereits actionable Pending-Record nicht downgraden.
+Ein Client MUSS `member-update` anhand von `(spaceId, action, memberDid, effectiveKeyGeneration)` als Pending-Record zusammenfuehren. Exakte Duplikate mit gleichem Signer und gleicher Signer-Autorisierung MÜSSEN ohne zusaetzliche UI-, Sync- oder State-Transitions ignoriert werden, nachdem die erste Nachricht durabel verarbeitet wurde. Eine spaeter empfangene Nachricht mit demselben Tuple, aber hoeherer lokaler Autorisierung, MUSS das Pending-Record upgraden (z.B. von `unverified-pending` zu actionable pending). Eine spaeter empfangene Nachricht mit niedrigerer oder unbekannter Autorisierung DARF ein bereits actionable Pending-Record nicht downgraden.
 
 Ein Client MUSS den Signer des inneren JWS gegen die lokal bekannte Space-Policy pruefen, bevor ein `member-update` vor der kanonischen Space-Sync-Bestaetigung UI- oder Schreibwirkung entfalten darf:
 
-- `action="removed"` ist vorlaeufig nur wirksam, wenn der Signer eine lokal bekannte aktuelle Admin-DID des Space ist ODER der Signer die betroffene `memberDid` selbst ist (Selbst-Austritt; die innere Signatur beweist die Austrittserklaerung des Betroffenen). Nicht autorisierbare oder unbekannte Signer DUERFEN keine lokale Schreibsperre, kein Ausblenden und keine andere vertrauensbasierte Removal-UX ausloesen; der Client MUSS das Signal hoechstens als unverifiziertes Pending-Signal durabel speichern und einen Space-Catch-Up ausloesen.
-- `action="added"` ist vorlaeufig nur als Pending-Signal wirksam, wenn der Signer eine lokal bekannte aktuelle Admin-DID oder Member-DID des Space ist. Nicht autorisierbare oder unbekannte Signer DUERFEN keine vertrauensbasierte Join-UX oder Schreibrechte ausloesen; der Client MUSS das Signal hoechstens als unverifiziertes Pending-Signal durabel speichern und einen Space-Catch-Up ausloesen.
+- `action="removed"` ist vorlaeufig nur wirksam, wenn der Signer eine lokal bekannte aktuelle Admin-DID des Space ist ODER der Signer die betroffene `memberDid` selbst ist (Selbst-Austritt; die innere Signatur beweist die Austrittserklaerung des Betroffenen). Nicht autorisierbare oder unbekannte Signer DÜRFEN keine lokale Schreibsperre, kein Ausblenden und keine andere vertrauensbasierte Removal-UX ausloesen; der Client MUSS das Signal hoechstens als unverifiziertes Pending-Signal durabel speichern und einen Space-Catch-Up ausloesen.
+- `action="added"` ist vorlaeufig nur als Pending-Signal wirksam, wenn der Signer eine lokal bekannte aktuelle Admin-DID oder Member-DID des Space ist. Nicht autorisierbare oder unbekannte Signer DÜRFEN keine vertrauensbasierte Join-UX oder Schreibrechte ausloesen; der Client MUSS das Signal hoechstens als unverifiziertes Pending-Signal durabel speichern und einen Space-Catch-Up ausloesen.
 - In allen Faellen entscheidet die kanonische Mitgliederliste nach Log-Catch-Up. Eine spaetere kanonische Bestaetigung DARF ein zuvor unverifiziertes Pending-Signal bestaetigen; ein Widerspruch MUSS das Pending-Signal verwerfen.
 
 Vor der Bestaetigung durch den naechsten Space-Sync gelten diese Regeln:
 
 - Bei `action="added"` fuer die lokale DID DARF der Client den Space als "Beitritt ausstehend" oder vergleichbar anzeigen, lokale Keys und Capabilities aus einer passenden `space-invite` verwenden und MUSS einen Space-Catch-Up per `sync-request` ausloesen. Er DARF Schreibzugriff erst als bestaetigte Mitgliedschaft behandeln, wenn die kanonische Mitgliederliste die lokale DID enthaelt.
 - Bei `action="added"` fuer eine andere DID DARF der Client UIs und lokale Caches als ausstehende Hinzufuegung aktualisieren, MUSS die kanonische Mitgliederliste aber unveraendert lassen.
-- Bei `action="removed"` fuer die lokale DID SOLLTE der Client den Space als "Entfernung ausstehend" oder vergleichbar markieren und DARF lokale Schreibaktionen sofort sperren oder den Space lokal ausblenden. Er MUSS bereits durabel gespeicherte, aber noch nicht bestaetigte lokale Schreibvorgaenge und retrybare Outbox-Eintraege behalten; sie DUERFEN erst nach kanonischer Bestaetigung oder bestaetigter Broker-Rotation verworfen, neu bewertet oder als nicht mehr sendbar markiert werden. Er DARF lokalen State erst nach kanonischer Bestaetigung oder bestaetigter Broker-Rotation dauerhaft als ausgetreten behandeln.
+- Bei `action="removed"` fuer die lokale DID SOLLTE der Client den Space als "Entfernung ausstehend" oder vergleichbar markieren und DARF lokale Schreibaktionen sofort sperren oder den Space lokal ausblenden. Er MUSS bereits durabel gespeicherte, aber noch nicht bestaetigte lokale Schreibvorgaenge und retrybare Outbox-Eintraege behalten; sie DÜRFEN erst nach kanonischer Bestaetigung oder bestaetigter Broker-Rotation verworfen, neu bewertet oder als nicht mehr sendbar markiert werden. Er DARF lokalen State erst nach kanonischer Bestaetigung oder bestaetigter Broker-Rotation dauerhaft als ausgetreten behandeln.
 - Bei `action="removed"` fuer eine andere DID DARF der Client UIs und lokale Caches als ausstehende Entfernung aktualisieren, MUSS die kanonische Mitgliederliste aber unveraendert lassen.
 
 Nach dem naechsten Space-Sync MUSS der Client Pending-Updates gegen die kanonische Mitgliederliste aufloesen:
@@ -257,7 +257,7 @@ Der Admin MUSS zusaetzlich `member-update` Nachrichten senden:
 - an den entfernten Member mit `action="removed"` und `effectiveKeyGeneration` der neuen Generation, damit der Client den Space lokal als Entfernung ausstehend markieren oder sperren kann;
 - an die verbleibenden Members mit `action="removed"`, damit UIs und lokale Caches die Entfernung sofort anzeigen koennen.
 
-Verbleibende Members MUESSEN ausserdem eine `key-rotation` Nachricht mit dem neuen Content Key und der neuen Capability erhalten. Der entfernte Member DARF diese `key-rotation` Nachricht nicht erhalten.
+Verbleibende Members MÜSSEN ausserdem eine `key-rotation` Nachricht mit dem neuen Content Key und der neuen Capability erhalten. Der entfernte Member DARF diese `key-rotation` Nachricht nicht erhalten.
 
 ### Operationelle Reihenfolge (MUSS)
 
@@ -265,9 +265,9 @@ Damit offline Devices deterministisch aufholen koennen, MUSS eine Member-Entfern
 
 1. Der Admin merkt die Remove-CRDT-Operation und den neuen Key-Material-Satz nur in einem **durablen, crash-festen Removal-Staging-State** vor — **nicht** als [Sync-002-Log-Eintrag](002-sync-protokoll.md#lokaler-schreibvorgang) appenden/publishen und **nicht** in den CRDT-State committen. Der eigentliche Sync-002-Commit der Remove-Operation (Log-Eintrag schreiben + publizieren) erfolgt erst in Schritt 3, nach Bestätigung aller Home-Broker.
 2. Der Admin sendet `space-rotate` an **alle autoritativen Home-Broker** des Space (das Set = die in der [Space-Metadata](003-transport-und-broker.md#broker-zuordnung-und-multi-broker) geführte Heim-Broker-Liste, **fixiert zum Removal-Start**) und wartet die Bestätigung **jedes** Brokers ab. Solange nicht **alle** bestätigt haben — oder ein Home-Broker offline ist — bleibt das Removal **`pending`/not-enforced** in einer retrybaren Outbox; der Ablauf **stoppt hier** (KEIN lokaler Commit, KEINE Verteilung, kein Schritt 3) — siehe [Removal-Enforcement-Semantik](#removal-enforcement-semantik-muss).
-3. **Erst nachdem alle Home-Broker `space-rotate` bestätigt haben:** Der Admin committet die Removal-Operation lokal und sendet `key-rotation` Inbox-Nachrichten an alle verbleibenden Members und `member-update` Nachrichten an verbleibende sowie entfernte Members. Diese Nachrichten MUESSEN pro Device zugestellt und ACKt werden (siehe [Sync 003 Store-and-Forward pro Device](003-transport-und-broker.md#store-and-forward-pro-device)).
-4. Verbleibende Members speichern die neue Generation durabel, bevor sie `key-rotation` ACKen. Danach MUESSEN sie einen Space-`sync-request` ausloesen und blockierte Log-Eintraege dieser Generation erneut verarbeiten.
-5. Entfernte Members duerfen `member-update(action="removed")` erst als dauerhaften lokalen Austritt behandeln, wenn der naechste Space-Sync die kanonische Mitgliederliste ohne diese DID bestaetigt oder die Broker-Rotation fuer `effectiveKeyGeneration` die bisherige Capability mit `CAPABILITY_GENERATION_STALE` ablehnt. Bis dahin SOLLTE die UI den Space als "Entfernung ausstehend" oder vergleichbar markieren. Es gibt keinen normativen Timeout, weil Offline-Zeit keine neue Protokoll-Autoritaet erzeugt; bei App-Start oder Reconnect MUSS der Client den Bestaetigungs-Sync erneut versuchen. Implementierungen DUERFEN den Space lokal ausblenden oder Schreibaktionen sperren, MUESSEN aber durabel gespeicherte, noch unbestaetigte lokale Schreibvorgaenge und retrybare Outbox-Eintraege behalten, bis die kanonische Bestaetigung oder Broker-Rotation deren weiteren Umgang bestimmt. Sie DUERFEN lokalen State nicht ohne diese Bestaetigung als kanonisch geloescht behandeln.
+3. **Erst nachdem alle Home-Broker `space-rotate` bestätigt haben:** Der Admin committet die Removal-Operation lokal und sendet `key-rotation` Inbox-Nachrichten an alle verbleibenden Members und `member-update` Nachrichten an verbleibende sowie entfernte Members. Diese Nachrichten MÜSSEN pro Device zugestellt und ACKt werden (siehe [Sync 003 Store-and-Forward pro Device](003-transport-und-broker.md#store-and-forward-pro-device)).
+4. Verbleibende Members speichern die neue Generation durabel, bevor sie `key-rotation` ACKen. Danach MÜSSEN sie einen Space-`sync-request` ausloesen und blockierte Log-Eintraege dieser Generation erneut verarbeiten.
+5. Entfernte Members duerfen `member-update(action="removed")` erst als dauerhaften lokalen Austritt behandeln, wenn der naechste Space-Sync die kanonische Mitgliederliste ohne diese DID bestaetigt oder die Broker-Rotation fuer `effectiveKeyGeneration` die bisherige Capability mit `CAPABILITY_GENERATION_STALE` ablehnt. Bis dahin SOLLTE die UI den Space als "Entfernung ausstehend" oder vergleichbar markieren. Es gibt keinen normativen Timeout, weil Offline-Zeit keine neue Protokoll-Autoritaet erzeugt; bei App-Start oder Reconnect MUSS der Client den Bestaetigungs-Sync erneut versuchen. Implementierungen DÜRFEN den Space lokal ausblenden oder Schreibaktionen sperren, MÜSSEN aber durabel gespeicherte, noch unbestaetigte lokale Schreibvorgaenge und retrybare Outbox-Eintraege behalten, bis die kanonische Bestaetigung oder Broker-Rotation deren weiteren Umgang bestimmt. Sie DÜRFEN lokalen State nicht ohne diese Bestaetigung als kanonisch geloescht behandeln.
 
 Zeitbasierte Snapshot- oder Vault-Retries duerfen diesen Ablauf beschleunigen, sind aber nicht normativ. Normative Konvergenz entsteht durch Inbox-Zustellung, Key-/Generation-Gap-Regeln und Log-Catch-Up gemaess [Sync 002 Key-Rotation und Generation-Gaps](002-sync-protokoll.md#key-rotation-und-generation-gaps).
 
@@ -314,7 +314,7 @@ Inbox-Nachrichtentyp `key-rotation`, verschlüsselt mit ECIES:
 
 Der Admin sendet eine `key-rotation` Nachricht an **jedes** verbleibende Mitglied einzeln.
 
-`key-rotation` ist der einzige normative bekannte Inbox-Nachrichtentyp fuer Space-Key-Rotation in `wot-sync@0.1`. `group-key-rotation` ist kein normativer Nachrichtentyp und DARF von konformen Implementierungen nicht als bekannte Protocol-Type-URI beansprucht werden. Lokale Migrations-Aliase MUESSEN vor Protocol-Verarbeitung auf die normative `key-rotation`-Form normalisiert werden.
+`key-rotation` ist der einzige normative bekannte Inbox-Nachrichtentyp fuer Space-Key-Rotation in `wot-sync@0.1`. `group-key-rotation` ist kein normativer Nachrichtentyp und DARF von konformen Implementierungen nicht als bekannte Protocol-Type-URI beansprucht werden. Lokale Migrations-Aliase MÜSSEN vor Protocol-Verarbeitung auf die normative `key-rotation`-Form normalisiert werden.
 
 Alte Daten bleiben mit alten Space Content Keys lesbar. Rotation schuetzt nur zukuenftige Daten und zukuenftigen Broker-Zugriff.
 
@@ -323,12 +323,12 @@ Alte Daten bleiben mit alten Space Content Keys lesbar. Rotation schuetzt nur zu
 - `generation` MUSS exakt die vorherige Space-Key-Generation plus eins sein.
 - Die enthaltene `capability.generation` MUSS `generation` entsprechen.
 - Der Broker MUSS nach erfolgreicher `space-rotate` Verarbeitung alte Capabilities ablehnen (`CAPABILITY_GENERATION_STALE`) und gecachte Capability-Scopes alter Generation **sofort über alle offenen Sockets invalidieren** (siehe [Sync 003 Capability-Widerruf über Rotation](003-transport-und-broker.md#capability-widerruf-über-rotation)) — sonst könnte ein entfernter Member über einen noch offenen Socket weiterschreiben.
-- Clients MUESSEN neue Log-Eintraege nach Rotation mit der neuen `keyGeneration` schreiben.
-- Clients MUESSEN alte Log-Eintraege weiter mit der jeweils im Log-Eintrag angegebenen historischen `keyGeneration` entschluesseln.
+- Clients MÜSSEN neue Log-Eintraege nach Rotation mit der neuen `keyGeneration` schreiben.
+- Clients MÜSSEN alte Log-Eintraege weiter mit der jeweils im Log-Eintrag angegebenen historischen `keyGeneration` entschluesseln.
 
-Die Phase-1-Interop-Vektoren für `key-rotation` prüfen das Inbox-Message-Shape. Die enthaltene `capability` wird dort nur als kompakter JWS-String validiert. Payload-Korrelation der Capability (`audience`, `spaceId`, `generation`, Signatur) ist durch den separaten `space_capability_jws` Vektor und die Capability-Regeln in [Sync 003](003-transport-und-broker.md#capability-format) abgedeckt. Spätere Conformance-Vektoren SOLLEN echte Capability-JWS-End-to-End-Beispiele für `key-rotation` enthalten.
+Die Phase-1-Interop-Vektoren für `key-rotation` prüfen das Inbox-Message-Shape. Die enthaltene `capability` wird dort nur als kompakter JWS-String validiert. Payload-Korrelation der Capability (`audience`, `spaceId`, `generation`, Signatur) ist durch den separaten `space_capability_jws` Vektor und die Capability-Regeln in [Sync 003](003-transport-und-broker.md#capability-format) abgedeckt. Spätere Conformance-Vektoren SOLLTEN echte Capability-JWS-End-to-End-Beispiele für `key-rotation` enthalten.
 
-Clients MUESSEN Key-Rotations anhand ihrer lokal bekannten Space-Key-Generation anwenden:
+Clients MÜSSEN Key-Rotations anhand ihrer lokal bekannten Space-Key-Generation anwenden:
 
 - Wenn `generation` der lokal bekannten Generation plus eins entspricht, DARF die Rotation angewendet werden.
 - Wenn `generation` kleiner oder gleich der lokal bekannten Generation ist, MUSS die Rotation als doppelt oder veraltet ignoriert werden.
