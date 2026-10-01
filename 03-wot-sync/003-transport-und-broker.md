@@ -552,7 +552,7 @@ Log-Einträge werden NICHT mit ECIES verschlüsselt — sie sind bereits mit dem
 | `.../log-entry/1.0` | Log-Sync | Neuer verschlüsselter Log-Eintrag |
 | `.../sync-request/1.0` | Log-Sync | Anfrage: "Was hast du seit seq X für docId Y?" |
 | `.../sync-response/1.0` | Log-Sync | Antwort: fehlende Log-Einträge |
-| `.../inbox/1.0` | Inbox | Direkte verschlüsselte Nachricht (Attestation, etc.) |
+| `.../inbox/1.0` | Inbox | Direkte verschlüsselte Nachricht; Body-Formen (Attestation, Empfangsquittung, Profil) siehe [Body-Formate](#inbox10--body-formate) |
 | `.../ack/1.0` | Inbox | Per-Device Empfangs-/Persistenzbestätigung für Inbox-Nachrichten (referenziert `id` der Original-Nachricht). Log-Sync DARF `ack/1.0` NICHT verwenden; siehe [Log-Sync vs. Inbox-ACK](#log-sync-vs-inbox-ack-normativ). |
 
 #### Gruppen ([Sync 005](005-gruppen.md))
@@ -680,6 +680,66 @@ Antwort auf `sync-request`. Body:
 **Heads-Diskrepanz-Detection:** Der Fragende kann die erhaltenen `heads` mit denen anderer Broker/Peers vergleichen, um Censorship oder Split-Brain zu erkennen (siehe [Sync 002](002-sync-protokoll.md#censorship--und-split-brain-detection)).
 
 **`sync-response.heads` sind NICHT der nächste Request-Cursor (MUSS).** Sie sind das Maximum des Antwortenden (Diagnostik), nicht der kontige Vollständigkeits-Cursor des Fragenden. Der nächste `sync-request.heads` MUSS aus dem **lokalen kontigen Cursor** nach Verarbeitung der verifizierten Einträge berechnet werden (siehe [Sync 002 Vollständigkeits-Cursor](002-sync-protokoll.md#vollstaendigkeits-cursor-luecken-und-pagination)) — niemals durch Übernahme von `sync-response.heads`, sonst werden lokale Lücken übersprungen.
+
+#### `inbox/1.0` — Body-Formate
+
+Der Klartext-Body einer `inbox/1.0`-Nachricht ist das Objekt, das der innere JWS signiert (siehe [Verschlüsselung (ECIES)](#verschlüsselung-ecies)). Der Absender ist der Signer des inneren JWS; `from` des Envelopes ist nur Routing-Information. Ein Body DARF die DID des Absenders NICHT als Autorität tragen.
+
+Dieses Dokument definiert drei Body-Formen. Sie unterscheiden sich am Feld `kind`. Längenangaben zählen Unicode-Zeichen.
+
+1. **Attestation zustellen** — kein Feld `kind`, Schema `inbox-attestation-delivery`:
+
+   ```json
+   { "vcJws": "<JWS Compact Serialization>" }
+   ```
+
+   `vcJws` MUSS eine Attestation nach [Trust 001](../02-wot-trust/001-attestations.md) sein. Der Body DARF keine weiteren Felder tragen. Der Empfänger MUSS den VC-JWS selbst verifizieren; der innere JWS der Nachricht bindet nur den Zusteller, nicht den Aussteller.
+
+2. **Empfang quittieren** — `kind: "attestation-receipt"`, Schema `inbox-attestation-receipt`:
+
+   ```json
+   { "kind": "attestation-receipt", "jti": "<Attestation-ID>", "status": "received" }
+   ```
+
+   Der Empfänger einer Attestation DARF nach erfolgreichem Verifizieren und Speichern eine Quittung an den Aussteller (`iss`) schicken. Der Body MUSS genau diese drei Felder tragen; `status` hat in dieser Version nur den Wert `received`. Der Aussteller MUSS eine Quittung verwerfen, deren Absender nicht das Subjekt der referenzierten Attestation ist. Eine Quittung DARF NICHT selbst quittiert werden. Absender von Attestationen MÜSSEN ohne Quittungen funktionieren.
+
+3. **Profil an Kontakte** — `kind: "profile-update"`, Schema `inbox-profile-update`:
+
+   ```json
+   {
+     "kind": "profile-update",
+     "profile": {
+       "name": "Anna",
+       "bio": "Gärtnerin",
+       "avatar": "data:image/png;base64,iVBORw0KGgo=",
+       "offers": ["Werkzeug leihen"],
+       "needs": ["Saatgut"],
+       "updatedAt": "2026-10-01T12:00:00Z"
+     }
+   }
+   ```
+
+   Ein Absender DARF sein Profil an seine Kontakte schicken, und zwar nur infolge einer bewussten Profiländerung durch den Nutzer. Der Body MUSS genau `kind` und `profile` tragen; `profile` DARF nur die folgenden Felder tragen:
+
+   | Feld | Pflicht | Regel |
+   |---|---|---|
+   | `name` | ja | nicht leer, mindestens ein Nicht-Leerzeichen, höchstens 200 Zeichen |
+   | `bio` | nein | höchstens 2000 Zeichen |
+   | `avatar` | nein | `data:image/<Typ>;base64,<Daten>`, die ganze URL höchstens 350 000 Zeichen (rund 256 KiB Bilddaten); externe Adressen DÜRFEN NICHT vorkommen |
+   | `offers`, `needs` | nein | je höchstens 100 Einträge, jeder nicht leer und höchstens 200 Zeichen |
+   | `updatedAt` | ja | RFC-3339-Zeitpunkt mit Zeitzone (`Z` oder Offset), gültiges Kalenderdatum |
+
+   `updatedAt` ist der Zeitpunkt der Profiländerung beim Absender, nicht der Sendezeitpunkt. Ein Absender, der dasselbe Profil auch an anderer Stelle veröffentlicht (zum Beispiel an einem Profil-Dienst nach [Sync 004](004-discovery.md)), MUSS dort dieselbe Zeitmarke verwenden.
+
+   Die Nachricht trägt das ganze Profil: Ein fehlendes optionales Feld bedeutet, dass der Absender es entfernt hat. Der Empfänger MUSS das Profil nur übernehmen, wenn der Absender ein bekannter Kontakt ist und entweder für diesen Kontakt noch keine Zeitmarke gespeichert ist oder `updatedAt` als Zeitpunkt später liegt als die gespeicherte. Zeitpunkte werden als Zeitpunkte verglichen, nicht als Zeichenketten. Alle Schreiber eines Kontaktprofils (diese Nachricht, ein Profil-Dienst) SOLLTEN derselben Regel unterliegen und je Kontakt nacheinander schreiben.
+
+**Ungültige Bodies.** Ein Body mit unbekanntem `kind` oder ein Body, der seiner Form nicht genügt, ist deterministisch ungültig. Der Empfänger MUSS ihn verwerfen und DARF ihn NICHT als Attestation deuten. Die Nachricht gilt als verarbeitet (die Message-ID wird erfasst); sie wird nicht mit `ack/1.0` bestätigt, die Redelivery endet über die Replay-Erkennung.
+
+**Bestätigung.** Ein gültiger Body gilt als verarbeitet, sobald er angewendet oder vom Konsumenten deterministisch verworfen wurde (zum Beispiel ein älteres Profil). Solange für eine Form kein Konsument bereitsteht, MUSS der Empfänger die Nachricht unbestätigt lassen, auch wenn sich ein Konsument während der Verarbeitung abmeldet ([ACK-Vorbedingungen](#ack-vorbedingungen)).
+
+Neue Body-Formen erfordern einen Nachtrag zu diesem Abschnitt mit eigenem `kind`, Schema und Testvektoren.
+
+Testvektoren: `inbox_body_classification` und `inbox_profile_update_acceptance` in [`test-vectors/phase-1-interop.json`](../test-vectors/phase-1-interop.json).
 
 #### `ack/1.0` — Empfangsbestätigung (NORMATIV)
 

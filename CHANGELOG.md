@@ -10,6 +10,7 @@ Das Format folgt grob [Keep a Changelog](https://keepachangelog.com/en/1.1.0/). 
 
 - `GLOSSARY.md` fuer normative Begriffe und konsistente Terminologie.
 - `wot-identity@0.1` und `wot-trust@0.1` ersetzen das bisherige `wot-core@0.1`-Profil.
+- Sync 003: Body-Formate von `inbox/1.0` normativ beschrieben — Attestation zustellen (`{ vcJws }`), Empfangsquittung (`kind: "attestation-receipt"`), Profil an Kontakte (`kind: "profile-update"`, mit Grenzwerten und Uebernahmeregel); unbekanntes `kind` ist ungueltig. Schemas `inbox-attestation-delivery`, `inbox-attestation-receipt`, `inbox-profile-update`; Testvektoren `inbox_body_classification`, `inbox_profile_update_acceptance` (Profil `wot-sync@0.1`).
 
 ### Changed
 

@@ -26,6 +26,9 @@ Status: initialer Draft. Die Schemas decken die in den Spec-Dokumenten beschrieb
 | `space-invite.schema.json` | Sync 005 | Space-Einladung ueber Inbox |
 | `key-rotation.schema.json` | Sync 005 | Key-Rotation Nachricht |
 | `member-update.schema.json` | Sync 005 | Mitgliedschafts-Aenderung ueber Inbox |
+| `inbox-attestation-delivery.schema.json` | Sync 003 | inbox/1.0-Body: Attestation zustellen |
+| `inbox-attestation-receipt.schema.json` | Sync 003 | inbox/1.0-Body: Empfang quittieren |
+| `inbox-profile-update.schema.json` | Sync 003 | inbox/1.0-Body: Profil an Kontakte |
 | `trust-list-delta.schema.json` | H03 | HMC Trust-List-Gossip Nachricht |
 
 ## Regeln

@@ -4,12 +4,14 @@ import hashlib
 import json
 import math
 import re
+from datetime import datetime
 from pathlib import Path
 
 from cryptography.hazmat.primitives import hashes, serialization
 from cryptography.hazmat.primitives.asymmetric import ed25519, x25519
 from cryptography.hazmat.primitives.ciphers.aead import AESGCM
 from cryptography.hazmat.primitives.kdf.hkdf import HKDF
+from jsonschema import Draft202012Validator
 
 
 ROOT = Path(__file__).resolve().parents[1]
@@ -441,6 +443,42 @@ def verify_delegated_attestation_bundle(bundle: dict, required_capability: str =
     assert iso_to_unix(binding_payload["validFrom"]) <= att_payload["iat"] <= iso_to_unix(binding_payload["validUntil"])
 
 
+INBOX_BODY_SCHEMAS = {
+    "attestation-receipt": "inbox-attestation-receipt.schema.json",
+    "profile-update": "inbox-profile-update.schema.json",
+}
+
+
+def classify_inbox_body(body, schemas_dir: Path) -> str:
+    """Sync 003 Body-Formate von inbox/1.0: Form am Feld kind, sonst Attestation-Zustellung."""
+    def valid(schema_file: str) -> bool:
+        schema = json.loads((schemas_dir / schema_file).read_text(encoding="utf-8"))
+        return Draft202012Validator(schema).is_valid(body)
+
+    if not isinstance(body, dict):
+        return "invalid"
+    kind = body.get("kind")
+    if kind is None:
+        return "attestation-delivery" if valid("inbox-attestation-delivery.schema.json") else "invalid"
+    schema_file = INBOX_BODY_SCHEMAS.get(kind)
+    if schema_file is None or not valid(schema_file):
+        return "invalid"
+    return kind
+
+
+def rfc3339_instant(value: str) -> datetime:
+    return datetime.fromisoformat(value.replace("Z", "+00:00"))
+
+
+def profile_update_disposition(case: dict) -> str:
+    if not case["contact_known"]:
+        return "ignore"
+    stored = case["stored_updated_at"]
+    if stored is None:
+        return "apply"
+    return "apply" if rfc3339_instant(case["incoming_updated_at"]) > rfc3339_instant(stored) else "ignore"
+
+
 def main() -> None:
     data = json.loads(VECTOR.read_text(encoding="utf-8"))
     identity = data["identity"]
@@ -525,6 +563,17 @@ def main() -> None:
         expected = "rollback" if rollback else "ok"
         assert expected == case["expected"], case["name"]
     print("profile service rollback ok")
+
+    # Sync 003 Body-Formate von inbox/1.0: Klassifikation gegen die Body-Schemas.
+    schemas_dir = Path(__file__).resolve().parent.parent / "schemas"
+    for case in data["inbox_body_classification"]["cases"]:
+        assert classify_inbox_body(case["body"], schemas_dir) == case["expected"], case["name"]
+    print("inbox body classification ok")
+
+    # Form profile-update: nur bekannte Kontakte, nur ein spaeterer Zeitpunkt.
+    for case in data["inbox_profile_update_acceptance"]["cases"]:
+        assert profile_update_disposition(case) == case["expected"], case["name"]
+    print("inbox profile-update acceptance ok")
 
     ecies = data["ecies"]
     eph_public = b64u_decode(ecies["ephemeral_public_b64"])

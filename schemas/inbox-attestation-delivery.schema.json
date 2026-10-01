@@ -1,0 +1,15 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://web-of-trust.de/schemas/inbox-attestation-delivery.schema.json",
+  "title": "WoT inbox/1.0 Body: Attestation zustellen",
+  "description": "Entschluesselter Klartext-Body einer inbox/1.0-Nachricht, die eine Attestation zustellt (Sync 003, Body-Formate von inbox/1.0). Kein Feld kind. Die Gueltigkeit des VC-JWS prueft Trust 001, nicht dieses Schema.",
+  "type": "object",
+  "required": ["vcJws"],
+  "additionalProperties": false,
+  "properties": {
+    "vcJws": {
+      "type": "string",
+      "pattern": "^[A-Za-z0-9_-]+\\.[A-Za-z0-9_-]+\\.[A-Za-z0-9_-]+$"
+    }
+  }
+}

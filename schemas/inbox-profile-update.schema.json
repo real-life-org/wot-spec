@@ -1,0 +1,39 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://web-of-trust.de/schemas/inbox-profile-update.schema.json",
+  "title": "WoT inbox/1.0 Body: Profil an Kontakte",
+  "description": "Entschluesselter Klartext-Body einer inbox/1.0-Profilaenderung (Sync 003, Body-Formate von inbox/1.0). Laengen zaehlen Unicode-Zeichen. Der Absender ist der Signer des inneren JWS; der Body traegt keine DID.",
+  "type": "object",
+  "required": ["kind", "profile"],
+  "additionalProperties": false,
+  "properties": {
+    "kind": { "const": "profile-update" },
+    "profile": {
+      "type": "object",
+      "required": ["name", "updatedAt"],
+      "additionalProperties": false,
+      "properties": {
+        "name": { "type": "string", "minLength": 1, "maxLength": 200, "pattern": "\\S" },
+        "bio": { "type": "string", "maxLength": 2000 },
+        "avatar": {
+          "type": "string",
+          "maxLength": 350000,
+          "pattern": "^data:image/[a-z0-9.+-]+;base64,[A-Za-z0-9+/]+={0,2}$"
+        },
+        "offers": { "$ref": "#/$defs/entries" },
+        "needs": { "$ref": "#/$defs/entries" },
+        "updatedAt": {
+          "type": "string",
+          "pattern": "^[0-9]{4}-[0-9]{2}-[0-9]{2}T[0-9]{2}:[0-9]{2}:[0-9]{2}(\\.[0-9]+)?(Z|[+-][0-9]{2}:[0-9]{2})$"
+        }
+      }
+    }
+  },
+  "$defs": {
+    "entries": {
+      "type": "array",
+      "maxItems": 100,
+      "items": { "type": "string", "minLength": 1, "maxLength": 200, "pattern": "\\S" }
+    }
+  }
+}
