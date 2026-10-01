@@ -1,0 +1,14 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://web-of-trust.de/schemas/inbox-attestation-receipt.schema.json",
+  "title": "WoT inbox/1.0 Body: Empfang einer Attestation quittieren",
+  "description": "Entschluesselter Klartext-Body einer inbox/1.0-Empfangsquittung (Sync 003, Body-Formate von inbox/1.0).",
+  "type": "object",
+  "required": ["kind", "jti", "status"],
+  "additionalProperties": false,
+  "properties": {
+    "kind": { "const": "attestation-receipt" },
+    "jti": { "type": "string", "minLength": 1 },
+    "status": { "const": "received" }
+  }
+}

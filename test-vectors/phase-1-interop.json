@@ -900,5 +900,209 @@
         "expected": "rollback"
       }
     ]
+  },
+  "inbox_body_classification": {
+    "notes": "Sync 003 Body-Formate von inbox/1.0: Klassifikation des entschluesselten Bodys. Ein Body, der keiner Form genuegt, ist ungueltig und wird nie als Attestation gedeutet.",
+    "spec_refs": [
+      "03-wot-sync/003-transport-und-broker.md#inbox10--body-formate"
+    ],
+    "cases": [
+      {
+        "name": "attestation-delivery",
+        "body": {
+          "vcJws": "eyJhbGciOiJFZERTQSJ9.eyJ0eXBlIjpbIldvdEF0dGVzdGF0aW9uIl19.c2lnbmF0dXJl"
+        },
+        "expected": "attestation-delivery"
+      },
+      {
+        "name": "attestation-receipt",
+        "body": {
+          "kind": "attestation-receipt",
+          "jti": "urn:uuid:550e8400-e29b-41d4-a716-446655440000",
+          "status": "received"
+        },
+        "expected": "attestation-receipt"
+      },
+      {
+        "name": "profile-update-minimal",
+        "body": {
+          "kind": "profile-update",
+          "profile": {
+            "name": "Anna",
+            "updatedAt": "2026-10-01T12:00:00Z"
+          }
+        },
+        "expected": "profile-update"
+      },
+      {
+        "name": "profile-update-full",
+        "body": {
+          "kind": "profile-update",
+          "profile": {
+            "name": "Anna",
+            "bio": "Gärtnerin",
+            "avatar": "data:image/png;base64,iVBORw0KGgo=",
+            "offers": [
+              "Werkzeug"
+            ],
+            "needs": [
+              "Saatgut"
+            ],
+            "updatedAt": "2026-10-01T14:00:00+02:00"
+          }
+        },
+        "expected": "profile-update"
+      },
+      {
+        "name": "unknown-kind",
+        "body": {
+          "kind": "something-new",
+          "vcJws": "eyJhbGciOiJFZERTQSJ9.eyJ0eXBlIjpbIldvdEF0dGVzdGF0aW9uIl19.c2lnbmF0dXJl"
+        },
+        "expected": "invalid"
+      },
+      {
+        "name": "delivery-with-extra-field",
+        "body": {
+          "vcJws": "eyJhbGciOiJFZERTQSJ9.eyJ0eXBlIjpbIldvdEF0dGVzdGF0aW9uIl19.c2lnbmF0dXJl",
+          "note": "x"
+        },
+        "expected": "invalid"
+      },
+      {
+        "name": "receipt-wrong-status",
+        "body": {
+          "kind": "attestation-receipt",
+          "jti": "x",
+          "status": "read"
+        },
+        "expected": "invalid"
+      },
+      {
+        "name": "profile-update-local-time",
+        "body": {
+          "kind": "profile-update",
+          "profile": {
+            "name": "Anna",
+            "updatedAt": "2026-10-01T12:00:00"
+          }
+        },
+        "expected": "invalid"
+      },
+      {
+        "name": "profile-update-blank-name",
+        "body": {
+          "kind": "profile-update",
+          "profile": {
+            "name": "   ",
+            "updatedAt": "2026-10-01T12:00:00Z"
+          }
+        },
+        "expected": "invalid"
+      },
+      {
+        "name": "profile-update-external-avatar",
+        "body": {
+          "kind": "profile-update",
+          "profile": {
+            "name": "Anna",
+            "avatar": "https://tracker.example/pixel.gif",
+            "updatedAt": "2026-10-01T12:00:00Z"
+          }
+        },
+        "expected": "invalid"
+      },
+      {
+        "name": "profile-update-did-in-body",
+        "body": {
+          "kind": "profile-update",
+          "profile": {
+            "did": "did:key:z6Mk",
+            "name": "Anna",
+            "updatedAt": "2026-10-01T12:00:00Z"
+          }
+        },
+        "expected": "invalid"
+      },
+      {
+        "name": "profile-update-name-201-chars",
+        "body": {
+          "kind": "profile-update",
+          "profile": {
+            "name": "äääääääääääääääääääääääääääääääääääääääääääääääääääääääääääääääääääääääääääääääääääääääääääääääääääääääääääääääääääääääääääääääääääääääääääääääääääääääääääääääääääääääääääääääääääääääääääääääääääääääää",
+            "updatedAt": "2026-10-01T12:00:00Z"
+          }
+        },
+        "expected": "invalid"
+      },
+      {
+        "name": "profile-update-name-200-chars",
+        "body": {
+          "kind": "profile-update",
+          "profile": {
+            "name": "ääääääääääääääääääääääääääääääääääääääääääääääääääääääääääääääääääääääääääääääääääääääääääääääääääääääääääääääääääääääääääääääääääääääääääääääääääääääääääääääääääääääääääääääääääääääääääääääääääääääää",
+            "updatedAt": "2026-10-01T12:00:00Z"
+          }
+        },
+        "expected": "profile-update"
+      }
+    ]
+  },
+  "inbox_profile_update_acceptance": {
+    "notes": "Sync 003 Body-Formate von inbox/1.0, Form profile-update: Uebernahme beim Empfaenger. Nur bekannte Kontakte, nur Neueres; ohne gespeicherte Zeitmarke wird das erste gueltige Profil uebernommen. Zeitpunkte werden als Zeitpunkte verglichen, nicht als Zeichenketten.",
+    "spec_refs": [
+      "03-wot-sync/003-transport-und-broker.md#inbox10--body-formate"
+    ],
+    "cases": [
+      {
+        "name": "first-profile",
+        "contact_known": true,
+        "stored_updated_at": null,
+        "incoming_updated_at": "2026-10-01T12:00:00Z",
+        "expected": "apply"
+      },
+      {
+        "name": "newer",
+        "contact_known": true,
+        "stored_updated_at": "2026-10-01T12:00:00Z",
+        "incoming_updated_at": "2026-10-02T12:00:00Z",
+        "expected": "apply"
+      },
+      {
+        "name": "equal-ignored",
+        "contact_known": true,
+        "stored_updated_at": "2026-10-01T12:00:00Z",
+        "incoming_updated_at": "2026-10-01T12:00:00Z",
+        "expected": "ignore"
+      },
+      {
+        "name": "older-ignored",
+        "contact_known": true,
+        "stored_updated_at": "2026-10-02T12:00:00Z",
+        "incoming_updated_at": "2026-10-01T12:00:00Z",
+        "expected": "ignore"
+      },
+      {
+        "name": "same-instant-other-offset-ignored",
+        "contact_known": true,
+        "stored_updated_at": "2026-10-01T12:00:00Z",
+        "incoming_updated_at": "2026-10-01T14:00:00+02:00",
+        "expected": "ignore"
+      },
+      {
+        "name": "later-instant-earlier-string",
+        "contact_known": true,
+        "stored_updated_at": "2026-10-01T12:00:00+02:00",
+        "incoming_updated_at": "2026-10-01T11:00:00Z",
+        "expected": "apply"
+      },
+      {
+        "name": "unknown-contact",
+        "contact_known": false,
+        "stored_updated_at": null,
+        "incoming_updated_at": "2026-10-01T12:00:00Z",
+        "expected": "ignore"
+      }
+    ]
   }
 }

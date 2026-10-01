@@ -263,6 +263,8 @@ Die folgenden Vektoren sind in [`phase-1-interop.md`](phase-1-interop.md) dokume
 - **Verification VC JWS** (Trust 002) - signiertes Verifiable Credential mit dem `type`-Eintrag `WotVerification` als normativem Diskriminator (zusaetzlich zu `WotAttestation`); der `claim`-Text ist nur ein Label. Re-verifizierte Signatur, JCS-SHA-256 und `signing_input` wie bei Attestation VC JWS.
 - **Profile Service PUT Acceptance** (Sync 004) - reine JSON-Dispositionsvektoren fuer die serverseitige Versions-Monotonie: nur strikt groessere `version` als die gespeicherte wird akzeptiert, sonst `conflict` (409). Resource-agnostisch fuer `/p`, `/p/{did}/v`, `/p/{did}/a`. Keine Signaturen.
 - **Profile Service Rollback** (Sync 004) - reine JSON-Dispositionsvektoren fuer den Client-Rollback-Schutz: gelieferte `version` kleiner als die zuletzt gesehene -> `rollback`, sonst `ok`; unabhaengig pro Ressource (Z.181). Keine Signaturen.
+- **Inbox Body Classification** (Sync 003) - reine JSON-Dispositionsvektoren fuer die Body-Formen von `inbox/1.0`: Attestation-Zustellung (`{ vcJws }`), Empfangsquittung, Profil an Kontakte; unbekanntes `kind` und Formfehler -> `invalid` (nie als Attestation gedeutet). Grenzfaelle fuer Zeitzone, Leer-Namen, externe Avatare und die 200-Zeichen-Grenze (in Unicode-Zeichen). Keine Signaturen.
+- **Inbox Profile-Update Acceptance** (Sync 003) - Uebernahme beim Empfaenger: nur bekannte Kontakte, nur ein spaeterer Zeitpunkt als der gespeicherte, Vergleich als Zeitpunkt und nicht als Zeichenkette (Offsets). Keine Signaturen.
 - **DID-Dokument** - `resolve()` fuer `did:key` plus Bootstrap-`keyAgreement`.
 - **Admin Key Ableitung** - HKDF mit Space-ID im Info-String.
 - **Personal Doc Key** - deterministische Document-ID.

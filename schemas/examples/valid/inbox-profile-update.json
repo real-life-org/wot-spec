@@ -1,0 +1,11 @@
+{
+  "kind": "profile-update",
+  "profile": {
+    "name": "Anna",
+    "bio": "Gärtnerin im Gemeinschaftsgarten",
+    "avatar": "data:image/png;base64,iVBORw0KGgo=",
+    "offers": ["Werkzeug leihen"],
+    "needs": ["Saatgut"],
+    "updatedAt": "2026-10-01T12:00:00Z"
+  }
+}

@@ -55,7 +55,10 @@
         "schemas/member-update.schema.json",
         "schemas/profile-service-response.schema.json",
         "schemas/profile-service-list-resource.schema.json",
-        "schemas/space-invite.schema.json"
+        "schemas/space-invite.schema.json",
+        "schemas/inbox-attestation-delivery.schema.json",
+        "schemas/inbox-attestation-receipt.schema.json",
+        "schemas/inbox-profile-update.schema.json"
       ],
       "test_vectors": [
         {
@@ -73,7 +76,9 @@
             "profile_service_put_acceptance",
             "profile_service_rollback",
             "admin_key_derivation",
-            "personal_doc"
+            "personal_doc",
+            "inbox_body_classification",
+            "inbox_profile_update_acceptance"
           ]
         }
       ],
