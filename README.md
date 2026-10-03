@@ -4,7 +4,7 @@ Ein Protokoll für dezentrale Vertrauensnetzwerke basierend auf echten Begegnung
 
 **Status:** Draft. Diese Spezifikation ist oeffentlich einsehbar, aber noch nicht stabil und nicht produktionsreif. Breaking Changes sind bis `v1.0.0` ausdruecklich moeglich.
 
-**Generation:** Diese Spezifikation ist die zweite Generation des Protokolls. Sie läuft produktiv in der [Web-of-Trust-App](https://web-of-trust.de) und im Real Life Stack (Implementierung: [`real-life-org/web-of-trust`](https://github.com/real-life-org/web-of-trust)). Ihr Nachfolger ist das **Real Life Trust Protocol (RLTP)**, die dritte Generation, in [`real-life-org/trust-protocol`](https://github.com/real-life-org/trust-protocol). Diese Spezifikation wird gepflegt, solange ausgelieferte Apps auf ihr laufen; Reparaturen gehen in Richtung der dritten Generation.
+**Generation:** Diese Spezifikation ist die zweite Generation des Protokolls. Obwohl sie noch ein Entwurf ist, läuft ihre Implementierung bereits produktiv in der [Web-of-Trust-App](https://web-of-trust.de) und im Real Life Stack (Implementierung: [`real-life-org/web-of-trust`](https://github.com/real-life-org/web-of-trust)). Ihr Nachfolger ist das **Real Life Trust Protocol (RLTP)**, die dritte Generation, in [`real-life-org/trust-protocol`](https://github.com/real-life-org/trust-protocol). Diese Spezifikation wird gepflegt, solange ausgelieferte Apps auf ihr laufen; Reparaturen gehen in Richtung der dritten Generation.
 
 Zwei Menschen treffen sich, verifizieren ihre Identität, und stellen sich gegenseitig signierte Aussagen aus — kryptographisch verifizierbar, offline-fähig, ohne zentrale Instanz.
 
