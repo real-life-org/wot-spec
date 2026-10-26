@@ -73,4 +73,7 @@ Issues sollten moeglichst einem Arbeitsblock aus `ROADMAP.md` zugeordnet werden.
 
 ## Lizenz
 
-Beitraege zur Spezifikation werden unter derselben Lizenz wie das Repository veroeffentlicht: CC-BY 4.0. Mit einem Beitrag bestaetigst du, dass du die notwendigen Rechte daran hast.
+Beitraege werden unter der Lizenz des jeweiligen Teils veroeffentlicht:
+Spezifikationstexte unter CC BY 4.0, `schemas/`, `test-vectors/`, `scripts/`
+und die JSON-Dateien in `conformance/` unter der Apache License 2.0. Mit einem
+Beitrag bestaetigst du, dass du die notwendigen Rechte daran hast.

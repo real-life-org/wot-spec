@@ -170,4 +170,7 @@ Alle Dokumente sind im Status **Entwurf**. Dieses Repository ist die neutrale Sp
 
 ## Lizenz
 
-[CC-BY 4.0](LICENSE)
+Die Spezifikationstexte stehen unter
+[Creative Commons Attribution 4.0](LICENSE) (CC BY 4.0). `schemas/`,
+`test-vectors/`, `scripts/` und die JSON-Dateien in `conformance/` stehen unter
+der [Apache License 2.0](LICENSE-CODE).
